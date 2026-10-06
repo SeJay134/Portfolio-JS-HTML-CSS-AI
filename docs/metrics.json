@@ -1,0 +1,67 @@
+{
+  "date": "2026-09-25",
+  "environment": "Local Chromium 143, Lighthouse 12.8.2, simulated mobile throttling; single run per version, not field data",
+  "runtimeErrors": [],
+  "baseline": {
+    "scores": {
+      "performance": 79,
+      "accessibility": 87,
+      "best-practices": 96,
+      "seo": 91
+    },
+    "metrics": {
+      "largest-contentful-paint": {
+        "value": 5401.242,
+        "unit": "millisecond"
+      },
+      "cumulative-layout-shift": {
+        "value": 0,
+        "unit": "unitless"
+      },
+      "total-blocking-time": {
+        "value": 0,
+        "unit": "millisecond"
+      },
+      "first-contentful-paint": {
+        "value": 1801.2420000000002,
+        "unit": "millisecond"
+      },
+      "speed-index": {
+        "value": 1801.2420000000002,
+        "unit": "millisecond"
+      }
+    },
+    "warnings": []
+  },
+  "candidate": {
+    "scores": {
+      "performance": 90,
+      "accessibility": 100,
+      "best-practices": 96,
+      "seo": 100
+    },
+    "metrics": {
+      "largest-contentful-paint": {
+        "value": 3001.679,
+        "unit": "millisecond"
+      },
+      "cumulative-layout-shift": {
+        "value": 0,
+        "unit": "unitless"
+      },
+      "total-blocking-time": {
+        "value": 0,
+        "unit": "millisecond"
+      },
+      "first-contentful-paint": {
+        "value": 2701.679,
+        "unit": "millisecond"
+      },
+      "speed-index": {
+        "value": 2701.679,
+        "unit": "millisecond"
+      }
+    },
+    "warnings": []
+  }
+}

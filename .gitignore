@@ -8,3 +8,11 @@ old/
 .vscode/
 embeddings/
 temp.txt
+node_modules/
+dist/
+.env.local
+.env.*.local
+.pytest_cache/
+playwright-report/
+test-results/
+*.tsbuildinfo

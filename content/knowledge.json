@@ -1,0 +1,51 @@
+[
+  {
+    "id": "about",
+    "doc_id": "portfolio",
+    "title": "About Sergei",
+    "url": "https://sergei-luna.vercel.app/#About",
+    "text": "Sergei Patrushev is an entry-level software developer with hands-on projects in web development, Python, data analysis, machine learning and AI applications. Skills listed in his portfolio include JavaScript, HTML, CSS, Python, SQL, Git, APIs, Pandas, NumPy, scikit-learn, LLMs, RAG, AI agents, ETL pipelines and Azure."
+  },
+  {
+    "id": "experience",
+    "doc_id": "portfolio",
+    "title": "Experience",
+    "url": "https://sergei-luna.vercel.app/#Experience",
+    "text": "Sergei is a Volunteer Mentor Reviewer at Code the Dream since January 2026, helping learners with programming, code reviews and debugging. He is a Quality Technician at Inteplast AmmTop since July 2024. He worked as an IT Technician at Computer World from December 2022 to July 2024, building and repairing PCs and troubleshooting hardware and software."
+  },
+  {
+    "id": "contact",
+    "doc_id": "portfolio",
+    "title": "Contact",
+    "url": "https://sergei-luna.vercel.app/#Connect",
+    "text": "Contact Sergei Patrushev by email: patrushev.s.job@gmail.com. GitHub: https://github.com/SeJay134. LinkedIn: https://www.linkedin.com/in/sergei_patrushev. The website prepares an email draft; it does not send mail directly."
+  },
+  {
+    "id": "chocolate",
+    "doc_id": "projects",
+    "title": "Chocolate sales dashboard",
+    "url": "https://github.com/SeJay134/Chocolate-Sales-Dashboard-Python",
+    "text": "Chocolate Sales Dashboard is an interactive Python and Streamlit dashboard for analyzing sales by country, product, and salesperson. Live demo: https://sergei-chocolate-sales-dashboard.streamlit.app/."
+  },
+  {
+    "id": "gdp",
+    "doc_id": "projects",
+    "title": "GDP dashboard",
+    "url": "https://github.com/SeJay134/GDP-Dashboard-Python",
+    "text": "GDP Dashboard is a Python Streamlit app showing GDP for countries around the world. Live demo: https://gdp-dashboard-99adkaf6mof.streamlit.app/."
+  },
+  {
+    "id": "api",
+    "doc_id": "projects",
+    "title": "Open API explorer",
+    "url": "https://github.com/SeJay134/Open-API-Project-JS",
+    "text": "Open API Project is a website built with HTML, CSS and JavaScript that fetches and displays data from an open-source API. Live demo: https://open-api-project-vert.vercel.app."
+  },
+  {
+    "id": "assistant",
+    "doc_id": "projects",
+    "title": "Portfolio assistant",
+    "url": "https://github.com/SeJay134/Portfolio-JS-HTML-CSS",
+    "text": "The portfolio assistant uses Flask, Ollama qwen2.5:7b, FAISS retrieval and all-MiniLM-L6-v2 embeddings. Its API accepts independent questions. The server does not store chat history. Answers are grounded in portfolio evidence and may be incorrect. The backend can be offline while the portfolio remains available."
+  }
+]
