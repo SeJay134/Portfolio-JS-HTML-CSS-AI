@@ -60,11 +60,17 @@ source and its content tests are present, and the Phase 2.2 branch gate is green
       restoring a public message list; Back/Forward hash navigation is synced
       across desktop and mobile WebKit; focusing fields does not apply global
       scroll-to-top, zoom, or overflow-x hacks.
-  - [ ] Phase 3.9 — SEO metadata, social preview and crawlable page acceptance
-    - Verify description, non-www canonical, Open Graph/Twitter image metadata,
-      headings/landmarks, prerendered content, robots.txt, sitemap.xml, and favicon.
-    - Live canonical/WWW redirect and crawler accessibility require post-deploy
-      verification; source/build consistency alone does not establish this.
+  - [x] Phase 3.9 — SEO metadata, social preview and crawlable page (source/build) acceptance
+    - Accepted at `6107a064f14214e914dc03409084f88c7ab77328`
+    - Push CI: https://github.com/SeJay134/Portfolio-JS-HTML-CSS-AI/actions/runs/37468429643
+    - Full PR browser regression: https://github.com/SeJay134/Portfolio-JS-HTML-CSS-AI/actions/runs/37468435885
+    - Description, canonical URL, Open Graph/Twitter title/description/image and
+      image accessibility metadata are consistent; the 1200x630 PNG, robots.txt,
+      sitemap.xml, favicon, prerendered project content, and document landmarks
+      have automated browser acceptance coverage.
+    - Deployment gate still open: verify the real non-www canonical response, www
+      redirect, and crawler accessibility of the social preview/sitemap on the
+      deployed domain. Source/build tests cannot prove external DNS or redirect behavior.
 - [ ] Phase 4.2 — Chat UI acceptance
 - [ ] Phase 5 — Frontend architecture and tooling acceptance
 - [ ] Merge Gate A — full tests -> merge main -> deploy -> smoke -> human browser verification
