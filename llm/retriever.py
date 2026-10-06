@@ -1,41 +1,27 @@
-# llm/retriever.py
+"""Retrieve bounded portfolio evidence; FAISS distances are not confidence scores."""
+import os
 
-import numpy as np
-from llm.vector_store import load_index
-from llm.embedder import model
-import logging
-# logger = logging.getLogger(__name__)
-from llm.dec_logging import logger
+
 class Retriever:
-    def __init__(self):
-        self.index, self.chunks = load_index()
-    @logger
-    def retrieve(self, query, top_k=1):
-        # logging.info('retriever retrieve was invoked')
-        q_emb = model.encode([query], convert_to_numpy=True) # Кодирует запрос
-        distances, ids = self.index.search(q_emb, top_k) # Ищет похожие embeddings
+    def __init__(self, index=None, chunks=None, encoder=None):
+        if index is None:
+            from llm.vector_store import load_index
+            index, chunks = load_index()
+        if encoder is None:
+            from llm.embedder import get_model
+            encoder = get_model()
+        self.index, self.chunks, self.encoder = index, chunks, encoder
+        # This initial threshold is inherited, not a calibrated accuracy claim.
+        self.threshold = float(os.getenv("RAG_MAX_DISTANCE", "1.4"))
 
-        logging.info(
-            "Retriever distance=%s",
-            distances[0][0]
-        )
-
+    def retrieve(self, query, top_k=3):
+        if top_k <= 0 or self.index.ntotal <= 0 or not self.chunks:
+            return []
+        vectors = self.encoder.encode([query], convert_to_numpy=True)
+        distances, ids = self.index.search(vectors, min(top_k, self.index.ntotal))
         results = []
-        for i, dist in zip(ids[0], distances[0]):
-            chunk = self.chunks[i] # Собирает результаты
-            results.append({
-                "id": chunk["id"],
-                "doc_id": chunk["doc_id"],
-                "text": chunk["text"],
-                "score": float(dist),
-        })
-            
-        for r in results:
-            logging.info("Chunk:\n%s", r["text"])
-
-        return results # возвращает список:
-# [
-#     {"text": "...", "score": 0.78},
-#     ...
-# ]
-
+        for i, distance in zip(ids[0], distances[0]):
+            if not 0 <= int(i) < len(self.chunks) or not float(distance) <= self.threshold:
+                continue
+            results.append({**self.chunks[int(i)], "score": float(distance)})
+        return results

@@ -1,15 +1,12 @@
-# llm/embedder.py
+"""Load the embedding model only when indexing or retrieval is requested."""
+from functools import lru_cache
 
-from sentence_transformers import SentenceTransformer
-import logging
-logger = logging.getLogger(__name__)
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
+@lru_cache(maxsize=1)
+def get_model():
+    from sentence_transformers import SentenceTransformer
+    return SentenceTransformer("all-MiniLM-L6-v2")
+
 
 def embed_chunks(chunks):
-    logging.info('embedder embed_chunks was invoked')
-    texts = [c["text"] for c in chunks]
-    embeddings = model.encode(texts, convert_to_numpy=True)
-    return embeddings
-
-# pip install -U sentence-transformers
+    return get_model().encode([c["text"] for c in chunks], convert_to_numpy=True)
