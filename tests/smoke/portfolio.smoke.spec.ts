@@ -7,7 +7,7 @@ test("critical portfolio shell is available", async ({ page }) => {
   await expect(page.locator("#Projects")).toBeVisible();
 });
 
-test("navigation and contact survive without the AI API", async ({ page }) => {
+test("navigation and contact work without an API connection", async ({ page }) => {
   await page.route("**/api/**", (route) => route.abort());
   await page.goto("/");
   await page.getByRole("button", { name: "Menu", exact: true }).click();

@@ -31,7 +31,7 @@ test("keyboard filters preserve the URL and support reload, back, and forward", 
   await expect(page).toHaveURL(/\?ref=portfolio&category=AI#Projects$/);
   await page.reload();
   await expect(ai).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("heading", { name: "Portfolio & AI assistant" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Portfolio website & AI prototype" })).toBeVisible();
 
   const all = filters.getByRole("button", { name: /^All/ });
   await all.click();
