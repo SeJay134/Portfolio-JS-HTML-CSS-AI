@@ -60,6 +60,11 @@ source and its content tests are present, and the Phase 2.2 branch gate is green
       restoring a public message list; Back/Forward hash navigation is synced
       across desktop and mobile WebKit; focusing fields does not apply global
       scroll-to-top, zoom, or overflow-x hacks.
+  - [ ] Phase 3.9 — SEO metadata, social preview and crawlable page acceptance
+    - Verify description, non-www canonical, Open Graph/Twitter image metadata,
+      headings/landmarks, prerendered content, robots.txt, sitemap.xml, and favicon.
+    - Live canonical/WWW redirect and crawler accessibility require post-deploy
+      verification; source/build consistency alone does not establish this.
 - [ ] Phase 4.2 — Chat UI acceptance
 - [ ] Phase 5 — Frontend architecture and tooling acceptance
 - [ ] Merge Gate A — full tests -> merge main -> deploy -> smoke -> human browser verification
