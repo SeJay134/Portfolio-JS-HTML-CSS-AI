@@ -1,107 +1,52 @@
-# Sergei Patrushev — Portfolio
+# Sergei Patrushev — Public Portfolio (Release Candidate)
 
-A React/TypeScript portfolio with a left navigation drawer, curated projects,
-responsive layout, themes, and accessible local email-draft contact.
-Public content is prerendered. The accepted Flask/Ollama backend remains in
-the repository but is not connected to this release. Chat UI and 3D are deferred.
+Accessible, responsive React/TypeScript portfolio with a left navigation drawer,
+curated projects, local WebP images, project-category URL filters, an experience
+timeline, light/dark/system themes, and a private `mailto:` contact draft.
 
-Progress: [ROADMAP.md](ROADMAP.md). Full proposal: [improvements.txt](improvements.txt).
-Validation and outstanding release gates: [docs/VALIDATION.md](docs/VALIDATION.md).
+This release deliberately has **no Chat UI, no model API requests, and no Three.js
+scene**. Backend/RAG modernization remains in the original work branch and
+requires a later independent pull request. See [ROADMAP.md](ROADMAP.md) and
+[the release checklist](docs/RELEASE_CANDIDATE.md).
 
-## Frontend
+## Local development
 
-Use Node 22.12+ (Node 24 is also supported).
+Node 22.12+:
 
 ```bash
 npm ci
-cp .env.example .env
 npm run dev
 ```
 
-Open `http://localhost:5001`. Vite retains a development `/api` proxy for
-future backend integration, but this release does not call the API.
-Do not use `python -m http.server` for the React source tree. For a production build:
+Open http://127.0.0.1:5001. Never use a static Python file server to run the
+React source tree. For a production build:
 
 ```bash
 npm run build
 npm run preview
 ```
 
-The preview runs on port 4173 and does not include the development API proxy.
-This release has no chat launcher or 3D canvas. `VITE_*` values are public;
-do not put credentials there.
+Build output is `dist/`; `scripts/prerender.tsx` adds crawlable HTML.
+No API URL or backend credentials are necessary for this release.
 
-## Backend
+## Visitor behavior
 
-Use Python 3.11 or 3.12. The application can start without model dependencies or
-an index; `/health` remains available and `/ready` reports unavailable until the
-model and evidence index are configured.
+Project data is controlled in `src/data/projects.ts` and remains available
+without GitHub or AI APIs. Filters are keyboard operable, encoded in
+`?category=`, and preserve section anchors. Local images have alt text and
+safe fallbacks.
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements-rag.txt
-ollama pull qwen2.5:7b
-python -m llm.indexer
-python -m llm.app
-```
+Contact only prepares an email draft or copyable text. The visitor must send
+the email using their own email app; this site neither stores nor submits
+visitor messages. There is no public message list. Do not add a resume or
+unverified employment/impact claims without owner review.
 
-On Windows activate with `.venv\Scripts\activate`. Ollama must be running.
-Indexing downloads the embedding model on first use. The generated FAISS index
-and JSON metadata live in `data/embeddings`, outside the frontend public tree.
-`content/knowledge.json` is the versioned knowledge source. After editing it,
-rebuild the index and restart backend workers to load the new version. Publication
-uses a manifest pointing to a complete index/metadata pair. Old generations are
-retained so active readers are not broken; clean them during maintenance after
-workers have restarted. The indexer returns a nonzero exit code on failure.
-
-Development tunneling, when needed:
+## Validation
 
 ```bash
-ngrok http 5002
-```
-
-Set `VITE_API_BASE_URL` to the tunnel's HTTPS base URL, without `/chat`, and rebuild.
-Use `FRONTEND_URLS` for the actual frontend origins. A tunnel is not production
-hosting. The Flask development server listens on loopback by default.
-
-## API contract
-
-- `GET /health`: process liveness; no model loading.
-- `GET /ready`: model/index availability; short cached Ollama check.
-- `POST /chat`: `{ "message": "What projects has Sergei built?" }`.
-- Success: `{ "reply": "...", "sources": [], "request_id": "..." }`.
-- Failure: JSON `error` and `request_id`, with 400/413/429/503 status.
-- Maximum message: 300 Unicode code points after trimming. Maximum body: 16 KiB.
-- Every request is independent. No history, visitor session, or transcript is
-  stored by the server. UI history exists only in the current page's memory.
-- Stop cancels the browser request, not necessarily backend generation. The
-  backend timeout/concurrency limit bounds remaining work.
-- The assistant always uses the same grounding policy. The inherited retrieval
-  distance threshold is provisional until the live evaluation set is reviewed.
-
-## Contact and content
-
-Contact prepares a `mailto:` draft. It never claims a message has been delivered.
-The visitor opens their email app and sends it themselves; a Copy draft fallback
-is available. No visitor messages are displayed publicly or posted to this server.
-A direct email-delivery service is a future integration requiring provider setup.
-
-Project content: `src/data/projects.ts`. Project screenshots are local assets
-from the linked repositories; the portrait is from this repository. Do not invent
-outcome metrics or skills. Keep `content/knowledge.json` consistent with public
-content. No resume is linked until a reviewed resume file exists.
-
-## Tests
-
-All automated tests, fixtures, and acceptance scenarios are centralized under
-`tests/`. See `tests/README.md`; contracts are in `docs/CONTRACTS.md`.
-
-```bash
-npm run typecheck
 npm run lint
+npm run typecheck
 npm run test:unit
-python -m pytest -q tests/unit/backend tests/integration/backend
 npm run build
 npx playwright install --with-deps chromium firefox webkit
 npm run test:smoke
@@ -109,56 +54,16 @@ npm run test:e2e
 npm run test:regression
 ```
 
-`npm run test:browser` runs smoke, E2E, and regression browser suites. Future
-scenarios live under `tests/future/`; manual release checks under
-`tests/scenarios/`.
+Browser tests use the built site at localhost:4173. See
+`tests/README.md` and `docs/VALIDATION.md` for evidence and outstanding gates.
 
-Live RAG evaluation uses `tests/fixtures/rag_cases.json`:
+## Deployment
 
-```bash
-python scripts/evaluate_chat.py --base-url http://127.0.0.1:5002 --output /tmp/rag-evaluation.json
-```
+The Vercel configuration uses `npm run build` and publishes `dist/`.
+Never merge merely because the CI is green: verify Preview, owner-controlled
+content, and the review diff before merging to `main`. After deployment,
+verify the deployed commit, robots/sitemap/social image, canonical metadata,
+navigation, contact behavior and rollback target.
 
-It records latency/answers for manual factual review and does not automatically
-certify accuracy.
-
-## Development and release workflow
-
-Use a short-lived branch from the latest verified `main`: one roadmap subphase,
-one defect fix, or one tightly coupled contract change. Pass required tests/build
-before merge. Then deploy `main`, run smoke checks, manually verify the affected
-journey, and record it in `docs/VALIDATION.md` before starting the next slice.
-
-The original `wip/portfolio-ui-draft` combines accepted and deferred features.
-This release candidate excludes the deferred UI. After its release gate passes,
-develop and deploy one subphase per short-lived branch.
-
-## Deployment and rollback
-
-Vercel uses `vercel.json`, `npm run build`, and `dist`.
-This first frontend release does not call a backend or host Ollama.
-The backend will require its own deployment gate.
-
-On a trusted backend host, set production origins and Redis rate-limit storage:
-
-```bash
-export RATELIMIT_STORAGE_URI=redis://localhost:6379/0
-export FRONTEND_URLS=https://sergei-luna.vercel.app
-.venv/bin/gunicorn --workers 1 --threads 4 --timeout 90 --bind 127.0.0.1:5002 llm.app:app
-```
-
-Terminate HTTPS at a reverse proxy and keep Ollama private. The generation gate
-is per worker; start with one worker to cap local model concurrency. Redis shares
-rate limits, not the generation gate. Configure trusted proxy/IP handling at the
-hosting layer; do not blindly trust forwarded headers from public clients.
-Readiness verifies an index and installed model, not successful inference on every
-request. Cold embedding initialization can take longer than warm inference.
-
-Run build/preview smoke checks before merging. After a green gate, merge to
-`main`, deploy that exact revision, run post-deploy smoke checks, and perform a
-human browser verification. The release is not closed until the result is recorded
-in `docs/VALIDATION.md`.
-
-The earlier site is preserved at
-`bcc8afbc1c4e2ecbe4bacde8084beeba981bc172`. Keep the previous deployment
-available for rollback and preserve API compatibility during transitions.
+Every subsequent subphase should have its own short-lived branch, tested merge,
+deployment and post-deploy acceptance.

@@ -1,5 +1,10 @@
 # Portfolio Roadmap
 
+> Release scope: this branch ships the public frontend only. Backend/AI
+> checkboxes below are historical acceptance evidence from
+> `wip/portfolio-ui-draft`; their code is **not** included in this release.
+> Merge and deploy them only through a separate future PR.
+
 ## Accepted checkpoints
 
 - [x] Phase 0.1 — Repository review and baseline
@@ -77,8 +82,7 @@ source and its content tests are present, and the Phase 2.2 branch gate is green
 
 The public-portfolio release candidate is extracted from
 `wip/portfolio-ui-draft` and excludes Chat UI (Phase 4.2) and 3D effects
-(Phase 6). Accepted backend source is included as a dependency baseline but is
-not deployed with the static frontend. Phase 5 tooling acceptance remains a
+(Phase 6). Backend changes are excluded entirely and must be released separately. Phase 5 tooling acceptance remains a
 separate task. After Release Gate A, one short-lived branch and release per slice.
 
 ## Independent follow-up releases

@@ -21,8 +21,9 @@ a focused hotfix restores the verified baseline.
 
 ## 2. Frontend <-> Flask API contract
 
-**Future integration:** the first public-portfolio release has no Chat UI or
-client API requests. This contract applies when chat is released separately.
+**Future integration (not shipped here):** the first public-portfolio release
+contains no Chat UI or client API requests. The Flask and RAG code changes are
+kept on the original work branch and require a separate future release.
 
 Development frontend: port 5001. Flask API: port 5002.
 

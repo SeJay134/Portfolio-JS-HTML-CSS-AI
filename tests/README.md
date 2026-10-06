@@ -18,7 +18,6 @@ All automated tests, fixtures, and manual scenarios live under this directory.
 
 ```bash
 npm run test:unit
-python -m pytest -q tests/unit/backend tests/integration/backend
 npm run build
 npm run test:smoke
 npm run test:e2e

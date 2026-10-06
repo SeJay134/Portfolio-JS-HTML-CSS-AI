@@ -1,25 +1,19 @@
-# Release Gate Scenarios
+# Public-portfolio release gate
 
-Record concrete results and deployed revision in docs/VALIDATION.md.
+Record exact deployed SHA, HTTP statuses and human review in docs/VALIDATION.md.
 
 ## Pre-merge
-- [ ] Scope matches one roadmap subphase/fix/contract change.
-- [ ] Unit and relevant integration tests pass.
-- [ ] Touched regression tests pass.
-- [ ] Required E2E/accessibility checks pass.
-- [ ] Lint, typecheck, and production build pass.
-- [ ] Smoke passes against build/preview.
-- [ ] Contract changes are documented/tested.
-- [ ] ROADMAP.md and docs/VALIDATION.md are updated.
+- [ ] Release PR contains only accepted frontend with no Chat/3D/backend changes.
+- [ ] Lint, typecheck, unit tests, build and prerender pass.
+- [ ] Smoke, browser and accessibility regressions pass.
+- [ ] Owner verifies employment facts and project content.
+- [ ] Human checks Preview on desktop and mobile.
 
-## Post-merge / deployed site
-- [ ] Deployment matches expected main revision.
-- [ ] Home loads without fatal console errors.
-- [ ] Navigation and an affected deep link work.
-- [ ] Projects/contact remain usable if AI API is unavailable.
-- [ ] Changed journey works in a real desktop browser.
-- [ ] Mobile-sensitive change is checked on a real mobile browser/device.
-- [ ] Rollback target is known.
-- [ ] Human verifier records pass/fail and date.
+## Post-merge
+- [ ] Deployed production commit matches approved main SHA.
+- [ ] Site, robots.txt, sitemap.xml, social image return 200.
+- [ ] Canonical, OG, Twitter metadata and headings exist in fetched HTML.
+- [ ] Drawer, filters, Contact drafts, deep links work on desktop/mobile.
+- [ ] Rollback target and owner verification recorded.
 
-Do not start the next feature slice while a post-deploy item is failed/unresolved.
+A failed release gate blocks the next feature branch until fixed or rolled back.
