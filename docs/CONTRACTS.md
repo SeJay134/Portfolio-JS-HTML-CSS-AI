@@ -61,7 +61,7 @@ Stable public section anchors:
 The drawer uses a native accessible trigger; closes via Close/Escape/backdrop/
 section selection; contains modal focus; restores focus on dismiss; keeps hidden
 links unreachable; preserves anchor/deep-link behavior; exposes the active section
-with `aria-current`; and owns the modal layer so chat and drawer cannot compete.
+with `aria-current`. Chat integration remains a separate future contract.
 
 Changing a public section ID is a contract change and requires navigation/deep-link
 regression updates.
@@ -77,15 +77,16 @@ retain accessible contrast.
 ## 6. Contact <-> visitor contract
 
 The current feature is local-only: validate fields; prepare `mailto:` and copyable
-text; never POST visitor contact content to this backend; never claim delivery or
+text; never POST visitor contact content; never claim delivery or
 persistence; invalidate stale drafts; report clipboard success only after the
 operation completes. A delivery provider is a new contract requiring privacy,
 spam, failure, retry, and delivery-confirmation tests.
 
 ## 7. Project content <-> UI/RAG contract
 
-Reviewed public facts are kept synchronized between typed frontend project data
-and versioned RAG knowledge. Core cards do not depend on GitHub API availability.
+Reviewed public projects are defined in typed frontend project data.
+A future RAG release must reconcile that data with its own versioned knowledge.
+Core cards do not depend on GitHub API availability.
 Missing optional fields fail safely. Do not invent impact metrics, employers,
 dates, skills, or proficiency levels.
 
@@ -116,6 +117,7 @@ At 320/360/390/768/1024/1440 CSS pixels, light and dark layouts preserve section
 order, readable Hero actions, project details, loaded local images, and usable
 contact controls. Neither the document nor checked content containers overflow
 horizontally; project illustrations must fit inside their visible preview area.
-This also holds when the external font service is unavailable. Optional canvas effects are deferred; no canvas is shipped in this release. Automated axe scans cover main content
+This also holds when the external font service is unavailable. Optional canvas
+effects are deferred; no canvas is shipped in this release. Automated axe scans cover main content
 at 320 and 1440 pixels in both themes; real devices and broader cross-browser
 acceptance remain Phase 7 work.

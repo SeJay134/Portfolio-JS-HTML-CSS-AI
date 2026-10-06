@@ -59,14 +59,14 @@ export const projects: readonly Project[] = [
   {
     id: "portfolio",
     category: "AI",
-    title: "Portfolio & AI assistant",
+    title: "Portfolio website & AI prototype",
     summary:
-      "React and TypeScript portfolio with a separate Flask/Ollama RAG assistant grounded in reviewed portfolio evidence.",
+      "React and TypeScript portfolio with a separately developed Flask/Ollama RAG prototype. The assistant is not enabled on the public site.",
     tags: ["React", "TypeScript", "Flask", "FAISS", "Ollama"],
     demo: "https://sergei-luna.vercel.app",
     repository: "https://github.com/SeJay134/Portfolio-JS-HTML-CSS",
     detail:
-      "The assistant accepts independent questions, retrieves portfolio evidence with FAISS and all-MiniLM-L6-v2 embeddings, and generates grounded answers with qwen2.5:7b while the portfolio remains usable if the AI backend is offline.",
+      "A separate, not-yet-deployed RAG prototype retrieves reviewed portfolio evidence with FAISS and all-MiniLM-L6-v2 and uses qwen2.5:7b for grounded answers. This public portfolio release does not offer an AI chat interface.",
   },
 ];
 

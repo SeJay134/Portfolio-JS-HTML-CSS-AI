@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 const origin = "https://sergei-luna.vercel.app";
 const description =
-  "Explore Sergei Patrushev's software development portfolio: web applications, Python dashboards, data projects, and a retrieval-grounded AI assistant.";
+  "Explore Sergei Patrushev's software development portfolio: responsive web applications, Python dashboards, data projects, and applied AI prototypes.";
 const socialDescription =
   "Thoughtful interfaces. Meaningful data. Practical AI. Explore my selected projects.";
 const image = `${origin}/images/social-card.png`;

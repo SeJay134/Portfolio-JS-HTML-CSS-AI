@@ -28,7 +28,7 @@ it("filters local project content without requiring a network request", async ()
   await user.click(screen.getByRole("button", { name: /^AI/ }));
   expect(screen.getAllByRole("article")).toHaveLength(1);
   expect(
-    screen.getByRole("heading", { name: "Portfolio & AI assistant" }),
+    screen.getByRole("heading", { name: "Portfolio website & AI prototype" }),
   ).toBeVisible();
   expect(location.search).toContain("category=AI");
   await user.click(screen.getByRole("button", { name: /^All/ }));
