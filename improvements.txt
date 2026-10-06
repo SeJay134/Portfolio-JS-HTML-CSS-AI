@@ -3,7 +3,7 @@ Date: September 24, 2026
 Repository: https://github.com/SeJay134/Portfolio-JS-HTML-CSS
 Reviewed branch: main
 Baseline commit: 7c03e1eee59ab21351b89be5a5baa376b45ab164
-Status: proposals and acceptance criteria; implementation is outside this plan.
+Status: active implementation plan. Accepted subphases, release gates, test evidence, and contracts are tracked in ROADMAP.md, docs/VALIDATION.md, tests/, and docs/CONTRACTS.md.
 
 1. SOURCES, REVIEW LIMITATIONS, AND RECOMMENDED DIRECTION
 
@@ -180,6 +180,9 @@ Tests and acceptance:
 Categories: UI, navigation, responsive design, accessibility. P1.
 Estimate: 2-4 days.
 Dependency: Phase 0; complete P0 fixes before public release.
+Status: Phase 2.1 design tokens/themes and Phase 2.2 accessible left drawer
+accepted on September 28, 2026. Remaining broad responsive/manual device checks
+stay in Phases 3 and 7.
 
 Design:
 [ ] Introduce CSS tokens for background, surface, text, muted text, border, accent,
@@ -195,35 +198,43 @@ Design:
     gap, and minmax(0,1fr). Check intermediate widths continuously.
 
 Drawer specification: the user's primary priority.
-[ ] Use a native top-left button with a minimum 44x44px target, aria-expanded,
-    and aria-controls. The hamburger icon changes to a close icon.
-[ ] Desktop width: 280-320px; mobile: min(86vw, 320px). Use 100dvh, internal
+[x] Use a native top-left Menu button with a minimum 44px touch target,
+    aria-expanded, and aria-controls. Keep a dedicated visible Close control
+    inside the drawer rather than changing the sticky trigger while the modal
+    overlay owns the screen.
+[x] Desktop width: 280-320px; mobile: min(86vw, 320px). Use 100dvh, internal
     scrolling, and safe-area padding. Keep the internal Close button visible.
-[ ] Top: mini portrait/name. Navigation: Home, Projects, Skills, Experience,
-    About, Contact. Bottom: Theme, Resume if available, GitHub/LinkedIn.
-[ ] Open with click/touch/Enter/Space. Close with Close, Escape, backdrop, or
-    section selection. Opening must not depend on hover.
-[ ] Animate translateX(-100%) to 0 and backdrop opacity over 200-260ms.
-    Avoid width/left/layout animation. Respect prefers-reduced-motion.
-[ ] Option A is a modal dialog containing normal nav links, not role=menu.
-    On open, move focus inside, contain Tab, make background content inert,
-    and lock background scrolling. On dismiss, restore scroll and trigger focus.
-    After section selection, close and focus that section's heading.
-[ ] Closed navigation must be unavailable to Tab and screen readers; translate
-    alone is insufficient. Coordinate hidden/inert with transition completion.
-[ ] Highlight the active section using IntersectionObserver and aria-current.
-    Preserve href anchors, header-aware scroll-margin-top, and Back/Forward.
-[ ] Use a single overlay owner: opening modal navigation minimizes/closes chat
-    while preserving its draft. Avoid competing focus traps.
-[ ] Provide System/Light/Dark theme selection, persistence, and a correct first frame.
+[x] Accepted composition: SP wordmark and Close at the top; Home, Projects,
+    Skills, Experience, About, Contact navigation; GitHub/LinkedIn at the bottom.
+    Theme remains in the persistent header. Resume stays omitted until a reviewed
+    resume file exists.
+[x] Open with click/touch/Enter/Space. Close with Close, Escape, backdrop, or
+    section selection. Opening does not depend on hover.
+[x] Animate the inner panel with translateX over approximately 240ms and use a
+    full-screen backdrop. Avoid layout-width animation and respect
+    prefers-reduced-motion.
+[x] Use a native modal dialog containing normal nav links, not role=menu. Contain
+    Tab, make background content inert, lock background scrolling, restore trigger
+    focus on dismiss, and transfer focus to the selected section on navigation.
+[x] Closed navigation is unavailable to keyboard/accessibility navigation because
+    the native dialog is closed rather than merely translated off-screen.
+[x] Highlight the active section with a viewport scroll-spy and
+    aria-current="location". Preserve href anchors, header-aware scroll margins,
+    Back/Forward compatibility, and explicit section focus after drawer navigation.
+[x] Use a single overlay owner: opening modal navigation closes chat while
+    preserving its draft. Avoid competing focus traps.
+[x] System/Light/Dark selection, persistence, cross-tab/system synchronization,
+    and correct first-frame behavior were accepted under Phase 2.1.
 
 Tests and acceptance:
-  Playwright: all open/close methods, rapid clicks, resizing while open, anchors,
-  scroll restoration, and no stuck scroll lock.
-  Keyboard and VoiceOver: accessible names, Tab order, Escape, and focus return.
-  Hidden links cannot receive focus. Combine automated axe with manual checks.
-  320-1440px, landscape, 200% zoom: no lost content or horizontal scrolling.
-  Reduced motion: fully functional without movement. Both themes remain readable.
+  Accepted Phase 2.2 branch gate: close/Escape/backdrop/section navigation,
+  focus containment and return, section focus, active aria-current state, anchor
+  preservation, scroll lock, 390x844 resize while open, single modal ownership,
+  reduced motion, and automated axe WCAG A/AA checks.
+  GitHub Actions run 36416335520 passed frontend, backend, smoke, and 10/10
+  Chromium branch regression checks at f4f5ed496a2561b3c70333360a781436cd25c6a6.
+  Full Firefox/WebKit, VoiceOver, 200% zoom, landscape, and real-device checks are
+  retained for Phase 7 rather than being implied by Phase 2.2 acceptance.
 
 7. PHASE 3: CONTENT, PROJECT CARDS, AND CONTACT FORM
 Categories: UI, content, data, SEO. P1. Estimate: 2-4 days.
@@ -440,26 +451,50 @@ Build automation starting in Phase 1; this phase is the final release check.
     frontend switching. Roll back broken navigation/contact, session mixing,
     or substantial performance regression.
 
-12. RECOMMENDED WORK PACKAGES AND TIMELINE
+12. IMPLEMENTATION PACKAGES, MERGE GATES, AND DELIVERY ORDER
 
-Release A: Phases 0-3. Safe logic, working contact, left drawer, design system,
-hero, and projects. Main visible improvement: approximately 7-14 working days.
-Release B: Phases 4-5. Reliable chat/RAG and incremental React: about 6-12 days.
-Release C: Phase 6 plus Phase 7 acceptance. Budgeted 3D: approximately 3-7 days.
-Estimates assume one developer and exclude waiting for content/infrastructure.
-The total sequential range is approximately 16-33 working days; refine after
-Phase 0. With limited time, ship A and reliable JSON chat without streaming/3D.
+The repository now follows a small-change delivery process. A normal implementation
+branch must contain one roadmap subphase, one defect fix, or one tightly coupled
+contract change. Do not accumulate unrelated phases in a long-lived branch.
 
-Within each phase:
-  Concrete scenario -> small implementation -> focused tests -> preview ->
-  critical user journey check -> next phase.
+The existing wip/portfolio-ui-draft branch predates this rule and already contains
+several drafted frontend areas. Treat it as a one-time transition exception:
+  1) accept Phase 2.2 (left drawer),
+  2) accept Phase 3 (hero/projects/responsive composition),
+  3) accept Phase 4.2 (chat UI),
+  4) accept Phase 5 (frontend architecture/tooling),
+  5) run the complete merge gate,
+  6) merge to main, deploy, run automated production smoke checks where available,
+     and perform a human browser check before starting the next change.
+
+Phase 5 closes this transitional frontend package and is the merge gate for the
+current WIP branch. Phase 4.3 (live RAG/production backend) is a separate release
+slice. Phase 6 (optional Three.js) is also a separate release slice and must not
+block the first stable frontend release.
+
+After the transitional branch is closed, use this cycle for every change:
+  main -> short-lived branch -> implementation -> focused tests -> full required
+  regression -> preview/build check -> merge -> deploy -> smoke -> human browser
+  acceptance -> delete branch -> next change.
+
+No next feature branch starts while the production verification of the previous
+slice is unresolved. A failed production smoke or human acceptance check triggers
+rollback or a focused hotfix before new feature work.
+
+Delivery order after the current transition:
+  A) Phase 4.3: live RAG evaluation and production backend contract.
+  B) Phase 6: optional Three.js/effects as an isolated enhancement.
+  C) Phase 7: final cross-browser, accessibility, performance, device, and release
+     hardening.
 
 First practical backlog:
-  1) Isolate chat history and enforce strict API validation.
-  2) Fix misleading contact submission and unsafe innerHTML.
-  3) Choose Option A and design tokens, then implement the accessible left drawer.
-  4) Build the hero, curated project cards, and responsive layout.
-  5) Add chat Send/pending/errors, then React, and only afterward Three.js.
+  1) Finish and accept the accessible left drawer (Phase 2.2).
+  2) Accept hero/projects/responsive composition (Phase 3).
+  3) Accept chat UI without requiring production RAG (Phase 4.2).
+  4) Accept frontend architecture/tooling and close the current WIP merge gate
+     (Phase 5).
+  5) Merge, deploy, smoke-test, and manually verify production.
+  6) Start Phase 4.3 from a fresh branch based on the verified main branch.
 
 13. OFFICIAL IMPLEMENTATION REFERENCES
 
@@ -478,3 +513,108 @@ https://threejs.org/manual/pages/responsive.html
 
 These references support the technical approaches. Layout, palette, dimensions,
 priorities, and budgets above are proposals specific to this portfolio.
+
+14. MANDATORY ENGINEERING PROCESS
+
+This process is the default technical workflow for all future portfolio changes.
+
+Change scope:
+- One branch should normally represent one roadmap subphase, one bug fix, or one
+  explicit contract change.
+- Branch from the latest verified main. Keep branches short-lived.
+- Do not mix opportunistic refactors, unrelated UI changes, RAG changes, and
+  deployment changes in one slice.
+- Every behavior change must update or add the smallest appropriate automated
+  test and, when user-visible, an acceptance scenario.
+
+Pre-merge gate:
+1) Scope is complete and documented.
+2) Unit tests pass.
+3) Relevant integration tests pass.
+4) Regression tests for touched behavior pass.
+5) Smoke tests pass against the production build or preview.
+6) Required E2E/browser tests pass.
+7) Typecheck, lint, and production build pass.
+8) Contracts in docs/CONTRACTS.md remain compatible, or the contract change is
+   explicitly documented with tests.
+9) ROADMAP.md and docs/VALIDATION.md record the accepted checkpoint.
+10) No known P0/P1 defect is hidden by skipping or weakening a test.
+
+Merge and release gate:
+- Merge only after the pre-merge gate is green.
+- Deploy the merged main branch.
+- Run post-deploy smoke checks against the deployed site when automation exists.
+- A person opens the deployed site in a real browser and verifies the critical
+  journey affected by the change.
+- Record the production verification in docs/VALIDATION.md.
+- Only then is the slice closed and the next feature branch allowed to begin.
+- If production verification fails, roll back or create a focused hotfix.
+
+Commit policy:
+- Prefer a small number of coherent commits inside a short-lived branch.
+- Do not create a new branch for every trivial edit, but do not keep unrelated
+  completed work unmerged.
+- Delete merged branches unless intentionally retained as release references.
+
+15. TEST ARCHITECTURE AND OWNERSHIP
+
+All automated tests, fixtures, and test scenarios live under tests/. Production
+source files must not contain test files. The canonical layout is:
+
+tests/
+  unit/          deterministic component/module tests
+  integration/   contracts between internal modules or API layers
+  e2e/           complete browser user journeys
+  smoke/         minimal fast checks for build/deploy health
+  regression/    tests protecting previously fixed defects/accepted behavior
+  future/        scenarios for planned features; never failing CI placeholders
+  fixtures/      reusable deterministic test data
+  scenarios/     manual acceptance and release-gate checklists
+  setup/         test-runner setup only
+
+Rules:
+- A test has one canonical home. Do not copy the same test into smoke/regression/E2E.
+- Every fixed regression should add a regression test when practical.
+- Smoke tests remain intentionally small and fast.
+- Future tests describe expected behavior before implementation; when implemented,
+  move/convert them into unit/integration/E2E/regression and remove stale plans.
+- Unit and integration tests must not depend on public internet services.
+- Live Ollama/RAG evaluation is a controlled acceptance activity using fixtures;
+  it does not fabricate an automatic accuracy score.
+- Manual browser/device scenarios belong in tests/scenarios and are evidence for
+  acceptance, not substitutes for automated coverage.
+- CI runs fast deterministic checks on each branch. Full browser regression runs
+  on pull requests and main. Future scenarios are never executed as passing tests.
+
+See tests/README.md for commands and suite ownership.
+
+16. CONTRACTS BETWEEN PHASES AND PROJECT PARTS
+
+The canonical contracts are documented in docs/CONTRACTS.md. They are release
+boundaries, not informal assumptions.
+
+Phase contract:
+- A phase may consume only behavior that an earlier phase has accepted and documented.
+- Changing an accepted contract requires updating its tests and running dependent
+  regression suites.
+- A downstream phase cannot silently redefine an upstream contract.
+- Acceptance evidence belongs in docs/VALIDATION.md; roadmap state belongs in
+  ROADMAP.md.
+
+Primary runtime contracts:
+- Frontend <-> Flask API: endpoint, request, status, error, source-link, timeout,
+  and statelessness behavior.
+- RAG content <-> index: content/knowledge.json is the versioned knowledge source;
+  index publication is atomic and metadata/source IDs stay compatible.
+- Navigation <-> page sections: stable IDs/anchors, focus destination, active
+  section semantics, and modal ownership.
+- Theme <-> persistence: system/light/dark values, first-frame behavior, storage
+  fallback, and cross-tab synchronization.
+- Contact <-> visitor: current release prepares a local mailto/copy draft only;
+  it never claims server-side delivery.
+- Project data <-> UI/RAG: public project facts stay reviewed and synchronized.
+- Main <-> deployment: a merged release is incomplete until deployed smoke checks
+  and a human browser verification pass.
+
+A contract change is itself a scoped engineering change and must pass the same
+merge/deploy/verification cycle.

@@ -1,66 +1,69 @@
+# Sergei Patrushev — Public Portfolio (Release Candidate)
 
-Portfolio project
-Sergei Patrushev
+Accessible, responsive React/TypeScript portfolio with a left navigation drawer,
+curated projects, local WebP images, project-category URL filters, an experience
+timeline, light/dark/system themes, and a private `mailto:` contact draft.
 
-A lightweight local LLM chatbot powered by qwen2.5:7b and a minimal RAG pipeline, designed to answer questions about me and my projects.
-Frontend runs on Vercel, backend runs locally or on a private server.
+This release deliberately has **no Chat UI, no model API requests, and no Three.js
+scene**. Backend/RAG modernization remains in the original work branch and
+requires a later independent pull request. See [ROADMAP.md](ROADMAP.md) and
+[the release checklist](docs/RELEASE_CANDIDATE.md).
 
-structure of chat bot
+## Local development
 
+Node 22.12+:
 
-index.html                 # Main portfolio page + chat widget
+```bash
+npm ci
+npm run dev
+```
 
-css/
- - index.css              # Styles for portfolio sections
- - chat.css               # Styles for chat widget
+Open http://127.0.0.1:5001. Never use a static Python file server to run the
+React source tree. For a production build:
 
-js/
- - index.js               # Portfolio scripts (projects, animations)
- - chat.js                # Chat widget logic (UI + fetch to Flask)
+```bash
+npm run build
+npm run preview
+```
 
-llm/
- - app.py                 # Main LLM server (Model + RAG + router)
- - rag_pipeline.py        # Orchestrates RAG steps
- - loader.py              # Loads rag_text.txt
- - splitter.py            # Splits text into chunks
- - embedder.py            # Embeddings (sentence-transformers or Ollama)
- - vector_store.py        # FAISS vector storage
- - retriever.py           # Retrieves relevant chunks
- - formatter.py           # Builds final prompt for model
- - validator.py           # Validates user input
- - indexer.py             # Builds FAISS index
- - watcher.py             # Auto-reloads index on rag_text.txt change
- - rag_text.txt           # Your biography + project descriptions
- - dec_logging.py         # decorator for logging
+Build output is `dist/`; `scripts/prerender.tsx` adds crawlable HTML.
+No API URL or backend credentials are necessary for this release.
 
-data/
- - base             # data for embbedings
- - embeddings       # embedded data
+## Visitor behavior
 
-README.md
+Project data is controlled in `src/data/projects.ts` and remains available
+without GitHub or AI APIs. Filters are keyboard operable, encoded in
+`?category=`, and preserve section anchors. Local images have alt text and
+safe fallbacks.
 
+Contact only prepares an email draft or copyable text. The visitor must send
+the email using their own email app; this site neither stores nor submits
+visitor messages. There is no public message list. Do not add a resume or
+unverified employment/impact claims without owner review.
 
+## Validation
 
-workflow without RAG
-- user
-- app.py            # get request
-- validator.py      # checking user's message
-- router.py         # RAG or Chat, desiscion
-- app.py            # run_chat_model
-- ollama model      # recievs SYSTEM_PROMPT, chat_history, user_message
-- app.py            # add answer to chat_history, JSON
-- user
+```bash
+npm run lint
+npm run typecheck
+npm run test:unit
+npm run build
+npx playwright install --with-deps chromium firefox webkit
+npm run test:smoke
+npm run test:e2e
+npm run test:regression
+```
 
+Browser tests use the built site at localhost:4173. See
+`tests/README.md` and `docs/VALIDATION.md` for evidence and outstanding gates.
 
-workflow with RAG
-1. app.py
-2. validator.py
-3. router.py
-4. rag_pipeline.py
-5. retriever.py
-6. vector_store.py (FAISS)
-7. formatter.py
-8. Ollama
-9. rag_pipeline.py
-10. app.py
-11. Ответ пользователю
+## Deployment
+
+The Vercel configuration uses `npm run build` and publishes `dist/`.
+Never merge merely because the CI is green: verify Preview, owner-controlled
+content, and the review diff before merging to `main`. After deployment,
+verify the deployed commit, robots/sitemap/social image, canonical metadata,
+navigation, contact behavior and rollback target.
+
+Every subsequent subphase should have its own short-lived branch, tested merge,
+deployment and post-deploy acceptance.

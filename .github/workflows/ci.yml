@@ -1,0 +1,72 @@
+name: Portfolio checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:unit
+      - run: npm run build
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm }
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:smoke -- --project=chromium
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: smoke-test-report
+          path: |
+            playwright-report/
+            test-results/
+  branch-regression:
+    if: github.event_name == 'push' && github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm }
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:regression -- --project=chromium
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: branch-regression-report
+          path: |
+            playwright-report/
+            test-results/
+  browser-regression:
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm }
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:e2e
+      - run: npm run test:regression
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-regression-report
+          path: |
+            playwright-report/
+            test-results/
