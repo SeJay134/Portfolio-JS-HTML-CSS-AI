@@ -19,13 +19,15 @@ affected critical journey in a real browser, record the result, and only then
 start the next feature branch. Failure blocks new feature work until rollback or
 a focused hotfix restores the verified baseline.
 
-## 2. Frontend <-> Flask API contract
+## 2. Frontend <-> local Flask API contract
 
-**Future integration (not shipped here):** the first public-portfolio release
-contains no Chat UI or client API requests. The Flask and RAG code changes are
-kept on the original work branch and require a separate future release.
+**Local-only at this stage:** the public Vercel portfolio has no Chat UI or API
+requests. Flask/RAG/Ollama runs only on the owner's computer and is not a
+production dependency.
 
-Development frontend: port 5001. Flask API: port 5002.
+Development frontend: port 5001. Local Flask API: 127.0.0.1:5002.
+The default host allowlist is localhost/127.0.0.1. ngrok is test-only and must
+be explicitly enabled through trusted host/origin configuration.
 
 - `GET /health`: liveness without requiring model/index loading.
 - `GET /ready`: HTTP 200 when model/index are ready, 503 otherwise.
@@ -36,10 +38,16 @@ Development frontend: port 5001. Flask API: port 5002.
 - Requests are stateless; client history/session fields are not trusted state.
 - Browser Stop aborts the client request but does not promise immediate model cancellation.
 - Frontend validates source URLs before rendering them.
-- `VITE_API_BASE_URL` is public build-time configuration and never contains secrets.
+- The local API binds to loopback, does not serve static repository files, and
+  does not log conversation text.
+- CORS restricts browser origins but is not authentication.
+- A temporary tunnel requires explicit trusted-host/origin configuration and an
+  API key; never place that key in VITE_* or other public frontend code.
+- `VITE_API_BASE_URL` remains public build-time configuration and never contains secrets.
 
-An incompatible API change requires coordinated frontend tests and a deployment
-plan that preserves compatibility during rollout.
+An incompatible API change requires coordinated tests. Any future remote/public
+AI backend is a new deployment/security decision and must not be inferred from
+this local-development contract.
 
 ## 3. RAG knowledge <-> index contract
 

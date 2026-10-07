@@ -41,6 +41,38 @@ the email using their own email app; this site neither stores nor submits
 visitor messages. There is no public message list. Do not add a resume or
 unverified employment/impact claims without owner review.
 
+## Optional local AI backend
+
+The public Vercel site does **not** call the AI backend in this release. The AI
+runtime stays on your own computer and is optional.
+
+On Windows PowerShell:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements-local-ai.txt
+ollama pull qwen2.5:7b
+python -m llm.indexer
+python -m llm.app
+```
+
+The API listens only on `http://127.0.0.1:5002`. Check it with:
+
+```powershell
+curl.exe http://127.0.0.1:5002/health
+curl.exe http://127.0.0.1:5002/ready
+```
+
+Current production frontend has no Chat UI, so starting `app.py` does not alter
+the public website. It is for local AI development/testing until the Chat UI gets
+its own release.
+
+Do not expose Flask with `--host=0.0.0.0`. ngrok is unnecessary for normal
+local work. A temporary tunnel must be an explicit test-only configuration with
+trusted host/origin settings and API-key protection; never place that key in a
+public Vercel/Vite build.
+
 ## Validation
 
 ```bash
