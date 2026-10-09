@@ -18,6 +18,37 @@
 > frontend-only release. Hosting decisions in this snapshot supersede older
 > production-backend assumptions in the historical plan.
 
+## North star and functional preservation contract
+
+**Goal:** modernize the **existing** portfolio: new responsive design plus a
+React/TypeScript frontend, while keeping the originally planned user-facing
+features and the Flask/FAISS/Ollama assistant concept. The shipped static
+frontend is an incremental release, not the finished product.
+
+Work should be **parity-first, not rewrite-first**:
+- Preserve reviewed navigation/anchors, projects, skills, experience, contact,
+  themes and the originally planned chat experience as the design evolves.
+- Preserve the assistant's purpose: answer questions about the owner's
+  portfolio/projects using reviewed local knowledge; improve reliability and
+  truthfulness without silently broadening or removing its scope.
+- Reintroduce React Chat UI as a **required functional milestone**, not an
+  optional decorative feature. Frontend-only release must remain useful when
+  the personal computer and AI are offline.
+- Current safe mailto/copy Contact is an interim **working** contact route;
+  direct message delivery is not present. Discuss any delivery-provider change
+  with the owner before implementing it.
+- Security, accessibility, validation and regression fixes are in scope.
+  New services, paid components, public AI exposure, changing the purpose
+  or substantially redesigning planned interaction behavior need agreement.
+- Three.js and enhanced visual effects are optional pending separate design,
+  accessibility, performance and owner acceptance; they cannot block core UX.
+- Keep changes in focused branches/PRs with no implicit production merge.
+  A local AI runtime (Draft PR #13) is a **hosting decision**, not a decision
+  to omit chat from the finished portfolio.
+
+The [feature-parity acceptance scenarios](tests/scenarios/original-feature-parity.md)
+are the baseline for checking whether later changes preserve intended behavior.
+
 ## Historical engineering checkpoints (not all shipped to main)
 
 - [x] Phase 0.1 — Repository review and baseline
@@ -130,7 +161,7 @@ a private computer or add a remote API.
 - [ ] Optional dedicated negative checks: malformed JSON, 413, 429, model
       offline, simultaneous requests, and denied external Host, on local hardware.
 
-### Phase 4.3a — Knowledge provenance and source attribution (next separate PR)
+### Phase 4.3a — Knowledge provenance and source attribution (separate PR after runtime acceptance)
 
 A real local `/chat` request for "What projects has Sergei built?" returned
 only broad categories ("Responsive web applications", "Machine learning
@@ -168,11 +199,29 @@ hardcodes `sources: []` even when retrieval succeeds.
       unknown-fact tests before marking quality accepted. These are release
       criteria, not guarantees about every user question.
 
+### Phase 4.2 — React Chat UI functional parity (required; separate PR)
+
+This restores the chat experience drafted on
+`wip/portfolio-ui-draft/src/components/Chat.tsx`. It must coexist with the
+accepted React design, drawer, themes, projects and Contact.
+
+- [ ] Reuse/review the WIP Chat implementation rather than inventing a different
+      chat product; keep the widget purpose limited to portfolio questions.
+- [ ] Restore accessible open/close controls, a responsive panel, keyboard send
+      (Enter; Shift+Enter newline), visible Send, Stop, retry and clear/new
+      conversation; cap messages at the API's 300-character limit.
+- [ ] Preserve user drafts on offline, timeout, failed and stopped requests;
+      prevent duplicate submissions; display online/offline readiness honestly.
+- [ ] Preserve safe text rendering, validated source links and responsive focus
+      behavior; avoid a second competing modal when the drawer is open.
+- [ ] Add unit/API-mock and browser regression tests for chat plus existing
+      drawer/project/contact journeys. Manual review includes mobile keyboard.
+- [ ] Validate local/mock `/chat` contract first. Do **not** enable public
+      Vercel-to-local-host requests, ship a key, or introduce a cloud host by
+      merging a UI-only PR. Explicit approval is required before public exposure.
+
 ### Other independent slices (deferred)
 
-- [ ] Phase 4.2 — Chat UI in a separate branch/PR. The public portfolio
-      remains fully usable without AI. Test against local/mock API only;
-      **do not** wire Vercel to ngrok, the owner's PC, or an embedded secret.
 - [ ] Phase 5 remainder — chat-specific tooling and any explicitly scoped
       frontend modernization (the React/TS/Vite baseline already shipped).
 - [ ] Phase 6 — Optional Three.js scene/effects.
@@ -180,6 +229,23 @@ hardcodes `sources: []` even when retrieval succeeds.
 - [ ] Phase 7.2 — Real-device checks and final production release hardening.
 - [ ] Remote/cloud AI hosting — **not currently planned**. Reconsider only
       after an explicit owner decision; the $0, own-computer preference wins.
+
+## Next execution order
+
+1. Review/approve Draft PR #13 **only after** the required local-runtime and
+   security review; no merge without explicit owner permission.
+2. Finish recording the public frontend post-deploy/human verification gate.
+   A Vercel deployment status alone does not close this gate.
+3. Restore Phase 4.2 React Chat UI behind a safe local/mock-only integration
+   boundary; review its design/behavior before any public connection.
+4. Complete Phase 4.3a knowledge/source mapping and Phase 4.3b grounded-answer
+   evaluation against reviewed owner-local facts. This can be designed in
+   parallel, but should be accepted in its own PR(s) and test evidence.
+5. Assess Phase 6 optional visual effects and Phase 7 device/accessibility
+   hardening only after core parity and outstanding QA gates are resolved.
+
+Do not replace the original product goal with hosting experimentation or a
+different feature set. Large behavior changes require prior owner agreement.
 
 ## Required close-out for every future slice
 
