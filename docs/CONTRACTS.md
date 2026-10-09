@@ -51,17 +51,31 @@ An incompatible API change requires coordinated tests. Any future remote/public
 AI backend is a new deployment/security decision and must not be inferred from
 this local-development contract.
 
-## 3. RAG knowledge <-> index contract
+## 3. Local RAG knowledge <-> index contract
 
-- `content/knowledge.json` is the versioned knowledge source.
-- Generated FAISS/index metadata is runtime/build output, not another editable source.
-- Publication is atomic: complete old or complete new generation only.
-- Retriever IDs must map to valid metadata; FAISS sentinel `-1` is discarded.
-- Returned source titles/URLs correspond to reviewed public portfolio content.
-- Embedding/normalization/threshold/schema changes require retrieval regression
-  and live evaluation before production.
-- Live evaluation records evidence, answers, and latency for manual factual review;
-  it does not fabricate an automatic accuracy score.
+**Current Draft PR #13 implementation:** local `data/base/*.txt` and `*.md`
+files, selected by the owner and ignored by Git, are the input to
+`python -m llm.indexer`. Runtime output is `data/embeddings/index.faiss`
+with safe `meta.json`; legacy pickle metadata is rejected. Generated files
+are not canonical public portfolio facts.
+
+- The current public catalogue is `src/data/projects.ts`. Reconciliation with
+  locally held knowledge is an **unaccepted follow-up**, not already guaranteed.
+  `content/knowledge.json` was a historical plan and is not read by the
+  current local indexer.
+- Index vectors and JSON metadata must have matching counts and valid chunk
+  fields; FAISS sentinel IDs such as `-1` are discarded.
+- Current publication uses two separate `os.replace` calls: individual files
+  are replaced atomically, but the pair is **not** an atomic snapshot. A future
+  generation/manifest switch is required before claiming that guarantee.
+- Current `POST /chat` implementation returns `sources: []` even after
+  retrieval. Source IDs, verified public URLs and provenance checks are
+  pending Phase 4.3a; never invent or leak local paths as sources.
+- Retrieval currently lacks a calibrated relevance cutoff; factual answer
+  accuracy and bilingual performance are pending Phase 4.3b evaluation.
+- Embedding/normalization/threshold/schema changes need retrieval regression
+  and live evaluation before quality acceptance. Record evidence and latency
+  on the owner's hardware without logging conversation or knowledge content.
 
 ## 4. Navigation <-> document contract
 

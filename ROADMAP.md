@@ -1,11 +1,24 @@
 # Portfolio Roadmap
 
-> Release scope: this branch ships the public frontend only. Backend/AI
-> checkboxes below are historical acceptance evidence from
-> `wip/portfolio-ui-draft`; their code is **not** included in this release.
-> Merge and deploy them only through a separate future PR.
+> Status snapshot: October 9, 2026.
+>
+> **Public website:** frontend-only PR #12 merged to `main` on October 6
+> (merge commit `cea29189`). GitHub reported successful Vercel deployment;
+> production URL/SEO HTTP checks and a final human-browser acceptance record
+> remain **unverified in the release checklist**. The public site has no chat.
+>
+> **Local AI:** Draft PR #13 (`feat/local-ai-runtime-security`) restores and
+> hardens `python -m llm.app`. It runs on the owner's computer only, without
+> ngrok or any cloud backend. The owner confirmed `/health`, `/ready`, and a
+> real `/chat` Ollama response. This proves basic runtime operation, **not**
+> factual RAG quality or source attribution.
+>
+> Earlier Phase 0/1/4.1 checkboxes below describe historic work on
+> `wip/portfolio-ui-draft`; they do not mean those changes shipped in the
+> frontend-only release. Hosting decisions in this snapshot supersede older
+> production-backend assumptions in the historical plan.
 
-## Accepted checkpoints
+## Historical engineering checkpoints (not all shipped to main)
 
 - [x] Phase 0.1 — Repository review and baseline
 - [x] Phase 0.2 — Reproducible backend setup
@@ -17,10 +30,11 @@
 - [x] Phase 2.2 — Accessible left drawer acceptance
 - [x] Phase 4.1 — Grounded service and atomic index infrastructure
 
-## Current transitional frontend package
+## Public portfolio release: PR #12 merged to main
 
-The earlier project-data baseline blocker is resolved: the reviewed typed project
-source and its content tests are present, and the Phase 2.2 branch gate is green.
+The reviewed typed project source, responsive UI, accessible drawer, frontend
+toolchain, SEO assets and frontend tests are in `main`. Previous engineering
+acceptance evidence remains below; it does not replace post-deploy inspection.
 
 - [ ] Phase 3 — Hero, curated projects, and responsive layout production acceptance (3.1–3.9 accepted by CI)
   - [x] Phase 3.1 — Hero links and project filter/navigation contracts
@@ -76,24 +90,104 @@ source and its content tests are present, and the Phase 2.2 branch gate is green
     - Deployment gate still open: verify the real non-www canonical response, www
       redirect, and crawler accessibility of the social preview/sitemap on the
       deployed domain. Source/build tests cannot prove external DNS or redirect behavior.
-- [ ] Phase 4.2 — Chat UI acceptance
-- [ ] Phase 5 — Frontend architecture and tooling acceptance
-- [ ] Release Gate A — public portfolio (Phases 2.1–3.9) -> full tests -> merge main -> deploy -> smoke -> human browser verification
+- [x] Phase 5 baseline shipped — React/TypeScript/Vite, lint/typecheck/unit,
+      production build, Playwright and static prerender in the public frontend.
+      Remaining Phase 5 polish/chat-specific tooling is deferred.
+- [x] Release Gate A — merge of reviewed frontend PR #12 into `main`
+      on October 6, 2026 (`cea29189`).
+- [x] Vercel GitHub deployment status reported success for that merge commit.
+- [ ] Release Gate A close-out — record actual production root/robots/sitemap/
+      social-card HTTP responses, canonical metadata and human desktop/mobile
+      browser review in `docs/VALIDATION.md`. Do not equate deployment status
+      or green CI with those unrecorded checks.
+- [ ] Owner-controlled content/date sign-off recorded in release validation.
 
-The public-portfolio release candidate is extracted from
-`wip/portfolio-ui-draft` and excludes Chat UI (Phase 4.2) and 3D effects
-(Phase 6). Backend changes are excluded entirely and must be released separately. Phase 5 tooling acceptance remains a
-separate task. After Release Gate A, one short-lived branch and release per slice.
+PR #12 was extracted from `wip/portfolio-ui-draft`. Chat UI (Phase 4.2),
+3D (Phase 6), and the Python backend were excluded. PR #13 is a separate
+local-only AI runtime change; it must not connect the public Vercel site to
+a private computer or add a remote API.
 
-## Independent follow-up releases
+## Independent follow-up releases and local AI gates
 
-- [ ] Phase 4.3 — Live RAG evaluation and production backend
-- [ ] Phase 6 — Optional Three.js scene/effects
-- [ ] Phase 7.1 — Final cross-browser, accessibility, and performance checks
-- [ ] Phase 7.2 — Real-device checks and final production release hardening
+### PR #13 — Phase 4.1L: secure local runtime (current Draft PR)
+
+- [x] Implement local-only Flask `app.py` on 127.0.0.1:5002, stateless API,
+      bounded requests/generations, safe validation and local Host/CORS policy.
+- [x] Replace pickle metadata with JSON; reject malformed/sentinel FAISS IDs;
+      avoid logging prompts, responses and retrieved RAG text.
+- [x] Rebuild the local index after migration; the owner reported
+      `python -m llm.indexer` built and validated it.
+- [x] Owner-local smoke: `GET /health` -> local-only/stateless/ok,
+      `GET /ready` -> ready, `POST /chat` -> a real Ollama reply.
+- [x] Latest push and PR CI at `7459c587` green:
+      https://github.com/SeJay134/Portfolio-JS-HTML-CSS-AI/actions/runs/37923838307
+      and https://github.com/SeJay134/Portfolio-JS-HTML-CSS-AI/actions/runs/37923843071
+- [ ] Owner reviews the security/runtime diff and closes any outstanding
+      operational checks before deciding whether to merge PR #13.
+- [ ] Merge PR #13 only with explicit approval. No public AI deployment.
+- [ ] Record a post-merge local `/health`, `/ready`, `/chat` smoke check;
+      the current owner evidence is pre-merge.
+- [ ] Optional dedicated negative checks: malformed JSON, 413, 429, model
+      offline, simultaneous requests, and denied external Host, on local hardware.
+
+### Phase 4.3a — Knowledge provenance and source attribution (next separate PR)
+
+A real local `/chat` request for "What projects has Sergei built?" returned
+only broad categories ("Responsive web applications", "Machine learning
+models", "Cloud ETL pipelines", etc.). The public project catalogue instead
+names **Chocolate sales dashboard**, **GDP dashboard**, **Open API weather
+explorer**, and **Portfolio website & AI prototype**. The response may reflect
+other owner-local documents, which have not been inspected; therefore factual
+accuracy is **unverified**, not automatically false. The current service
+hardcodes `sources: []` even when retrieval succeeds.
+
+- [ ] Audit owner-local `data/base/*.txt|*.md` (gitignored), with owner approval;
+      identify stale, unsupported or private content without exposing it to CI.
+- [ ] Reconcile approved facts with `src/data/projects.ts`; decide a canonical
+      reviewed public facts source and a reproducible local ingestion process.
+- [ ] Add safe source IDs, titles and allowlisted public project/section URLs
+      to chunk metadata; return only verified retrieved sources from `/chat`.
+- [ ] Add tests proving source provenance, URL allowlisting, no local paths in
+      responses, and honest fallback when the evidence is missing.
+- [ ] Keep index and JSON metadata consistent across updates; current two-file
+      `os.replace` is **not** atomic as a pair. Design a generation/manifest
+      switch for a true atomic snapshot before claiming atomic publication.
+
+### Phase 4.3b — Retrieval relevance and answer evaluation (separate PR)
+
+- [ ] Calibrate FAISS squared-L2 distance on labeled queries; drop irrelevant
+      chunks rather than always passing up to three retrieved matches.
+- [ ] Evaluate Russian and English queries; compare all-MiniLM-L6-v2 with
+      multilingual embeddings only after measurable evidence.
+- [ ] Maintain 30–50 bilingual tests: exact projects, paraphrases, projects not
+      present, missing biographies, prompt injection in source text, unrelated
+      questions and invented-claim traps.
+- [ ] Report source retrieval recall separately from final answer correctness,
+      record latency on owner hardware, and review answers manually.
+- [ ] Aim for >=90% correct supported answers and zero unsupported claims in
+      unknown-fact tests before marking quality accepted. These are release
+      criteria, not guarantees about every user question.
+
+### Other independent slices (deferred)
+
+- [ ] Phase 4.2 — Chat UI in a separate branch/PR. The public portfolio
+      remains fully usable without AI. Test against local/mock API only;
+      **do not** wire Vercel to ngrok, the owner's PC, or an embedded secret.
+- [ ] Phase 5 remainder — chat-specific tooling and any explicitly scoped
+      frontend modernization (the React/TS/Vite baseline already shipped).
+- [ ] Phase 6 — Optional Three.js scene/effects.
+- [ ] Phase 7.1 — Final cross-browser, accessibility, and performance checks.
+- [ ] Phase 7.2 — Real-device checks and final production release hardening.
+- [ ] Remote/cloud AI hosting — **not currently planned**. Reconsider only
+      after an explicit owner decision; the $0, own-computer preference wins.
 
 ## Required close-out for every future slice
 
-Implementation -> focused tests -> required regression -> production build/preview
-smoke -> merge -> deploy -> post-deploy smoke -> human browser check -> close slice.
-The next feature branch starts only after the deployed release is verified.
+Implementation -> focused tests -> required regression -> build/preview smoke ->
+review -> merge -> verify the affected runtime -> human acceptance -> close slice.
+For public frontend changes, verify the Vercel deployment and public browser
+journeys. For local backend-only changes, verify the owner's own computer and
+`/health`, `/ready`, `/chat`; there is no cloud deployment gate.
+Record evidence in `docs/VALIDATION.md`. The previous frontend release's
+unrecorded public smoke/human gates remain explicitly open rather than inferred
+from a successful Vercel status.
