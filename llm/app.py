@@ -12,6 +12,7 @@ import os
 import threading
 import uuid
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
@@ -73,10 +74,13 @@ information and suggest the portfolio Contact section.
 
     def ready(self) -> bool:
         index_path = PROJECT_ROOT / "data" / "embeddings" / "index.faiss"
-        meta_path = PROJECT_ROOT / "data" / "embeddings" / "meta.pkl"
+        meta_path = PROJECT_ROOT / "data" / "embeddings" / "meta.json"
         if not index_path.is_file() or not meta_path.is_file():
             return False
         try:
+            # The metadata must be safe JSON and match the FAISS vector count.
+            from llm.vector_store import load_index
+            load_index()
             response = self.health_client.list()
             models = getattr(response, "models", [])
             for item in models:
@@ -143,6 +147,34 @@ def create_app(config: dict | None = None, service=None) -> Flask:
         )
 
     origins = _csv(app.config["FRONTEND_URLS"])
+    # Opening a non-loopback host/origin is a conscious test-only decision.
+    # Fail closed rather than relying on an operator to remember API-key setup.
+    local_names = {"localhost", "127.0.0.1"}
+    configured_hosts = app.config["TRUSTED_HOSTS"]
+    if not configured_hosts:
+        raise RuntimeError("TRUSTED_HOSTS cannot be empty.")
+    external_hosts = [
+        host for host in configured_hosts
+        if host.lower().rstrip(".") not in local_names
+    ]
+    parsed_origins = [urlsplit(origin) for origin in origins]
+    if any(
+        origin.scheme not in {"http", "https"} or not origin.hostname
+        or origin.username or origin.password or origin.path not in {"", "/"}
+        or origin.query or origin.fragment
+        for origin in parsed_origins
+    ):
+        raise RuntimeError("FRONTEND_URLS must contain only complete origins.")
+    external_origins = [
+        origin for origin in parsed_origins
+        if origin.hostname not in local_names
+    ]
+    if any(origin.scheme != "https" for origin in external_origins):
+        raise RuntimeError("External frontend origins must use HTTPS.")
+    if (external_hosts or external_origins) and not app.config["REQUIRE_API_KEY"]:
+        raise RuntimeError(
+            "Non-local hosts or frontend origins require REQUIRE_API_KEY=true."
+        )
     CORS(
         app,
         origins=origins,

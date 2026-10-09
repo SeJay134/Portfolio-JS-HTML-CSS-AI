@@ -53,11 +53,18 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements-local-ai.txt
 ollama pull qwen2.5:7b
+# Put reviewed .txt/.md knowledge files in data/base/ first.
+# This directory is local/gitignored. No knowledge content is committed automatically.
 python -m llm.indexer
 python -m llm.app
 ```
 
-The API listens only on `http://127.0.0.1:5002`. Check it with:
+The API listens only on `http://127.0.0.1:5002`. It loads a FAISS index
+and safe `meta.json` metadata from `data/embeddings/`. Old `meta.pkl`
+files are intentionally **not** deserialized: rebuild the index from trusted
+local text documents after updating.
+
+Check the API with:
 
 ```powershell
 curl.exe http://127.0.0.1:5002/health
@@ -70,8 +77,10 @@ its own release.
 
 Do not expose Flask with `--host=0.0.0.0`. ngrok is unnecessary for normal
 local work. A temporary tunnel must be an explicit test-only configuration with
-trusted host/origin settings and API-key protection; never place that key in a
-public Vercel/Vite build.
+trusted host/origin settings and API-key protection; app startup rejects
+non-local origins/hosts without `REQUIRE_API_KEY=true`. Never place that key
+in a public Vercel/Vite build. A tunnel does **not** make the Flask development
+server appropriate for an untrusted public workload.
 
 ## Validation
 

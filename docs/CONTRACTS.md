@@ -27,7 +27,9 @@ production dependency.
 
 Development frontend: port 5001. Local Flask API: 127.0.0.1:5002.
 The default host allowlist is localhost/127.0.0.1. ngrok is test-only and must
-be explicitly enabled through trusted host/origin configuration.
+be explicitly enabled through trusted host/origin configuration and
+`REQUIRE_API_KEY=true`; startup fails if a non-local origin or host is
+configured without authentication.
 
 - `GET /health`: liveness without requiring model/index loading.
 - `GET /ready`: HTTP 200 when model/index are ready, 503 otherwise.

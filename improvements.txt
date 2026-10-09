@@ -29,8 +29,11 @@ Local API security baseline:
 - do not serve repository/static files through Flask;
 - run with debug/reloader disabled in the app.py entry point;
 - if a temporary tunnel is explicitly enabled, add its host/origin to configuration
-  and require an API key. That key is suitable only for private testing, never for
-  embedding in the public Vercel frontend.
+  and require an API key; startup rejects external hosts/origins without a key;
+- do not log RAG retrieved text or deserialize pickle index metadata; use JSON and
+  rebuild old local indexes from owner-controlled text documents;
+- indexer errors must exit nonzero and readiness must reject missing/mismatched
+  index metadata. The key is for private testing only, never the public frontend.
 
 This decision supersedes earlier text that treated ngrok or a remote backend as
 the next default deployment path. Production AI hosting is deferred.

@@ -1,43 +1,77 @@
-# llm/vector_store.py
+"""Save/load local FAISS vectors with JSON metadata, never pickle."""
+from __future__ import annotations
 
-import faiss # pip install faiss-cpu
-import numpy as np
+import json
 import os
-import pickle
-from llm.dec_logging import logger
-import logging
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
-INDEX_PATH = "data/embeddings/index.faiss"
-META_PATH = "data/embeddings/meta.pkl"
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+STORE_DIR = PROJECT_ROOT / "data" / "embeddings"
+INDEX_PATH = STORE_DIR / "index.faiss"
+META_PATH = STORE_DIR / "meta.json"
+LEGACY_META_PATH = STORE_DIR / "meta.pkl"
 
-@logger
-def save_index(chunks, embeddings):
-    os.makedirs("data/embeddings/", exist_ok=True)
 
-    dim = embeddings.shape[1]
-    index = faiss.IndexFlatL2(dim) # L2 distance, "score": float(dist), расстояние less = better; больше = хуже.
-    index.add(embeddings)
-
-    logging.info(
-        "FAISS index created: %s | dimension=%s | vectors=%s",
-        type(index).__name__,
-        index.d,
-        index.ntotal
+def _valid_chunks(chunks) -> bool:
+    return isinstance(chunks, list) and all(
+        isinstance(chunk, dict)
+        and isinstance(chunk.get("id"), str)
+        and isinstance(chunk.get("doc_id"), str)
+        and isinstance(chunk.get("text"), str)
+        for chunk in chunks
     )
 
-    if index.d != embeddings.shape[1]:
-        raise ValueError("Dimension mismatch")
 
-    faiss.write_index(index, INDEX_PATH)
+def save_index(chunks, embeddings) -> None:
+    import faiss
+    import numpy as np
 
-    with open(META_PATH, "wb") as f:
-        pickle.dump(chunks, f)
+    if not _valid_chunks(chunks) or not chunks:
+        raise ValueError("Cannot index an empty or invalid knowledge source.")
 
-    print(f"[VECTOR_STORE] Saved {len(chunks)} chunks, dim={dim}")
+    array = np.ascontiguousarray(embeddings, dtype=np.float32)
+    if array.ndim != 2 or array.shape[1] < 1 or array.shape[0] != len(chunks):
+        raise ValueError("Chunk count and embedding dimensions must match.")
 
-@logger
+    index = faiss.IndexFlatL2(array.shape[1])
+    index.add(array)
+    STORE_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Write both temporary files before publishing; inconsistent pairs
+    # are rejected by load_index() rather than loaded silently.
+    with TemporaryDirectory(prefix=".rebuild-", dir=STORE_DIR) as temp_dir:
+        index_temp = Path(temp_dir) / "index.faiss"
+        meta_temp = Path(temp_dir) / "meta.json"
+        faiss.write_index(index, str(index_temp))
+        meta_temp.write_text(
+            json.dumps(chunks, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        os.replace(index_temp, INDEX_PATH)
+        os.replace(meta_temp, META_PATH)
+
+
 def load_index():
-    index = faiss.read_index(INDEX_PATH)
-    with open(META_PATH, "rb") as f:
-        chunks = pickle.load(f)
+    if not META_PATH.is_file():
+        if LEGACY_META_PATH.is_file():
+            raise ValueError(
+                "Legacy pickle metadata is disabled for safety. "
+                "Rebuild the index with python -m llm.indexer."
+            )
+        raise FileNotFoundError("Local RAG index metadata not found. Rebuild the index.")
+
+    try:
+        chunks = json.loads(META_PATH.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise ValueError("Invalid JSON RAG metadata.") from exc
+
+    if not _valid_chunks(chunks):
+        raise ValueError("Invalid RAG metadata structure.")
+
+    import faiss
+
+    index = faiss.read_index(str(INDEX_PATH))
+    if int(index.d) <= 0 or int(index.ntotal) != len(chunks):
+        raise ValueError("FAISS vectors do not match JSON metadata.")
     return index, chunks

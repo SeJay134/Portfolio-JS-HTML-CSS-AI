@@ -1,54 +1,54 @@
-# llm/indexer.py
-"""
-indexer rebuilds indexes in RAG
-"""
-
-import os
-from llm.loader import load_documents
-from llm.splitter import split_text
-from llm.embedder import embed_chunks
-from llm.vector_store import save_index
-from llm.validator import validate_index
+"""Build a local RAG index from owner-provided data/base/*.txt or *.md."""
+from __future__ import annotations
 
 import logging
+from pathlib import Path
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
-)
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+KB_PATH = PROJECT_ROOT / "data" / "base"
+log = logging.getLogger(__name__)
 
-KB_PATH = "data/base/"
 
-def rebuild_index():
-    logging.info(f'llm/indexer.py rebuild_index() was invoked')
+def rebuild_index() -> None:
+    from llm.loader import load_documents
+
+    docs = load_documents(str(KB_PATH))
+    if not docs:
+        raise ValueError(
+            "No local knowledge documents found in data/base/. "
+            "Add reviewed .txt or .md files before indexing."
+        )
+
+    from llm.splitter import split_text
+
+    chunks = split_text(docs)
+    if not chunks:
+        raise ValueError("Local knowledge documents are empty.")
+
+    from llm.embedder import embed_chunks
+    from llm.vector_store import save_index
+
+    embeddings = embed_chunks(chunks)
+    if len(chunks) != len(embeddings):
+        raise ValueError("Chunk count and embedding count differ.")
+    save_index(chunks, embeddings)
+
+    from llm.validator import validate_index
+
+    if not validate_index():
+        raise RuntimeError("Index validation failed.")
+
+
+def main() -> int:
     try:
-        print("[INDEXER] rebuilds indexes...")
+        rebuild_index()
+    except Exception as exc:
+        # Avoid logging source content or generating a success exit on failure.
+        log.error("Local index build failed: %s", type(exc).__name__)
+        return 1
+    print("[INDEXER] Index built and validated.")
+    return 0
 
-        docs = load_documents(KB_PATH)
-        logging.debug(f'llm/indexer.py rebuild_index() docs = {docs}')
-
-        if not docs:
-            print(f'indexer.py no docs')
-            logging.warning(f'llm/indexer.py rebuild_index() docs not found')
-
-        chunks = split_text(docs)
-        embeddings = embed_chunks(chunks)
-
-        if len(chunks) != len(embeddings):
-            raise ValueError("Chunks and embeddings count mismatch")
-        
-        print(f"[INDEXER] Loaded {len(docs)} documents")
-        print(f"[INDEXER] Created {len(chunks)} chunks")
-
-        save_index(chunks, embeddings)
-        validate_index()
-
-        print("[INDEXER] index updated")
-
-    except Exception as e:
-        print("[INDEXER] ERROR:", e)
 
 if __name__ == "__main__":
-    rebuild_index()
-
-# python -m llm.indexer
+    raise SystemExit(main())
