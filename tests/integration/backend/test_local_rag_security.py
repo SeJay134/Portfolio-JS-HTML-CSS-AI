@@ -19,7 +19,7 @@ class FakeService:
 
 
 def test_external_host_requires_key():
-    with pytest.raises(RuntimeError, match="REQUIRE_API_KEY"):
+    with pytest.raises(RuntimeError, match="TRUSTED_HOSTS.*REQUIRE_API_KEY"):
         create_app({
             "TESTING": True,
             "TRUSTED_HOSTS": ["localhost", "sample.ngrok-free.app"],
@@ -27,7 +27,7 @@ def test_external_host_requires_key():
 
 
 def test_external_frontend_requires_key():
-    with pytest.raises(RuntimeError, match="REQUIRE_API_KEY"):
+    with pytest.raises(RuntimeError, match="FRONTEND_URLS.*REQUIRE_API_KEY"):
         create_app({
             "TESTING": True,
             "FRONTEND_URLS": "http://localhost:5001,https://example.test",

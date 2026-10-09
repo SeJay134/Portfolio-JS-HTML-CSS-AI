@@ -64,6 +64,38 @@ and safe `meta.json` metadata from `data/embeddings/`. Old `meta.pkl`
 files are intentionally **not** deserialized: rebuild the index from trusted
 local text documents after updating.
 
+### If the local API refuses to start
+
+If `python -m llm.app` reports a non-local address in `FRONTEND_URLS`
+or `TRUSTED_HOSTS`, the likely cause is an older, **gitignored** `.env`
+from when the website was connected through ngrok. Do **not** enable
+`REQUIRE_API_KEY` merely to silence the error. Instead open `.env`:
+
+```powershell
+notepad .env
+```
+
+For computer-only operation use these values (remove duplicate old entries):
+
+```dotenv
+FRONTEND_URLS=http://localhost:5001,http://127.0.0.1:5001
+TRUSTED_HOSTS=localhost,127.0.0.1
+REQUIRE_API_KEY=false
+OLLAMA_HOST=http://127.0.0.1:11434
+```
+
+Values already set as Windows/PowerShell environment variables take
+precedence over `.env`. To clear only these overrides for the current
+PowerShell session, run:
+
+```powershell
+Remove-Item Env:FRONTEND_URLS,Env:TRUSTED_HOSTS,Env:REQUIRE_API_KEY -ErrorAction SilentlyContinue
+python -m llm.app
+```
+
+Do not share the contents of `.env` or any `LOCAL_API_KEY` value.
+An already-built index does **not** need rebuilding to correct these settings.
+
 Check the API with:
 
 ```powershell

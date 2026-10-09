@@ -172,8 +172,17 @@ def create_app(config: dict | None = None, service=None) -> Flask:
     if any(origin.scheme != "https" for origin in external_origins):
         raise RuntimeError("External frontend origins must use HTTPS.")
     if (external_hosts or external_origins) and not app.config["REQUIRE_API_KEY"]:
+        offending = []
+        if external_hosts:
+            offending.append("TRUSTED_HOSTS")
+        if external_origins:
+            offending.append("FRONTEND_URLS")
         raise RuntimeError(
-            "Non-local hosts or frontend origins require REQUIRE_API_KEY=true."
+            "Non-local address configured in " + ", ".join(offending)
+            + ". For local-only AI, remove Vercel/ngrok/external addresses "
+            + "from these settings in .env or your process environment. "
+            + "An explicitly exposed temporary tunnel requires "
+            + "REQUIRE_API_KEY=true and a private LOCAL_API_KEY."
         )
     CORS(
         app,
