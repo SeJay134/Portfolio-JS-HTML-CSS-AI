@@ -10,12 +10,12 @@ export class ApiError extends Error {
 // Never ship or accept a configurable public AI endpoint in this slice.
 // The original Flask server is intentionally local-only on the owner's PC.
 const base = "http://127.0.0.1:5002";
+export function canUseLocalChat(hostname: string, dev: boolean): boolean {
+  return dev && ["localhost", "127.0.0.1"].includes(hostname);
+}
 function localAccess(): boolean {
-  return (
-    import.meta.env.DEV &&
-    typeof window !== "undefined" &&
-    ["localhost", "127.0.0.1"].includes(window.location.hostname)
-  );
+  return typeof window !== "undefined" &&
+    canUseLocalChat(window.location.hostname, import.meta.env?.DEV === true);
 }
 export async function requestAnswer(
   message: string,

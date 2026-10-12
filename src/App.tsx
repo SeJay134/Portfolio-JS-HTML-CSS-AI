@@ -9,7 +9,7 @@ import { WidgetBoundary } from "./components/WidgetBoundary";
 
 // Explicit opt-in for the Chat UI development slice. Production default is
 // unchanged; no public AI endpoint is configured or bundled.
-const CHAT_UI_ENABLED = import.meta.env.VITE_ENABLE_CHAT_UI === "true";
+const CHAT_UI_ENABLED = import.meta.env?.VITE_ENABLE_CHAT_UI === "true";
 const Chat = lazy(() => import("./components/Chat"));
 
 function getViewportSection(): SectionId {

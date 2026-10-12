@@ -1,12 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
-import { requestAnswer, readiness } from "../../../src/lib/api";
+import { canUseLocalChat, requestAnswer, readiness } from "../../../src/lib/api";
 
 describe("local-only chat API contract", () => {
-  it("never calls the network from non-local browser origins", async () => {
-    const original = window.location;
-    // The API explicitly guards public builds and remote browser hostnames;
-    // tests verify the pure boundary without depending on a live server.
-    expect(typeof original.hostname).toBe("string");
+  it("blocks production builds and non-loopback browser origins", () => {
+    expect(canUseLocalChat("localhost", true)).toBe(true);
+    expect(canUseLocalChat("127.0.0.1", true)).toBe(true);
+    expect(canUseLocalChat("sergei-luna.vercel.app", true)).toBe(false);
+    expect(canUseLocalChat("localhost", false)).toBe(false);
+    expect(canUseLocalChat("127.0.0.1", false)).toBe(false);
+    expect(canUseLocalChat("localhost.evil.example", true)).toBe(false);
   });
   it("rejects missing and unsafe source references", async () => {
     const signal = new AbortController().signal;
