@@ -90,7 +90,7 @@ export default function Chat({
     const timeout = setTimeout(() => {
       timedOut = true;
       c.abort();
-    }, 50000);
+    }, 135000);
     try {
       const result = await requestAnswer(clean, c.signal);
       if (c.signal.aborted) throw new DOMException("Request aborted", "AbortError");

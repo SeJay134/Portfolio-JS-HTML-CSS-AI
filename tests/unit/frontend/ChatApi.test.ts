@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { canUseLocalChat, requestAnswer, readiness } from "../../../src/lib/api";
+import { ApiError, canUseLocalChat, requestAnswer, readiness } from "../../../src/lib/api";
 
 describe("local-only chat API contract", () => {
   it("blocks production builds and non-loopback browser origins", () => {
@@ -38,6 +38,22 @@ describe("local-only chat API contract", () => {
       vi.unstubAllGlobals();
     }
   });
+  it("shows a recoverable message for an unavailable or timed-out local model", async () => {
+    const mocked = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 503,
+      json: async () => ({ error: "Assistant is unavailable.", request_id: "test" }),
+    });
+    vi.stubGlobal("fetch", mocked);
+    try {
+      await expect(requestAnswer("What projects?", new AbortController().signal))
+        .rejects.toThrow("The local assistant is unavailable or taking too long.");
+      expect(mocked).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("validates readiness from the real local status contract", async () => {
     const mocked = vi.fn().mockResolvedValue({
       ok: true,

@@ -106,6 +106,32 @@ running on the owner's PC.
 No `VITE_API_BASE_URL`, ngrok URL, backend key, cloud service, or remote proxy
 is introduced. Do not add these without explicit owner agreement.
 
+## Slow local Ollama replies and 503
+
+The owner-local integration was confirmed end-to-end with at least one
+`POST /chat` 200; other requests took about 45 seconds and returned Flask
+`503` with `ReadTimeout`. `GET /ready` 200 verifies model/index presence,
+**not** inference speed. The model is not necessarily offline.
+
+The companion Draft PR #13 now defaults to `MODEL_TIMEOUT=120` seconds,
+and React Chat waits **135 seconds** for that bounded Flask response.
+These limits are not a latency promise; users can still use **Stop** or
+**Retry**, and a browser abort does not guarantee immediate Ollama compute
+cancellation. If an older `.env` contains `MODEL_TIMEOUT=45`, change
+it to 120 locally or override it only for the current PowerShell session:
+
+```powershell
+# Flask terminal: stop Flask (Ctrl+C), then:
+$env:MODEL_TIMEOUT = "120"
+python -m llm.app
+```
+
+Restart the React Vite process after pulling the PR #14 change.
+If 503 continues, inspect `ollama ps`, RAM/CPU/GPU use and elapsed time
+per question; do not silently change the model or expose the local API.
+The generic 503 message reflects unavailable, busy, and slow inference
+without claiming `/ready` makes every request fast.
+
 ## Feature parity and pending acceptance
 
 Adapted from the original `wip/portfolio-ui-draft`:

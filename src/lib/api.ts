@@ -45,7 +45,7 @@ export async function requestAnswer(
       response.status === 429
         ? "Too many requests. Please wait a minute before retrying."
         : response.status === 503
-          ? "The assistant is offline or busy. Please try later or use Contact."
+          ? "The local assistant is unavailable or taking too long. Please retry or use Contact."
           : "The request could not be completed. Please check your message.";
     throw new ApiError(retry, response.status);
   }
