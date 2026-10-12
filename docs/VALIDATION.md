@@ -84,3 +84,22 @@ to 120 seconds. This is a bounded response to observed runtime evidence;
 not a performance guarantee, proof of correct RAG facts, or production AI
 deployment. The paired frontend PR #14 gives the browser 135 seconds.
 A user-local smoke test with restarted processes is still **pending**.
+
+## October 12, 2026 — Owner retest after timeout adjustment
+
+After updating Flask PR #13 to `4905615` with `MODEL_TIMEOUT=120`, and
+React PR #14 to `5074954` on `127.0.0.1:5001`, the owner observed:
+- `GET /ready` -> 200; `OPTIONS /chat` -> 200.
+- `POST /chat` -> **200** after about 60 seconds (16:12–16:13 local time).
+- The visible React conversation showed a real model reply to
+  "What projects has Sergei built?"
+- The reply still listed broad categories, not the four public project titles.
+
+This proves the end-to-end local chat path and one successful longer-running
+request, not a reliable latency distribution or accepted RAG answer quality.
+
+Draft PR #15 adds reviewed public project context and safe source provenance.
+It is based on Draft PR #13, does not include uncommitted private
+`data/base/` materials, and is **not yet owner-tested against the rebuilt
+local index**. Any resulting factual answers and source links require manual
+retesting before accepting Phase 4.3a.

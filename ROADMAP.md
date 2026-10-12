@@ -161,7 +161,7 @@ a private computer or add a remote API.
 - [ ] Optional dedicated negative checks: malformed JSON, 413, 429, model
       offline, simultaneous requests, and denied external Host, on local hardware.
 
-### Phase 4.3a — Knowledge provenance and source attribution (separate PR after runtime acceptance)
+### Phase 4.3a — Knowledge provenance and source attribution (dependent Draft PR #15)
 
 A real local `/chat` request for "What projects has Sergei built?" returned
 only broad categories ("Responsive web applications", "Machine learning
@@ -174,12 +174,17 @@ hardcodes `sources: []` even when retrieval succeeds.
 
 - [ ] Audit owner-local `data/base/*.txt|*.md` (gitignored), with owner approval;
       identify stale, unsupported or private content without exposing it to CI.
-- [ ] Reconcile approved facts with `src/data/projects.ts`; decide a canonical
-      reviewed public facts source and a reproducible local ingestion process.
-- [ ] Add safe source IDs, titles and allowlisted public project/section URLs
-      to chunk metadata; return only verified retrieved sources from `/chat`.
-- [ ] Add tests proving source provenance, URL allowlisting, no local paths in
-      responses, and honest fallback when the evidence is missing.
+- [x] Prepare a public four-project catalogue mirroring `src/data/projects.ts`,
+      with unit parity protection and ingestion into the local FAISS index
+      alongside owner-local documents; owner factual sign-off still pending.
+- [x] Attach verified project IDs, titles and allowlisted public URLs to
+      generated chunks; return only those reviewed retrieved references from
+      `/chat`, never paths or URLs inferred from private documents.
+- [x] Add initial tests for source provenance, malicious links, and canonical
+      facts in the generation prompt. Real local reindex/browser acceptance is
+      **not** established by mocked tests.
+- [ ] Confirm honest fallback for absent evidence, bilingual factual answers,
+      and no source misattribution on actual owner data in Phase 4.3b.
 - [ ] Keep index and JSON metadata consistent across updates; current two-file
       `os.replace` is **not** atomic as a pair. Design a generation/manifest
       switch for a true atomic snapshot before claiming atomic publication.
@@ -199,26 +204,29 @@ hardcodes `sources: []` even when retrieval succeeds.
       unknown-fact tests before marking quality accepted. These are release
       criteria, not guarantees about every user question.
 
-### Phase 4.2 — React Chat UI functional parity (required; separate PR)
+### Phase 4.2 — React Chat UI functional parity (dependent Draft PR #14; local tested)
 
 This restores the chat experience drafted on
 `wip/portfolio-ui-draft/src/components/Chat.tsx`. It must coexist with the
 accepted React design, drawer, themes, projects and Contact.
 
-- [ ] Reuse/review the WIP Chat implementation rather than inventing a different
-      chat product; keep the widget purpose limited to portfolio questions.
-- [ ] Restore accessible open/close controls, a responsive panel, keyboard send
-      (Enter; Shift+Enter newline), visible Send, Stop, retry and clear/new
-      conversation; cap messages at the API's 300-character limit.
+- [x] Reuse WIP Chat implementation rather than inventing a different
+      chat product; local feature switch keeps public Vercel without AI.
+- [x] Implement accessible launcher/dialog, keyboard Send/Stop/Retry/Clear,
+      and the 300-character API bound; further owner acceptance stays open.
 - [ ] Preserve user drafts on offline, timeout, failed and stopped requests;
       prevent duplicate submissions; display online/offline readiness honestly.
 - [ ] Preserve safe text rendering, validated source links and responsive focus
       behavior; avoid a second competing modal when the drawer is open.
-- [ ] Add unit/API-mock and browser regression tests for chat plus existing
-      drawer/project/contact journeys. Manual review includes mobile keyboard.
-- [ ] Validate local/mock `/chat` contract first. Do **not** enable public
-      Vercel-to-local-host requests, ship a key, or introduce a cloud host by
-      merging a UI-only PR. Explicit approval is required before public exposure.
+- [x] Add local/mock API and browser tests for the React chat, including
+      mobile drawer switching. Owner reported `npm run test:chat-dev` 2 passed.
+      Manual mobile keyboard review remains open.
+- [x] Owner live-local integration: Flask on 5002 + Vite on 5001,
+      `POST /chat` 200 and real Ollama answer after raising local bounded
+      timeouts. Generic category-based answer is *not* RAG factual acceptance.
+- [ ] Complete desktop/mobile visual + keyboard acceptance. Do **not** enable
+      public Vercel-to-local-host requests, ship a key, or introduce cloud
+      hosting without explicit owner permission.
 
 ### Other independent slices (deferred)
 
