@@ -23,11 +23,12 @@ corner. `src/lib/api.ts` calls `http://127.0.0.1:5002/chat` and `/ready`
 browser hostname). Cross-origin access must remain confined to Flask's
 configured local origins.
 
-Running `npm run build` without the opt-in flag leaves the launcher hidden.
-A test/preview build with `VITE_ENABLE_CHAT_UI=true` may show the panel but
-**cannot send AI requests**; its offline fallback and Contact link remain
-usable. This distinction is deliberate: a public static site cannot rely
-on a visitor's network having access to a server running on the owner's PC.
+The launcher appears **only in Vite DEV when the opt-in flag is true**.
+Every `npm run build` output remains chat-free, even when the environment
+contains `VITE_ENABLE_CHAT_UI=true`. This prevents hydration differences in
+the static prerender and prevents accidentally shipping an offline-only
+chat panel. A public static site cannot rely on visitors reaching a server
+running on the owner's PC.
 
 No `VITE_API_BASE_URL`, ngrok URL, backend key, cloud service, or remote proxy
 is introduced. Do not add these without explicit owner agreement.
