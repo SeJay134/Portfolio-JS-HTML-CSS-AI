@@ -150,6 +150,50 @@ non-local origins/hosts without `REQUIRE_API_KEY=true`. Never place that key
 in a public Vercel/Vite build. A tunnel does **not** make the Flask development
 server appropriate for an untrusted public workload.
 
+### If `/ready` passes but `/chat` returns 503
+
+An occasional `Generation failed ... type=ReadTimeout` means that Ollama did
+not return data within the configured network read timeout. `/ready` verifies
+that the local index and named model exist; it does **not** measure inference
+speed or guarantee a fast response. One successful request does not guarantee
+the next request will finish within the same interval.
+
+For the local 7B model, this branch now defaults to
+`MODEL_TIMEOUT=120` seconds (previously 45). A setting already present in
+`.env` or the process environment takes precedence over the default.
+For a temporary owner-local test, inspect the active setting and explicitly
+override it **before restarting** Flask:
+
+```powershell
+Get-Item Env:MODEL_TIMEOUT -ErrorAction SilentlyContinue
+# Stop Flask with Ctrl+C, then in its PowerShell:
+$env:MODEL_TIMEOUT = "120"
+python -m llm.app
+```
+
+The React Chat UI in Draft PR #14 waits 135 seconds so Flask can report its
+120-second limit before the browser gives up. Keep the frontend timeout longer
+than the backend timeout; this default does not guarantee success on slow
+hardware. Only adjust these limits after evaluating real local latency.
+
+If timeouts persist, check `ollama ps`, available RAM and CPU/GPU load while
+the model runs. For a direct measurement, time the request from PowerShell:
+
+```powershell
+$body = @{ message = "What projects has Sergei built?" } | ConvertTo-Json
+$start = Get-Date
+$result = Invoke-RestMethod -Uri "http://127.0.0.1:5002/chat" `
+    -Method Post -ContentType "application/json; charset=utf-8" `
+    -Body $body -TimeoutSec 150
+(New-TimeSpan -Start $start -End (Get-Date)).TotalSeconds
+$result.reply
+```
+
+Avoid firing multiple generation requests in parallel; a second request may
+receive the expected busy 503. `/ready` can remain 200 while the model
+generation is slow. Never share private `.env` values or the local knowledge
+files when troubleshooting.
+
 ## Validation
 
 ```bash

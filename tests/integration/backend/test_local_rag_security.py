@@ -114,3 +114,14 @@ def test_missing_knowledge_fails_index_build(tmp_path, monkeypatch):
     with pytest.raises(ValueError, match="No local knowledge"):
         indexer.rebuild_index()
     assert indexer.main() == 1
+
+
+def test_model_read_timeout_default_and_owner_override(monkeypatch):
+    """Slow local Ollama inference must have a bounded, configurable allowance."""
+    monkeypatch.delenv("MODEL_TIMEOUT", raising=False)
+    normal = create_app({"TESTING": True}, FakeService())
+    assert normal.config["MODEL_TIMEOUT"] == 120.0
+
+    monkeypatch.setenv("MODEL_TIMEOUT", "180")
+    configured = create_app({"TESTING": True}, FakeService())
+    assert configured.config["MODEL_TIMEOUT"] == 180.0

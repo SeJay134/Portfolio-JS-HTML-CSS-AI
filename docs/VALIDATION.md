@@ -66,3 +66,21 @@ Owner-provided Windows PowerShell evidence (October 9, 2026):
 This is **local runtime evidence only**. The public Vercel portfolio does not
 call Flask, Ollama or FAISS, and no ngrok/cloud API is required or planned.
 See `ROADMAP.md` for separate source-attribution and RAG-quality follow-ups.
+
+## October 12, 2026 — Windows Vite-to-Flask live chat integration
+
+Owner reported a working Vite React Chat UI on `127.0.0.1:5001`, local
+Flask on `127.0.0.1:5002`, and Playwright Chromium installed locally.
+`npm run test:chat-dev` passed 2 of 2 browser tests (these are mocked API
+tests, not accuracy checks). The local Flask log included:
+- `OPTIONS /chat` 200 once the browser used port 5001 (earlier port 5003
+  caused 400 and is no longer used).
+- `POST /chat` 200 on one real generation.
+- Two `POST /chat` 503 responses with `type=ReadTimeout` after about
+  45 seconds, despite `GET /ready` 200.
+
+The implementation change raises the **local** Ollama read timeout from 45
+to 120 seconds. This is a bounded response to observed runtime evidence;
+not a performance guarantee, proof of correct RAG facts, or production AI
+deployment. The paired frontend PR #14 gives the browser 135 seconds.
+A user-local smoke test with restarted processes is still **pending**.

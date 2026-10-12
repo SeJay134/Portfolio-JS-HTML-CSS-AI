@@ -133,7 +133,7 @@ def create_app(config: dict | None = None, service=None) -> Flask:
         CHAT_LIMIT=os.getenv("CHAT_LIMIT", "10/minute"),
         MODEL_NAME=os.getenv("MODEL_NAME", "qwen2.5:7b"),
         OLLAMA_HOST=os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434"),
-        MODEL_TIMEOUT=float(os.getenv("MODEL_TIMEOUT", "45")),
+        MODEL_TIMEOUT=float(os.getenv("MODEL_TIMEOUT", "120")),
         MAX_GENERATIONS=max(1, int(os.getenv("MAX_GENERATIONS", "1"))),
         REQUIRE_API_KEY=_enabled(os.getenv("REQUIRE_API_KEY", "false")),
         LOCAL_API_KEY=os.getenv("LOCAL_API_KEY", ""),
