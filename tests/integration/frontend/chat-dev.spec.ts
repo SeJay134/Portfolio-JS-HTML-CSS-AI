@@ -33,7 +33,9 @@ test("local React chat sends and displays a verified source without exposing unt
     }
   });
   await page.goto("/");
-  await page.getByRole("button", {name:"Open portfolio assistant"}).click();
+  const launcher = page.getByRole("button", {name:"Open portfolio assistant"});
+  await expect(launcher).toHaveCSS("position", "fixed");
+  await launcher.click();
   const chat = page.getByRole("dialog", {name:"Ask about Sergei"});
   await expect(chat).toBeVisible();
   await expect(chat.getByText("Assistant online")).toBeVisible();
@@ -59,7 +61,9 @@ test("mobile chat switches to the main drawer without competing dialogs", async 
     }),
   );
   await page.goto("/");
-  await page.getByRole("button", {name:"Open portfolio assistant"}).click();
+  const launcher = page.getByRole("button", {name:"Open portfolio assistant"});
+  await expect(launcher).toHaveCSS("position", "fixed");
+  await launcher.click();
   const chat = page.getByRole("dialog", {name:"Ask about Sergei"});
   await expect(chat).toBeVisible();
   await expect(chat).toHaveJSProperty("open", true);

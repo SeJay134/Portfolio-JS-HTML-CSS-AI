@@ -30,6 +30,62 @@ $env:VITE_ENABLE_CHAT_UI="true"
 npm run dev
 ```
 
+### Troubleshooting Windows ports, browser installs and Node
+
+**Only port 5001 is supported for the local Vite frontend.** Flask listens
+on port 5002. If `npm run dev` reports port 5001 occupied, do **not** use
+Vite's fallback 5003: Flask's CORS allowlist covers
+`http://127.0.0.1:5001` and `http://localhost:5001`, not 5003.
+
+Stop the previous Vite process with Ctrl+C, and inspect the port before
+stopping any other process:
+
+```powershell
+Get-NetTCPConnection -LocalPort 5001 -State Listen -ErrorAction SilentlyContinue |
+    Select-Object LocalAddress,LocalPort,OwningProcess
+# Substitute the returned PID. Confirm its identity before stopping it:
+Get-Process -Id <PID> | Select-Object Id,ProcessName,Path
+```
+
+Leave the Flask process on 5002 running. With `--strictPort`, Vite now fails
+clearly instead of changing its URL and breaking local CORS. After stopping
+only the known unwanted process, start Vite again.
+
+The initial worktree command used `--detach`. To fetch the latest PR #14
+fixes in the already-created `Sergei-Luna-Chat` folder:
+
+```powershell
+# Stop the old Vite process with Ctrl+C first.
+cd "C:\Users\patru\OneDrive\Documents\GitHub\Sergei-Luna-Chat"
+git status
+git fetch origin
+git switch --track origin/feat/react-chat-ui-local-preview
+$env:VITE_ENABLE_CHAT_UI="true"
+npm run dev
+```
+
+Run `git switch --track` only once. After it creates the local tracking
+branch, future updates are `git pull --ff-only`. Never force/reset worktree
+changes that have not been reviewed and saved.
+
+If Playwright reports a missing Chromium headless executable, this is a
+browser installation failure, **not** a failing chat assertion:
+
+```powershell
+npx playwright install chromium
+npm run test:chat-dev
+```
+
+Stop the separate Vite server on 5001 before `test:chat-dev`; Playwright
+launches its **own** Vite server with the correct flag and rejects reuse of
+a different or stale app.
+
+The project's locked jsdom dependencies need Node.js 22.22.2+ or 24.15.0+;
+Node.js 22.13.1 can install with `EBADENGINE` warnings but should be upgraded
+for reliable local testing. Open a new terminal and confirm `node -v` after
+updating Node, then run `npm ci` again. Review `npm audit` findings separately;
+do not blindly run `npm audit fix` on a release branch.
+
 The second worktree intentionally has no private `data/` directory. Its
 frontend talks only to the first worktree's running local Flask server.
 Stop both processes when finished.

@@ -1,20 +1,4 @@
 /* Phase 4.2: opt-in React chat, adapted from the original WIP design. */
-.chat-launcher {
-  position: fixed;
-  bottom: max(24px, env(safe-area-inset-bottom));
-  right: 24px;
-  background: var(--button);
-  color: var(--button-text);
-  border-radius: 30px;
-  padding: 15px 20px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  box-shadow: var(--shadow);
-  z-index: 30;
-  font-size: 0.75rem;
-  min-height: 52px;
-}
 .chat-panel {
   position: fixed;
   inset: auto 24px 90px auto;
@@ -196,9 +180,6 @@
   border-radius: 10px;
 }
 
-@media (max-width: 720px) {
-  .chat-launcher { right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); }
-}
 @media (max-width: 600px) {
   .chat-panel {
     inset: 0;
