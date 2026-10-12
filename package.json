@@ -15,7 +15,8 @@
     "test:browser": "playwright test tests/smoke tests/e2e tests/regression",
     "typecheck": "tsc -b --pretty false",
     "lint": "eslint src scripts/prerender.tsx vite.config.ts playwright.config.ts tests",
-    "format": "prettier --write src scripts tests *.ts *.json *.md .github/workflows/ci.yml"
+    "format": "prettier --write src scripts tests *.ts *.json *.md .github/workflows/ci.yml",
+    "test:chat-dev": "playwright test --config playwright.chat.config.ts"
   },
   "dependencies": {
     "react": "19.3.0",

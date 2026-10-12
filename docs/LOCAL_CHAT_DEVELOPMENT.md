@@ -6,16 +6,33 @@ computer and carry no AI secrets.
 
 ## Try the original Chat interface locally
 
-With the Vite/React frontend installed and Ollama + Flask running locally
-from the separate `feat/local-ai-runtime-security` branch / PR #13:
+Use **two Git worktrees** so the local backend from Draft PR #13 and
+the frontend from Draft PR #14 can run concurrently without mixing source
+files or accidentally restarting an older `llm/app.py`.
+
+Terminal A: stay in the original repository where `data/base/` and
+`data/embeddings/` exist. Check out PR #13 and run its server:
 
 ```powershell
 git fetch origin
-git switch feat/react-chat-ui-local-preview
+git switch feat/local-ai-runtime-security
+.\.venv\Scripts\Activate.ps1
+python -m llm.app
+```
+
+Terminal B: create a separate frontend-only worktree from the new branch:
+
+```powershell
+git worktree add --detach ..\Sergei-Luna-Chat origin/feat/react-chat-ui-local-preview
+Set-Location ..\Sergei-Luna-Chat
 npm ci
 $env:VITE_ENABLE_CHAT_UI="true"
 npm run dev
 ```
+
+The second worktree intentionally has no private `data/` directory. Its
+frontend talks only to the first worktree's running local Flask server.
+Stop both processes when finished.
 
 Open http://127.0.0.1:5001 and select **Ask about me** in the lower-right
 corner. `src/lib/api.ts` calls `http://127.0.0.1:5002/chat` and `/ready`
@@ -46,3 +63,14 @@ Adapted from the original `wip/portfolio-ui-draft`:
 Flask/Ollama E2E; PR CI/keyboard/failed-request tests; source provenance and
 retrieval quality improvements tracked separately in Phase 4.3. A production
 public chat connection is **not** part of this PR.
+
+## Browser test (offline fixtures, no Ollama dependency)
+
+```powershell
+npm run test:chat-dev
+```
+
+The test starts a Vite DEV process with Chat enabled on loopback, intercepts
+Flask URLs with deterministic JSON responses, checks actual chat interactions
+and mobile menu transitions, and never calls a remote/cloud service. The
+existing frontend CI additionally verifies default production behavior.
