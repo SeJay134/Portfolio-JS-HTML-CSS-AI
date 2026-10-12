@@ -18,11 +18,16 @@ def split_text(docs, chunk_size=100, overlap=40):
             chunk_words = words[start:end]
             chunk_text = " ".join(chunk_words)
 
-            chunks.append({
+            chunk = {
                 "id": f"{doc_id}_chunk_{chunk_id}",
                 "doc_id": doc_id,
                 "text": chunk_text,
-            })
+            }
+            # Only the indexer-generated, reviewed public docs include source
+            # metadata. Never infer a source URL from a local filename or text.
+            if isinstance(doc.get("source"), dict):
+                chunk["source"] = dict(doc["source"])
+            chunks.append(chunk)
 
             chunk_id += 1
             start = end - overlap
