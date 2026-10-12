@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { ApiError, canUseLocalChat, requestAnswer, readiness } from "../../../src/lib/api";
+import { canUseLocalChat, requestAnswer, readiness } from "../../../src/lib/api";
 
 describe("local-only chat API contract", () => {
   it("blocks production builds and non-loopback browser origins", () => {
