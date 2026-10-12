@@ -1,4 +1,5 @@
 import React from "react";
+import "../chat.css";
 import { containModalFocus } from "../lib/dialog";
 import { useEffect, useRef, useState } from "react";
 import { ApiError, readiness, requestAnswer, type Source } from "../lib/api";

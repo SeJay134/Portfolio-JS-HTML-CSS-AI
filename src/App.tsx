@@ -12,7 +12,9 @@ import { WidgetBoundary } from "./components/WidgetBoundary";
 const CHAT_UI_ENABLED =
   import.meta.env?.DEV === true &&
   import.meta.env?.VITE_ENABLE_CHAT_UI === "true";
-const Chat = lazy(() => import("./components/Chat"));
+const Chat = CHAT_UI_ENABLED
+  ? lazy(() => import("./components/Chat"))
+  : null;
 
 function getViewportSection(): SectionId {
   const headerBottom =
@@ -459,7 +461,7 @@ export default function App() {
             <Icon name={chat ? "close" : "chat"} />
             <span>Ask about me</span>
           </button>
-          {chatLoaded && (
+          {chatLoaded && Chat && (
             <WidgetBoundary fallback={
               <div className="widget-fallback" role="alert">
                 Assistant could not load. <a href="#Connect">Use Contact</a>.
