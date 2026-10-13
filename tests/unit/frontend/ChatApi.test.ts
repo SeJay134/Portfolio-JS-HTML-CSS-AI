@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { canUseLocalChat, requestAnswer, readiness } from "../../../src/lib/api";
+import { canUseLocalChat, selectChatApi, requestAnswer, readiness } from "../../../src/lib/api";
 
 describe("local-only chat API contract", () => {
   it("blocks production builds and non-loopback browser origins", () => {
@@ -9,6 +9,18 @@ describe("local-only chat API contract", () => {
     expect(canUseLocalChat("localhost", false)).toBe(false);
     expect(canUseLocalChat("127.0.0.1", false)).toBe(false);
     expect(canUseLocalChat("localhost.evil.example", true)).toBe(false);
+  });
+  it("never sends production requests to loopback or an arbitrary origin", () => {
+    expect(selectChatApi("localhost", "http:", true, false))
+      .toBe("http://127.0.0.1:5002");
+    expect(selectChatApi("sergei-luna.vercel.app", "https:", false, false))
+      .toBeNull();
+    expect(selectChatApi("sergei-luna.vercel.app", "https:", false, true))
+      .toBe("");
+    expect(selectChatApi("sergei-luna.vercel.app", "http:", false, true))
+      .toBeNull();
+    expect(selectChatApi("attacker.example", "https:", true, true))
+      .toBeNull();
   });
   it("rejects missing and unsafe source references", async () => {
     const signal = new AbortController().signal;
@@ -47,7 +59,7 @@ describe("local-only chat API contract", () => {
     vi.stubGlobal("fetch", mocked);
     try {
       await expect(requestAnswer("What projects?", new AbortController().signal))
-        .rejects.toThrow("The local assistant is unavailable or taking too long.");
+        .rejects.toThrow("The assistant is unavailable or taking too long.");
       expect(mocked).toHaveBeenCalledTimes(1);
     } finally {
       vi.unstubAllGlobals();
