@@ -65,11 +65,11 @@ def _public_projects() -> list[dict]:
 # The checked public catalogue currently contains four entries; this guard does
 # not make any claim about projects that might exist outside that catalogue.
 _OUT_OF_RANGE_ORDINAL = re.compile(
-    r"\\b(?P<position>\\d+(?:-?(?:й|го|ый|st|nd|rd|th))?"
+    r"\b(?P<position>\d+(?:-?(?:й|го|ый|st|nd|rd|th))?"
     r"|fifth|sixth|seventh|eighth|ninth|tenth"
     r"|пят(?:ый|ого|ом|ому|ым|ая|ое|ой|ую|ые|ых)"
-    r"|шест(?:ой|ого|ом|ому|ым|ая|ое|ую|ые|ых))\\b"
-    r"(?:\\s+[\\w-]+){0,3}\\s+(?:projects?|проект\\w*)\\b",
+    r"|шест(?:ой|ого|ом|ому|ым|ая|ое|ую|ые|ых))\b"
+    r"(?:\s+[\w-]+){0,3}\s+(?:projects?|проект\w*)\b",
     re.IGNORECASE,
 )
 
@@ -85,7 +85,7 @@ def unlisted_project_reply(question: str) -> str | None:
     if not match:
         return None
     ordinal = match.group("position").casefold()
-    numeric = re.match(r"\\d+", ordinal)
+    numeric = re.match(r"\d+", ordinal)
     position = int(numeric.group()) if numeric else 5
     count = len(_public_projects())
     if position <= count:
