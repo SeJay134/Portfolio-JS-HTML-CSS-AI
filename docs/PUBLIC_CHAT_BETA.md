@@ -1,6 +1,6 @@
 # Public portfolio chat beta — deployment gate (Draft PR #17)
 
-**Status:** Frontend wiring prepared; **not live, not ready to merge**.
+**Status:** Frontend and Vercel relay prepared; **not live, not ready to merge**.
 Depends on the React chat implementation in Draft PR #14 and the
 source-provenance review in Draft PR #15. This is a separate public release
 task from Phase 4.3b model-quality research (Draft PR #16).
@@ -11,8 +11,8 @@ task from Phase 4.3b model-quality research (Draft PR #16).
 - For production, `VITE_ENABLE_PUBLIC_CHAT_UI=true` would opt into the same
   Chat component, calling **only relative, same-origin HTTPS**
   `/api/ready` and `/api/chat` routes.
-- The flag is **off by default**. There is no public API route in this PR:
-  public requests would not work even if the flag were manually forced on.
+- The flag is **off by default**. The public API routes exist but fail closed until their server-side
+  tunnel URL and key are configured.
   Do not turn it on until the conditions below are satisfied.
 - No hostname or secret in a Vite public environment variable may be used to
   connect to the owner's laptop. The public client is never authorized to
@@ -20,11 +20,9 @@ task from Phase 4.3b model-quality research (Draft PR #16).
 
 ## Mandatory server-side prerequisites
 
-1. Choose a publicly reachable inference host and verify operational cost,
-   uptime, response time and the same-language response baseline. A static
-   Vercel page cannot itself run the current Flask + FAISS + qwen2.5:7b
-   stack; a separate server/AI runtime is required. Do not silently change
-   the model or simulate Ollama with a canned chatbot.
+1. Use the owner's confirmed ngrok tunnel, key-protected Flask and the
+   existing qwen2.5:7b running only on the PC. The Vercel Function is a
+   narrow HTTP relay, not a second model runtime.
 2. Serve **only owner-reviewed public portfolio knowledge**. Do not deploy or
    expose `data/base/`, old user notes, private embeddings, `.env`,
    training examples, or local filesystem paths. A public-only index and
@@ -45,20 +43,44 @@ task from Phase 4.3b model-quality research (Draft PR #16).
    deployment PRs, then enable the flag in production Vercel settings and
    redeploy. Do not merge or enable the beta solely because CI passes.
 
-## Hosting decision to make
+## Hosting decision — confirmed owner choice
 
-**Option A — managed external AI server (preferred for untrusted visitors):**
-real HTTPS inference service separate from the laptop, with a public-only
-catalogue and safe rate limits; requires provider selection and budget review.
+The owner confirmed the original architecture: **ngrok tunnel → Flask →
+FAISS → Ollama on the owner's own Windows PC**. No separate compute host
+or new model provider is planned. The frontend uses a minimal Vercel
+serverless relay, because browser calls must not contain Flask credentials
+or the tunnel URL.
 
-**Option B — owner-hosted PC:** technically possible only after a separate
-security design for network exposure, isolated public-only corpus, reliable
-availability and abuse prevention. **Do not expose the existing Flask dev
-server or private FAISS corpus directly.**
+**Request path:** browser → same-origin `/api/chat` → server-only Vercel
+function → HTTPS ngrok origin → API-key-protected, public-only local Flask
+→ in-memory FAISS over the four reviewed public cards → qwen2.5:7b.
 
-The user has requested public chat testing; that authorizes planning a safe
-release, but does not supply an inference host or credentials. This branch
-intentionally changes no production deployment until those are available.
+PR #17 implements the Vercel relay and browser integration. Separate
+Draft PR #18 implements `PUBLIC_ONLY_MODE` for Flask, which **must be
+enabled** before starting ngrok. This mode never loads the owner's private
+FAISS index or `data/base` files.
+
+The bridge expects these Vercel **server-side** environment variables
+(initially scoped to Preview):
+- `NGROK_TUNNEL_ORIGIN`: exact HTTPS ngrok origin, e.g.
+  `https://your-subdomain.ngrok-free.app` (no trailing path)
+- `LOCAL_FLASK_API_KEY`: random secret equal to Flask `LOCAL_API_KEY`.
+  Treat as a Vercel **Secret**, not a public `VITE_*` value.
+- `VITE_ENABLE_PUBLIC_CHAT_UI=true`: optional non-secret Preview flag
+  **only after** the backend and relay have passed tests.
+
+Vercel functions `api/chat.js` and `api/ready.js` are fail-closed
+without their server-side settings. `/api/chat` forwards at most a 300
+character question and exposes only sanitized `reply` and `sources`.
+Upstream HTTP errors and exceptions return generic responses; neither
+the tunnel URL nor the key is copied to the browser. Server-side
+`X-Local-API-Key` is sent over HTTPS.
+
+Stop ngrok to disable external access immediately. If the laptop sleeps,
+goes offline or the tunnel URL changes, public Chat will be unavailable.
+This is expected for an owner-hosted alpha/beta and must be shown honestly.
+See `docs/LOCAL_NGROK_PUBLIC_BETA.md` on the PR #18 branch for exact
+Flask startup/security prerequisites.
 
 ## October 13, 2026 — authenticated Vercel connection inspection
 
