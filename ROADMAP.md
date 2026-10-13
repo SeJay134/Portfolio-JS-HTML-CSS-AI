@@ -196,9 +196,10 @@ hardcodes `sources: []` even when retrieval succeeds.
       follow-up fix: the owner observed a false fifth-project answer with an
       irrelevant Weather Explorer source. An unrelated favorite-film question
       correctly returned no sources.
-- [ ] Retest Russian project summaries after the stronger language directive:
-      two owner-local Russian project questions were answered in English.
-      Full bilingual quality/retrieval evaluation remains Phase 4.3b.
+- [ ] Russian-language compliance is **out of scope for PR #15**:
+      live owner tests still found English answers to Russian project queries.
+      No extra translation pass remains; evaluate a simple one-call baseline
+      and any measured self-review benefit in Draft PR #16.
 - [ ] Confirm honest fallback for absent evidence, bilingual factual answers,
       and no source misattribution on actual owner data in Phase 4.3b.
 - [ ] Keep index and JSON metadata consistent across updates; current two-file
