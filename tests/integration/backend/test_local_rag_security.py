@@ -182,6 +182,17 @@ def test_public_retriever_index_sources_are_only_approved_catalogue(monkeypatch)
             self.ntotal = len(vector)
 
     monkeypatch.setitem(sys.modules, "faiss", SimpleNamespace(IndexFlatL2=FakeIndex))
+    class FakeArray(list):
+        @property
+        def ndim(self):
+            return 2
+        @property
+        def shape(self):
+            return len(self), len(self[0])
+    monkeypatch.setitem(sys.modules, "numpy", SimpleNamespace(
+        float32="float32",
+        ascontiguousarray=lambda data, dtype: FakeArray(data),
+    ))
     monkeypatch.setitem(sys.modules, "llm.embedder", SimpleNamespace(
         embed_chunks=lambda chunks: [[1.0, 2.0] for _ in chunks]
     ))
