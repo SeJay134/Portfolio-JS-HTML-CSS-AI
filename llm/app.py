@@ -122,12 +122,12 @@ Do not invent project numbers or assert that documented repository URLs are abse
             else []
         )
         extra_context = (
-            "\\n\\n".join(str(chunk.get("text", "")) for chunk in chunks if chunk.get("text"))
+            "\n\n".join(str(chunk.get("text", "")) for chunk in chunks if chunk.get("text"))
             or "No relevant additional local portfolio evidence was found."
         )
         context = (
             public_overview()
-            + "\\n\\nAdditional owner-local/retrieved evidence:\\n"
+            + "\n\nAdditional owner-local/retrieved evidence:\n"
             + extra_context
         )
         language = response_language(message)
@@ -141,10 +141,10 @@ Do not invent project numbers or assert that documented repository URLs are abse
         response = self.client.chat(
             model=self.model,
             messages=[
-                {"role": "system", "content": self.SYSTEM_PROMPT + "\\n" + language_instruction},
+                {"role": "system", "content": self.SYSTEM_PROMPT + "\n" + language_instruction},
                 {
                     "role": "user",
-                    "content": f"Portfolio evidence:\\n{context}\\n\\nQuestion:\\n{message}",
+                    "content": f"Portfolio evidence:\n{context}\n\nQuestion:\n{message}",
                 },
             ],
             options={"temperature": 0, "num_predict": 350},
