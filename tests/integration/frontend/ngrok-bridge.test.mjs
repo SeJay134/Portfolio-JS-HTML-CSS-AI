@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import process from "node:process";
 import { afterEach, test } from "node:test";
 import { chatHandler, readyHandler } from "../../../server/chatBridge.js";
 
