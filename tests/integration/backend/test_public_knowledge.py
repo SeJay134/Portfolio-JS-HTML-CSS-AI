@@ -6,7 +6,6 @@ import pytest
 from llm.public_knowledge import (
     load_public_documents, public_overview, trusted_source,
     sources_for_mentioned_projects, unlisted_project_reply, response_language,
-    retrieved_text_for_language,
 )
 from llm.splitter import split_text
 from llm.app import LocalPortfolioService
@@ -196,8 +195,9 @@ def test_retrieved_public_chunk_does_not_automatically_become_a_source():
     assert "github.com" not in str(result)
 
 
-def test_russian_question_adds_explicit_language_instruction_and_preserves_sources():
+def test_russian_question_keeps_english_rag_evidence_and_sources():
     project = load_public_documents()[1]
+
     class PublicRetriever:
         index = SimpleNamespace(ntotal=1)
         def retrieve(self, message, top_k):
@@ -209,7 +209,7 @@ def test_russian_question_adds_explicit_language_instruction_and_preserves_sourc
         def chat(self, **kwargs):
             captured.append(kwargs)
             return {"message": {"content": (
-                "В проекте Chocolate sales dashboard использованы "
+                "В проекте Chocolate sales dashboard используются "
                 "Python, Streamlit, Pandas и Plotly."
             )}}
 
@@ -217,52 +217,122 @@ def test_russian_question_adds_explicit_language_instruction_and_preserves_sourc
     service._retriever = lambda: PublicRetriever()
     service.client = FakeClient()
     service.model = "test-model"
+    service._translate_to_russian = lambda draft, seconds: pytest.fail(
+        "Already Russian; a translation call would be unnecessary"
+    )
     result = service.answer("Какие технологии использованы? Ответь по-русски.")
+    assert len(captured) == 1
     assert "Response language: Russian." in captured[0]["messages"][0]["content"]
     prompt = captured[0]["messages"][1]["content"]
-    assert "Проверенные опубликованные проекты" in prompt
-    assert "Интерактивная панель Streamlit" in prompt
-    assert "Загружает CSV с продажами шоколада" in prompt
-    assert "Технологии: Python, Streamlit, Pandas, Plotly" in prompt
-    assert "Interactive Streamlit dashboard" not in prompt
-    assert prompt.endswith("Ответь по-русски на основании сведений выше.")
+    assert "Interactive Streamlit dashboard" in prompt
+    assert "Technologies: Python, Streamlit, Pandas, Plotly" in prompt
+    assert "Интерактивная панель Streamlit" not in prompt
     assert result["sources"] == [project["source"]]
-    assert "рус" not in result["sources"][0]["url"]
 
 
-def test_russian_catalogue_uses_curated_translations_without_changing_references():
-    assert response_language("Какие проекты создал Сергей?") == "Russian"
-    assert response_language("What projects has Sergei built?") == "English"
-    overview = public_overview("Russian")
-    english = public_overview()
-    docs = load_public_documents()
-    for doc in docs[1:]:
-        assert doc["source"]["title"] in overview
-        assert doc["source"]["title"] in english
-        localized = retrieved_text_for_language({
-            "doc_id": doc["id"], "source": doc["source"], "text": doc["text"]
-        }, "Russian")
-        assert "Описание:" in localized
-        assert "Подробности:" in localized
-        assert "Технологии:" in localized
-        assert doc["source"]["url"] in localized
-        assert retrieved_text_for_language({
-            "doc_id": doc["id"], "source": doc["source"], "text": doc["text"]
-        }, "English") == doc["text"]
-    assert "Интерактивная панель Streamlit" in overview
-    assert "Interactive Streamlit dashboard" not in overview
+def test_english_first_pass_is_translated_to_russian_and_cited():
+    project = load_public_documents()[1]
+    class PublicRetriever:
+        index = SimpleNamespace(ntotal=1)
+        def retrieve(self, message, top_k):
+            return [{"doc_id": project["id"], "text": project["text"],
+                     "source": project["source"]}]
+    captured = []
+    class EnglishFirstPass:
+        def chat(self, **kwargs):
+            captured.append(kwargs)
+            return {"message": {"content": (
+                "Technologies used in Chocolate sales dashboard: "
+                "Python, Streamlit, Pandas, Plotly."
+            )}}
+
+    service = LocalPortfolioService.__new__(LocalPortfolioService)
+    service._retriever = lambda: PublicRetriever()
+    service.client = EnglishFirstPass()
+    service.model = "test-model"
+    service._model_timeout = 120
+    translations = []
+    def translate(draft, seconds):
+        translations.append((draft, seconds))
+        return (
+            "В Chocolate sales dashboard используются "
+            "Python, Streamlit, Pandas и Plotly."
+        )
+    service._translate_to_russian = translate
+
+    result = service.answer("Какие технологии используются? Ответь по-русски.")
+    assert len(captured) == 1
+    assert len(translations) == 1
+    assert translations[0][0].startswith("Technologies used in ")
+    assert 0 < translations[0][1] <= 115
+    assert result["reply"].startswith("В Chocolate sales dashboard")
+    assert result["sources"] == [project["source"]]
 
 
-def test_russian_localization_never_relabels_untrusted_private_chunks():
-    docs = load_public_documents()
-    forged = {
-        "doc_id": "private-notes.md",
-        "source": docs[1]["source"],
-        "text": "Untrusted owner-local private document",
-    }
-    assert retrieved_text_for_language(forged, "Russian") == forged["text"]
-    assert retrieved_text_for_language({
-        "doc_id": docs[1]["id"],
-        "source": {"title": "Injected", "url": "https://evil.example"},
-        "text": "Private metadata impersonation",
-    }, "Russian") == "Private metadata impersonation"
+def test_no_time_for_translation_returns_russian_failure_without_sources():
+    class EmptyRetriever:
+        index = SimpleNamespace(ntotal=0)
+
+    class EnglishFirstPass:
+        def chat(self, **kwargs):
+            return {"message": {"content": "Technologies: Python."}}
+
+    service = LocalPortfolioService.__new__(LocalPortfolioService)
+    service._retriever = lambda: EmptyRetriever()
+    service.client = EnglishFirstPass()
+    service.model = "test-model"
+    service._model_timeout = 1
+    service._translate_to_russian = lambda draft, seconds: pytest.fail(
+        "Not enough remaining time"
+    )
+    result = service.answer("Какие технологии?")
+    assert "Не удалось" in result["reply"]
+    assert result["sources"] == []
+
+
+def test_untranslated_second_pass_does_not_expose_english_reply_or_sources():
+    class EmptyRetriever:
+        index = SimpleNamespace(ntotal=0)
+
+    class EnglishFirstPass:
+        def chat(self, **kwargs):
+            return {"message": {"content": "Chocolate sales dashboard uses Python."}}
+
+    service = LocalPortfolioService.__new__(LocalPortfolioService)
+    service._retriever = lambda: EmptyRetriever()
+    service.client = EnglishFirstPass()
+    service.model = "test-model"
+    service._model_timeout = 120
+    service._translate_to_russian = lambda draft, seconds: draft
+    result = service.answer("Ответь по-русски о проекте.")
+    assert result["sources"] == []
+    assert "Не удалось" in result["reply"]
+
+
+def test_translation_pass_sends_draft_only_and_uses_a_bounded_timeout(monkeypatch):
+    import ollama
+    observed = []
+    class Translator:
+        def chat(self, **kwargs):
+            observed.append(kwargs)
+            return {"message": {"content": (
+                "Технологии: Python, Streamlit, Pandas, Plotly."
+            )}}
+    def fake_client(host, timeout):
+        assert host == "http://127.0.0.1:11434"
+        assert 0 < timeout < 120
+        return Translator()
+    monkeypatch.setattr(ollama, "Client", fake_client)
+    service = LocalPortfolioService.__new__(LocalPortfolioService)
+    service._ollama_host = "http://127.0.0.1:11434"
+    service.model = "test-model"
+    translated = service._translate_to_russian(
+        "Technologies: Python, Streamlit, Pandas, Plotly.", 40
+    )
+    assert translated.startswith("Технологии:")
+    assert len(observed) == 1
+    system = observed[0]["messages"][0]["content"]
+    assert "Do not add, remove or change" in system
+    assert "Do not" in system
+    assert "Portfolio evidence:" not in observed[0]["messages"][1]["content"]
+    assert "Technologies: Python" in observed[0]["messages"][1]["content"]
