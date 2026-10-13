@@ -198,12 +198,27 @@ The technology facts and single project GitHub source were correct
 Therefore the earlier stronger English-language instruction was insufficient;
 do not mark bilingual acceptance complete.
 
-Next Draft PR #15 experiment: `public_overview("Russian")` and trusted
-FAISS public-project chunks now have draft Russian-language
-wording pending owner factual review, while canonical titles, tags, project IDs and source URLs stay bound
-to `content/public-projects.json`. All private/untrusted chunks keep their
-original text. The model still makes a single local Ollama call; no UI, model
-or embedding/index format changes were made. CI mock tests exercise language
-selection, localized prompt evidence, and private-source isolation; **live
-Russian answer quality remains pending owner retest** after fetching the new
-PR #15 head and restarting Flask, without an index rebuild.
+The owner's intended design is **one language-independent knowledge base**:
+RAG retrieves the original English evidence and Ollama explains it in the
+language of the user question. Maintaining a duplicate Russian facts catalogue
+would create drift and was not accepted.
+
+Revised Draft PR #15 behavior:
+- Feed the unchanged English catalogue and retrieved chunks to Ollama.
+- Request the answer in Russian when the question is in Russian.
+- When the generated answer contains no Russian prose, run a translation-only
+  follow-up with the same local model on its *draft answer only*, preserving
+  verified English titles, technology names, numbers and facts.
+- Use a time budget no greater than the existing model timeout with a small
+  reserve before attempting that second generation. If insufficient time
+  remains or the retry still lacks Russian prose, return a clear Russian
+  failure message with no sources.
+- Link only curated, explicitly named projects appearing in the final answer.
+
+This conditional extra model call can increase latency. The current frontend
+timeout is 135 seconds, and the backend model timeout defaults to 120 seconds;
+remaining-time behavior needs live owner verification on the original hardware.
+The translation instruction cannot guarantee factual equivalence, and tests
+using mocked model replies cannot establish Ollama output quality. Real local
+retests of language, source precision and worst-case latency remain required.
+No FAISS rebuild, model switch, public API or UI changes were made.
