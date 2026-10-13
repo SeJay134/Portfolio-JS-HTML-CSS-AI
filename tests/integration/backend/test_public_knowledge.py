@@ -5,7 +5,7 @@ import pytest
 
 from llm.public_knowledge import (
     load_public_documents, public_overview, trusted_source,
-    sources_for_mentioned_projects,
+    sources_for_mentioned_projects, unlisted_project_reply, response_language,
 )
 from llm.splitter import split_text
 from llm.app import LocalPortfolioService
@@ -136,3 +136,88 @@ def test_generation_links_named_projects_even_when_only_private_notes_retrieved(
     assert result["sources"] == [doc["source"] for doc in docs[1:]]
     assert "Attack" not in str(result)
     assert "evil.example" not in str(result)
+
+
+@pytest.mark.parametrize("question", [
+    "Как называется пятый опубликованный проект Сергея и где его GitHub?",
+    "Какие технологии в пятом проекте?",
+    "Расскажи о 5-м опубликованном проекте.",
+    "What is the fifth published project?",
+    "Tell me about the 5th public project.",
+    "Where is project 5?",
+])
+def test_unlisted_project_returns_grounded_fallback_without_sources_or_ollama(question):
+    class NoGeneration:
+        def chat(self, **kwargs):
+            pytest.fail("Unlisted ordinal should not call Ollama")
+
+    service = LocalPortfolioService.__new__(LocalPortfolioService)
+    service._retriever = lambda: pytest.fail("Unlisted ordinal should not query FAISS")
+    service.client = NoGeneration()
+    service.model = "test-model"
+    result = service.answer(question)
+    assert result["sources"] == []
+    assert "4" in result["reply"]
+    if response_language(question) == "Russian":
+        assert "проект" in result["reply"]
+        assert "информации" in result["reply"].casefold()
+    else:
+        assert "no information" in result["reply"].lower()
+
+
+def test_ordinal_guard_is_scoped_and_does_not_override_known_projects():
+    assert unlisted_project_reply("Расскажи о четвёртом проекте") is None
+    assert unlisted_project_reply("What is the 4th project?") is None
+    assert unlisted_project_reply("What is Sergei's fifth favorite movie?") is None
+    assert unlisted_project_reply("What are 5 technologies used by this project?") is None
+
+
+def test_retrieved_public_chunk_does_not_automatically_become_a_source():
+    project = load_public_documents()[1]
+    class PublicRetriever:
+        index = SimpleNamespace(ntotal=1)
+        def retrieve(self, message, top_k):
+            return [{"doc_id": project["id"], "text": project["text"],
+                     "source": project["source"]}]
+
+    class FakeClient:
+        def chat(self, **kwargs):
+            return {"message": {"content": (
+                "I do not have that information. Please use Contact."
+            )}}
+
+    service = LocalPortfolioService.__new__(LocalPortfolioService)
+    service._retriever = lambda: PublicRetriever()
+    service.client = FakeClient()
+    service.model = "test-model"
+    result = service.answer("What is Sergei's favorite movie?")
+    assert result["sources"] == []
+    assert "github.com" not in str(result)
+
+
+def test_russian_question_adds_explicit_language_instruction_and_preserves_sources():
+    project = load_public_documents()[1]
+    class PublicRetriever:
+        index = SimpleNamespace(ntotal=1)
+        def retrieve(self, message, top_k):
+            return [{"doc_id": project["id"], "text": project["text"],
+                     "source": project["source"]}]
+
+    captured = []
+    class FakeClient:
+        def chat(self, **kwargs):
+            captured.append(kwargs)
+            return {"message": {"content": (
+                "В проекте Chocolate sales dashboard использованы "
+                "Python, Streamlit, Pandas и Plotly."
+            )}}
+
+    service = LocalPortfolioService.__new__(LocalPortfolioService)
+    service._retriever = lambda: PublicRetriever()
+    service.client = FakeClient()
+    service.model = "test-model"
+    result = service.answer("Какие технологии использованы? Ответь по-русски.")
+    assert "Response language: Russian." in captured[0]["messages"][0]["content"]
+    assert "translate English catalogue descriptions" in captured[0]["messages"][0]["content"]
+    assert result["sources"] == [project["source"]]
+    assert "рус" not in result["sources"][0]["url"]
