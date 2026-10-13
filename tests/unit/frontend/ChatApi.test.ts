@@ -16,7 +16,7 @@ describe("local-only chat API contract", () => {
     expect(selectChatApi("sergei-luna.vercel.app", "https:", false, false))
       .toBeNull();
     expect(selectChatApi("sergei-luna.vercel.app", "https:", false, true))
-      .toBe("");
+      .toBe("/api");
     expect(selectChatApi("sergei-luna.vercel.app", "http:", false, true))
       .toBeNull();
     expect(selectChatApi("attacker.example", "https:", true, true))
