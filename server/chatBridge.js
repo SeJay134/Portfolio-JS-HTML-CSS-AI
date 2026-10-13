@@ -1,7 +1,7 @@
 // Only server-side Vercel Functions import this module.
 // Never expose the ngrok origin or Flask secret in the browser bundle.
 const allowedTunnelHost = (host) =>
-  /(^|\.)(?:ngrok-free\.dev|ngrok-free\.app|ngrok\.app|ngrok\.io)$/.test(host);
+  /(^|\.)(?:ngrok\.dev|ngrok-free\.dev|ngrok-free\.app|ngrok\.app|ngrok\.io)$/.test(host);
 
 function upstreamConfig() {
   const raw = process.env.NGROK_TUNNEL_ORIGIN;
