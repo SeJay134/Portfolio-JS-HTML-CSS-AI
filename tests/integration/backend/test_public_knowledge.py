@@ -6,6 +6,7 @@ import pytest
 from llm.public_knowledge import (
     load_public_documents, public_overview, trusted_source,
     sources_for_mentioned_projects, unlisted_project_reply, response_language,
+    retrieved_text_for_language,
 )
 from llm.splitter import split_text
 from llm.app import LocalPortfolioService
@@ -218,6 +219,50 @@ def test_russian_question_adds_explicit_language_instruction_and_preserves_sourc
     service.model = "test-model"
     result = service.answer("Какие технологии использованы? Ответь по-русски.")
     assert "Response language: Russian." in captured[0]["messages"][0]["content"]
-    assert "translate English catalogue descriptions" in captured[0]["messages"][0]["content"]
+    prompt = captured[0]["messages"][1]["content"]
+    assert "Проверенные опубликованные проекты" in prompt
+    assert "Интерактивная панель Streamlit" in prompt
+    assert "Загружает CSV с продажами шоколада" in prompt
+    assert "Технологии: Python, Streamlit, Pandas, Plotly" in prompt
+    assert "Interactive Streamlit dashboard" not in prompt
+    assert prompt.endswith("Ответь по-русски на основании сведений выше.")
     assert result["sources"] == [project["source"]]
     assert "рус" not in result["sources"][0]["url"]
+
+
+def test_russian_catalogue_uses_curated_translations_without_changing_references():
+    assert response_language("Какие проекты создал Сергей?") == "Russian"
+    assert response_language("What projects has Sergei built?") == "English"
+    overview = public_overview("Russian")
+    english = public_overview()
+    docs = load_public_documents()
+    for doc in docs[1:]:
+        assert doc["source"]["title"] in overview
+        assert doc["source"]["title"] in english
+        localized = retrieved_text_for_language({
+            "doc_id": doc["id"], "source": doc["source"], "text": doc["text"]
+        }, "Russian")
+        assert "Описание:" in localized
+        assert "Подробности:" in localized
+        assert "Технологии:" in localized
+        assert doc["source"]["url"] in localized
+        assert retrieved_text_for_language({
+            "doc_id": doc["id"], "source": doc["source"], "text": doc["text"]
+        }, "English") == doc["text"]
+    assert "Интерактивная панель Streamlit" in overview
+    assert "Interactive Streamlit dashboard" not in overview
+
+
+def test_russian_localization_never_relabels_untrusted_private_chunks():
+    docs = load_public_documents()
+    forged = {
+        "doc_id": "private-notes.md",
+        "source": docs[1]["source"],
+        "text": "Untrusted owner-local private document",
+    }
+    assert retrieved_text_for_language(forged, "Russian") == forged["text"]
+    assert retrieved_text_for_language({
+        "doc_id": docs[1]["id"],
+        "source": {"title": "Injected", "url": "https://evil.example"},
+        "text": "Private metadata impersonation",
+    }, "Russian") == "Private metadata impersonation"
