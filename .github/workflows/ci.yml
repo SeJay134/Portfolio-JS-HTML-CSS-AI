@@ -15,6 +15,7 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test:unit
+      - run: node --test tests/integration/frontend/ngrok-bridge.test.mjs
       - run: npm run build
   smoke:
     runs-on: ubuntu-latest
