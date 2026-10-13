@@ -19,9 +19,12 @@ def rebuild_index() -> None:
             "Add reviewed .txt or .md files before indexing."
         )
 
+    from llm.public_knowledge import load_public_documents
     from llm.splitter import split_text
 
-    chunks = split_text(docs)
+    # Keep owner-local documents private. Add only reviewed, public catalogue
+    # content from the versioned frontend parity fixture.
+    chunks = split_text(docs + load_public_documents())
     if not chunks:
         raise ValueError("Local knowledge documents are empty.")
 

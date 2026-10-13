@@ -33,5 +33,6 @@ class Retriever:
                 "doc_id": chunk.get("doc_id"),
                 "text": chunk["text"],
                 "score": float(distance),
+                "source": chunk.get("source"),
             })
         return results

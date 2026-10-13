@@ -74,6 +74,31 @@ the email using their own email app; this site neither stores nor submits
 visitor messages. There is no public message list. Do not add a resume or
 unverified employment/impact claims without owner review.
 
+## Verified public projects in the local RAG index
+
+The public catalogue in `src/data/projects.ts` is mirrored in
+`content/public-projects.json`, with an automated parity test to catch drift.
+The local indexer adds these **already-public project facts** to the owner's
+private `data/base/` documents. It never uploads local documents, and it
+never returns local filenames/paths as clickable sources. Only exact reviewed
+public project references can be returned in the `sources` array.
+
+After fetching this RAG knowledge update, **stop Flask** (Ctrl+C), then run
+`python -m llm.indexer` from the backend worktree and restart Flask.
+Reindexing and restarting are both necessary; otherwise the existing FAISS
+index and in-memory retriever still use the old private-only source data.
+Inspect your owner-local `data/base/` corpus separately before claiming all
+generated statements are accurate. The model may still paraphrase or make
+mistakes; source grounding and bilingual relevance tests remain necessary.
+
+The public portfolio catalogue and FAISS evidence remain in their original
+language (currently English). Model-language consistency and optional
+answer self-review are **out of scope for this source-provenance PR** and
+tracked under Phase 4.3b. No second translation/model call is made here.
+
+This knowledge update is a separate dependent Draft PR and is not yet part
+of PR #13 or `main`. See the roadmap for its acceptance gate.
+
 ## Optional local AI backend
 
 The public Vercel site does **not** call the AI backend in the current
