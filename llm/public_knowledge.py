@@ -7,6 +7,7 @@ from data/base/ user documents or arbitrary FAISS metadata.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -57,6 +58,48 @@ def _public_projects() -> list[dict]:
     if found != REQUIRED_IDS:
         raise ValueError("Public catalogue is incomplete.")
     return projects
+
+
+
+# Detect only explicit numbered catalogue-project questions (not arbitrary missing facts).
+# The checked public catalogue currently contains four entries; this guard does
+# not make any claim about projects that might exist outside that catalogue.
+_OUT_OF_RANGE_ORDINAL = re.compile(
+    r"\\b(?P<position>\\d+(?:-?(?:й|го|ый|st|nd|rd|th))?"
+    r"|fifth|sixth|seventh|eighth|ninth|tenth"
+    r"|пят(?:ый|ого|ом|ому|ым|ая|ое|ой|ую|ые|ых)"
+    r"|шест(?:ой|ого|ом|ому|ым|ая|ое|ую|ые|ых))\\b"
+    r"(?:\\s+[\\w-]+){0,3}\\s+(?:projects?|проект\\w*)\\b",
+    re.IGNORECASE,
+)
+
+
+def response_language(question: str) -> str:
+    """Select answer language from the actual question, not English evidence."""
+    return "Russian" if re.search(r"[А-Яа-яЁё]", question) else "English"
+
+
+def unlisted_project_reply(question: str) -> str | None:
+    """Ground numbered-project fallback in catalogue size, without model guesses."""
+    match = _OUT_OF_RANGE_ORDINAL.search(question)
+    if not match:
+        return None
+    ordinal = match.group("position").casefold()
+    numeric = re.match(r"\\d+", ordinal)
+    position = int(numeric.group()) if numeric else 5
+    count = len(_public_projects())
+    if position <= count:
+        return None
+    if response_language(question) == "Russian":
+        return (
+            f"В проверенном публичном каталоге портфолио указаны только {count} проекта. "
+            "Информации о проекте с запрошенным номером и его GitHub-репозитории нет."
+        )
+    return (
+        f"The verified public portfolio catalogue lists only {count} projects. "
+        "It has no information about a project at the requested position "
+        "or its GitHub repository."
+    )
 
 
 def public_overview() -> str:
