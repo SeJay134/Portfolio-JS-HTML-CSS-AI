@@ -48,6 +48,10 @@ test("rejects invalid or untrusted ngrok endpoints", async () => {
   for(const upstream of [
     "http://example.ngrok-free.app",
     "https://ngrok-free.app.evil.example",
+    "https://ngrok-free.dev.evil.example",
+    "https://user:pass@example.ngrok-free.dev",
+    "http://example.ngrok-free.dev",
+    "https://example.ngrok-free.dev/private",
     "https://user:pass@example.ngrok-free.app",
     "https://example.ngrok-free.app:8443",
     "https://example.ngrok-free.app/private",
@@ -105,6 +109,23 @@ test("chat rejects empty, oversized, malformed or unsupported methods", async ()
     await chatHandler(input,response);
     assert.ok([400,405,413].includes(response.statusCode));
   }
+});
+
+test("official ngrok-free.dev tunnel reaches Flask readiness endpoint", async () => {
+  configure();
+  process.env.NGROK_TUNNEL_ORIGIN = "https://demo.ngrok-free.dev";
+  let count = 0;
+  globalThis.fetch = async (url,options) => {
+    count++;
+    assert.equal(url, "https://demo.ngrok-free.dev/ready");
+    assert.equal(options.headers["X-Local-API-Key"], process.env.LOCAL_FLASK_API_KEY);
+    return {ok:true,status:200,json:async()=>({status:"ready"})};
+  };
+  const response = res();
+  await readyHandler({method:"GET",headers:{}},response);
+  assert.equal(response.statusCode,200);
+  assert.deepEqual(response.body,{status:"ready"});
+  assert.equal(count,1);
 });
 
 test("readiness uses protected tunnel, never leaking upstream", async () => {
