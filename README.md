@@ -91,6 +91,17 @@ Inspect your owner-local `data/base/` corpus separately before claiming all
 generated statements are accurate. The model may still paraphrase or make
 mistakes; source grounding and bilingual relevance tests remain necessary.
 
+Language selection happens **after retrieval**: public and private evidence
+remains in its original language (including English). A Russian question asks
+Ollama for a Russian answer. If the first answer contains no Russian prose,
+the same local model makes a translation-only pass over its draft answer,
+not over the source documents. Sources are selected from reviewed project
+titles in the final reply. The extra pass may increase latency, so the
+translation is restricted to the remaining `MODEL_TIMEOUT` budget; failure
+to produce Russian returns a clear message without invented sources.
+No separate translated RAG corpus, external translation API, or model change
+is needed. Check real local response quality and timing before acceptance.
+
 This knowledge update is a separate dependent Draft PR and is not yet part
 of PR #13 or `main`. See the roadmap for its acceptance gate.
 
