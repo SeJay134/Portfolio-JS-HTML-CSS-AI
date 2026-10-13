@@ -24,7 +24,7 @@ export function selectChatApi(
 ): string | null {
   if (canUseLocalChat(hostname, dev)) return LOCAL_API;
   if (!dev && productionBetaEnabled && protocol === "https:")
-    return ""; // same-origin; /api/chat, /api/ready
+    return "/api"; // same-origin; /api/chat, /api/ready
   return null;
 }
 
