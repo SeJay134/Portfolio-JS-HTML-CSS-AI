@@ -195,9 +195,8 @@ def test_retrieved_public_chunk_does_not_automatically_become_a_source():
     assert "github.com" not in str(result)
 
 
-def test_russian_question_keeps_english_rag_evidence_and_sources():
+def test_russian_question_adds_explicit_language_instruction_and_preserves_sources():
     project = load_public_documents()[1]
-
     class PublicRetriever:
         index = SimpleNamespace(ntotal=1)
         def retrieve(self, message, top_k):
@@ -209,7 +208,7 @@ def test_russian_question_keeps_english_rag_evidence_and_sources():
         def chat(self, **kwargs):
             captured.append(kwargs)
             return {"message": {"content": (
-                "В проекте Chocolate sales dashboard используются "
+                "В проекте Chocolate sales dashboard использованы "
                 "Python, Streamlit, Pandas и Plotly."
             )}}
 
@@ -217,123 +216,8 @@ def test_russian_question_keeps_english_rag_evidence_and_sources():
     service._retriever = lambda: PublicRetriever()
     service.client = FakeClient()
     service.model = "test-model"
-    service._translate_to_russian = lambda draft, seconds: pytest.fail(
-        "Already Russian; a translation call would be unnecessary"
-    )
     result = service.answer("Какие технологии использованы? Ответь по-русски.")
-    assert len(captured) == 1
     assert "Response language: Russian." in captured[0]["messages"][0]["content"]
-    prompt = captured[0]["messages"][1]["content"]
-    assert "Interactive Streamlit dashboard" in prompt
-    assert "Technologies: Python, Streamlit, Pandas, Plotly" in prompt
-    assert "Интерактивная панель Streamlit" not in prompt
+    assert "translate English catalogue descriptions" in captured[0]["messages"][0]["content"]
     assert result["sources"] == [project["source"]]
-
-
-def test_english_first_pass_is_translated_to_russian_and_cited():
-    project = load_public_documents()[1]
-    class PublicRetriever:
-        index = SimpleNamespace(ntotal=1)
-        def retrieve(self, message, top_k):
-            return [{"doc_id": project["id"], "text": project["text"],
-                     "source": project["source"]}]
-    captured = []
-    class EnglishFirstPass:
-        def chat(self, **kwargs):
-            captured.append(kwargs)
-            return {"message": {"content": (
-                "Technologies used in Chocolate sales dashboard: "
-                "Python, Streamlit, Pandas, Plotly."
-            )}}
-
-    service = LocalPortfolioService.__new__(LocalPortfolioService)
-    service._retriever = lambda: PublicRetriever()
-    service.client = EnglishFirstPass()
-    service.model = "test-model"
-    service._model_timeout = 120
-    translations = []
-    def translate(draft, seconds):
-        translations.append((draft, seconds))
-        return (
-            "В Chocolate sales dashboard используются "
-            "Python, Streamlit, Pandas и Plotly."
-        )
-    service._translate_to_russian = translate
-
-    result = service.answer("Какие технологии используются? Ответь по-русски.")
-    assert len(captured) == 1
-    assert len(translations) == 1
-    assert translations[0][0].startswith("Technologies used in ")
-    assert 0 < translations[0][1] <= 115
-    assert result["reply"].startswith("В Chocolate sales dashboard")
-    assert result["sources"] == [project["source"]]
-
-
-def test_no_time_for_translation_returns_russian_failure_without_sources():
-    class EmptyRetriever:
-        index = SimpleNamespace(ntotal=0)
-
-    class EnglishFirstPass:
-        def chat(self, **kwargs):
-            return {"message": {"content": "Technologies: Python."}}
-
-    service = LocalPortfolioService.__new__(LocalPortfolioService)
-    service._retriever = lambda: EmptyRetriever()
-    service.client = EnglishFirstPass()
-    service.model = "test-model"
-    service._model_timeout = 1
-    service._translate_to_russian = lambda draft, seconds: pytest.fail(
-        "Not enough remaining time"
-    )
-    result = service.answer("Какие технологии?")
-    assert "Не удалось" in result["reply"]
-    assert result["sources"] == []
-
-
-def test_untranslated_second_pass_does_not_expose_english_reply_or_sources():
-    class EmptyRetriever:
-        index = SimpleNamespace(ntotal=0)
-
-    class EnglishFirstPass:
-        def chat(self, **kwargs):
-            return {"message": {"content": "Chocolate sales dashboard uses Python."}}
-
-    service = LocalPortfolioService.__new__(LocalPortfolioService)
-    service._retriever = lambda: EmptyRetriever()
-    service.client = EnglishFirstPass()
-    service.model = "test-model"
-    service._model_timeout = 120
-    service._translate_to_russian = lambda draft, seconds: draft
-    result = service.answer("Ответь по-русски о проекте.")
-    assert result["sources"] == []
-    assert "Не удалось" in result["reply"]
-
-
-def test_translation_pass_sends_draft_only_and_uses_a_bounded_timeout(monkeypatch):
-    import sys
-    observed = []
-    class Translator:
-        def chat(self, **kwargs):
-            observed.append(kwargs)
-            return {"message": {"content": (
-                "Технологии: Python, Streamlit, Pandas, Plotly."
-            )}}
-    def fake_client(host, timeout):
-        assert host == "http://127.0.0.1:11434"
-        assert 0 < timeout < 120
-        return Translator()
-    # Lightweight CI doesn't install the real Ollama package.
-    monkeypatch.setitem(sys.modules, "ollama", SimpleNamespace(Client=fake_client))
-    service = LocalPortfolioService.__new__(LocalPortfolioService)
-    service._ollama_host = "http://127.0.0.1:11434"
-    service.model = "test-model"
-    translated = service._translate_to_russian(
-        "Technologies: Python, Streamlit, Pandas, Plotly.", 40
-    )
-    assert translated.startswith("Технологии:")
-    assert len(observed) == 1
-    system = observed[0]["messages"][0]["content"]
-    assert "Do not add, remove or change" in system
-    assert "Do not" in system
-    assert "Portfolio evidence:" not in observed[0]["messages"][1]["content"]
-    assert "Technologies: Python" in observed[0]["messages"][1]["content"]
+    assert "рус" not in result["sources"][0]["url"]
