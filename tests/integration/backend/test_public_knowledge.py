@@ -310,7 +310,7 @@ def test_untranslated_second_pass_does_not_expose_english_reply_or_sources():
 
 
 def test_translation_pass_sends_draft_only_and_uses_a_bounded_timeout(monkeypatch):
-    import ollama
+    import sys
     observed = []
     class Translator:
         def chat(self, **kwargs):
@@ -322,7 +322,8 @@ def test_translation_pass_sends_draft_only_and_uses_a_bounded_timeout(monkeypatc
         assert host == "http://127.0.0.1:11434"
         assert 0 < timeout < 120
         return Translator()
-    monkeypatch.setattr(ollama, "Client", fake_client)
+    # Lightweight CI doesn't install the real Ollama package.
+    monkeypatch.setitem(sys.modules, "ollama", SimpleNamespace(Client=fake_client))
     service = LocalPortfolioService.__new__(LocalPortfolioService)
     service._ollama_host = "http://127.0.0.1:11434"
     service.model = "test-model"
