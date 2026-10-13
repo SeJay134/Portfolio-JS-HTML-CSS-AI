@@ -133,3 +133,39 @@ Portfolio website & AI prototype.
 
 No private knowledge bytes or local path strings were committed.
 All work remains owner-local, with no production deployment.
+
+## October 13, 2026 — owner-local bilingual and unknown-fact probes
+
+These observations came from the owner's actual local `POST /chat`, not mocks:
+
+- **PASS**: English project-list question returned the four verified titles and
+  four corresponding public GitHub repository links. The fourth uses an older
+  GitHub path that redirects to the current repository name; canonical URL
+  normalization remains a separate follow-up.
+- **FAIL**: Russian project-list question answered entirely in English.
+- **FAIL**: Explicitly requesting Russian for chocolate-dashboard technologies
+  returned English `Technologies: Python, Streamlit, Pandas, Plotly.` again,
+  including when the request body was explicitly encoded as UTF-8.
+- **PASS**: Unknown favorite-film question correctly stated in Russian that
+  evidence was unavailable and returned `sources: []` (confirmed count 0).
+- **FAIL**: Request for the *fifth published project* returned the already-known
+  Open API weather explorer as if it answered the question, and one irrelevant
+  public GitHub source. That violates both answer relevance and attribution.
+
+Draft PR #15 follow-up code (not owner-live-accepted yet):
+- Reject explicit numbered projects outside the four-card verified catalogue
+  with a narrow, deterministic no-evidence reply and `sources: []`, without
+  claiming that no additional projects could exist outside the public catalogue.
+- Remove unconditional FAISS-hit source attachment; retrieved chunks remain
+  context candidates, not citations. Only explicitly named, reviewed project
+  titles can produce repository source links.
+- Reinforce a Russian answer-language directive while preserving exact
+  English project titles and technology names.
+- Add backend regression tests for Russian/numeric/English fifth-project
+  requests, source over-attribution and prompt-language selection.
+
+These changes do **not** establish general multilingual RAG accuracy or a
+relevance threshold for private FAISS chunks. Repeat real owner-local Flask
+tests after pulling the PR #15 head and restarting Flask. The existing local
+FAISS index requires **no rebuild** for this code-only change. No public
+deployment or merge is authorized.
