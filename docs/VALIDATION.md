@@ -199,8 +199,8 @@ Therefore the earlier stronger English-language instruction was insufficient;
 do not mark bilingual acceptance complete.
 
 Next Draft PR #15 experiment: `public_overview("Russian")` and trusted
-FAISS public-project chunks now have manually reviewed Russian-language
-wording, while canonical titles, tags, project IDs and source URLs stay bound
+FAISS public-project chunks now have draft Russian-language
+wording pending owner factual review, while canonical titles, tags, project IDs and source URLs stay bound
 to `content/public-projects.json`. All private/untrusted chunks keep their
 original text. The model still makes a single local Ollama call; no UI, model
 or embedding/index format changes were made. CI mock tests exercise language
