@@ -173,7 +173,7 @@ def public_overview(language: str = "English") -> str:
 
 
 def retrieved_text_for_language(chunk: dict, language: str) -> str:
-    """Use reviewed Russian wording for verified public chunks, never private text.
+    """Use draft Russian presentation text for verified public chunks, never private text.
 
     Local FAISS documents are left unchanged. Their metadata cannot trigger
     substitution unless it matches a fully trusted public source.
