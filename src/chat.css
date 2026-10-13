@@ -1,0 +1,195 @@
+/* Phase 4.2: opt-in React chat, adapted from the original WIP design. */
+.chat-panel {
+  position: fixed;
+  inset: auto 24px 90px auto;
+  margin: 0;
+  width: min(410px, calc(100vw - 32px));
+  height: min(640px, calc(100dvh - 120px));
+  max-width: none;
+  max-height: none;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 0;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 24px 90px #07121f35;
+  z-index: 31;
+  overflow: hidden;
+}
+.chat-panel[open] {
+  display: flex;
+  flex-direction: column;
+}
+.chat-panel::backdrop {
+  background: #08142080;
+}
+.chat-heading {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.chat-heading h2 {
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+}
+.chat-heading p {
+  font-size: 0.6rem;
+  color: var(--muted);
+}
+.chat-heading .icon-button {
+  margin-left: auto;
+}
+.assistant-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+}
+.chat-history {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+  overscroll-behavior: contain;
+}
+.chat-welcome h3 {
+  font-size: 1.8rem;
+  margin-bottom: 16px;
+}
+.chat-welcome > p:not(.eyebrow) {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.chat-welcome .eyebrow {
+  font-size: 0.6rem;
+  margin-bottom: 16px;
+}
+.suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 20px;
+}
+.suggestions button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--soft);
+  padding: 12px;
+  text-align: left;
+  font-size: 0.7rem;
+  border-radius: 6px;
+  min-height: 44px;
+}
+.message {
+  margin-bottom: 16px;
+  overflow-wrap: anywhere;
+}
+.message p {
+  white-space: pre-wrap;
+  font-size: 0.82rem;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--soft);
+}
+.message.user p {
+  background: var(--accent-soft);
+}
+.message-author {
+  font-size: 0.6rem;
+  display: block;
+  margin-bottom: 5px;
+  color: var(--muted);
+}
+.chat-sources {
+  font-size: 0.7rem;
+  padding-left: 18px;
+  color: var(--accent);
+}
+.pending-text {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.chat-error {
+  margin: 0 16px;
+  padding: 10px;
+  background: var(--soft);
+  font-size: 0.72rem;
+  border-radius: 6px;
+}
+.chat-error a {
+  color: var(--accent);
+  text-decoration: underline;
+  margin-left: 12px;
+}
+.chat-composer {
+  margin: 12px 16px 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+}
+.chat-composer textarea {
+  width: 100%;
+  resize: none;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.5;
+}
+.composer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.composer-actions > span {
+  font-size: 0.6rem;
+  color: var(--muted);
+}
+.button.small {
+  padding: 8px 12px;
+  min-height: 36px;
+  font-size: 0.7rem;
+  gap: 10px;
+}
+.chat-footnote {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+}
+.chat-footnote > span {
+  font-size: 0.55rem;
+  color: var(--muted);
+}
+.widget-fallback {
+  position: fixed;
+  right: 24px;
+  bottom: 90px;
+  z-index: 31;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 20px;
+  border-radius: 10px;
+}
+
+@media (max-width: 600px) {
+  .chat-panel {
+    inset: 0;
+    margin: 0;
+    width: 100%;
+    height: 100dvh;
+    border: 0;
+    border-radius: 0;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .chat-heading { padding: 12px 16px; }
+}
