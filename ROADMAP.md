@@ -205,7 +205,13 @@ hardcodes `sources: []` even when retrieval succeeds.
       `os.replace` is **not** atomic as a pair. Design a generation/manifest
       switch for a true atomic snapshot before claiming atomic publication.
 
-### Phase 4.3b — Retrieval relevance and answer evaluation (separate PR)
+### Phase 4.3b — Retrieval relevance and answer evaluation (Draft PR #16)
+
+Answer-quality experiments are isolated from PR #15. Begin with a measured
+single-pass baseline and consider an optional bounded self-review only if
+evidence shows it improves correctness. See `docs/RAG_ANSWER_EVALUATION.md`
+on the follow-up branch.
+
 
 - [ ] Calibrate FAISS squared-L2 distance on labeled queries; drop irrelevant
       chunks rather than always passing up to three retrieved matches.
@@ -251,8 +257,12 @@ accepted React design, drawer, themes, projects and Contact.
 - [ ] Phase 6 — Optional Three.js scene/effects.
 - [ ] Phase 7.1 — Final cross-browser, accessibility, and performance checks.
 - [ ] Phase 7.2 — Real-device checks and final production release hardening.
-- [ ] Remote/cloud AI hosting — **not currently planned**. Reconsider only
-      after an explicit owner decision; the $0, own-computer preference wins.
+- [ ] Public chat beta now requested by the owner (October 13, 2026).
+      This is a **separate deployment slice**, not completion of this
+      local-only backend PR. The selected inference host, costs, public
+      knowledge boundary, abuse controls, and private-data isolation require
+      review before enabling external access. The existing localhost Flask
+      and dev-only React UI cannot serve visitors on Vercel.
 
 ## Next execution order
 
