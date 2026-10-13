@@ -45,7 +45,14 @@ It must never load the owner's private `data/base` or existing mixed
 3. Start `ngrok http 5002` and note the HTTPS hostname (do not paste
    it into source code). In the Flask PowerShell set
    `TRUSTED_HOSTS=127.0.0.1,localhost,<exact-ngrok-hostname>`.
-4. Start the public-only Flask process with `python -m llm.app`.
+4. **For public visitors**, serve the public-only Flask app through
+   Waitress (Windows-compatible production WSGI), rather than Flask's
+   development server. Install the reviewed requirements into the venv:
+   `python -m pip install -r requirements-local-api.txt`. Run:
+   `waitress-serve --listen=127.0.0.1:5002 --threads=4 llm.app:app`.
+   The ngrok tunnel still points to local port 5002.
+   Do **not** start `python -m llm.app` alongside Waitress on that port.
+   `python -m llm.app` remains a local *development-only* command.
    Verify local `/ready` and `/chat` reject requests without the key.
    With the key they must use only the four reviewed public project cards.
    Owner-local `data/base` and private index must remain untouched.
@@ -68,7 +75,7 @@ It must never load the owner's private `data/base` or existing mixed
 
 ## Important limitations
 
-The owner computer must remain on, awake and connected. Ngrok free tunnel
+The owner computer must remain on, awake and connected. For an ongoing public beta, use the pinned Waitress WSGI server rather than the Flask development server; keep port 5002 bound to 127.0.0.1. Ngrok free tunnel
 URLs can change after restarts. Vercel server-only `NGROK_TUNNEL_ORIGIN`
 must then be updated and the relevant deployment refreshed. Protect the
 secret, do not post it to GitHub, chats, screenshots or browser JavaScript.
