@@ -41,9 +41,7 @@ class LocalPortfolioService:
 
     SYSTEM_PROMPT = """You are Sergei Patrushev's portfolio assistant.
 Answer in the language of the current question and keep the answer concise.
-For Russian questions, write every explanation and bullet summary in Russian.
-Keep reviewed English project titles and technology names unchanged, but
-translate English catalogue descriptions instead of copying them verbatim.
+Preserve the exact reviewed project titles and technology names.
 Use only the supplied portfolio evidence for facts about Sergei or his work.
 When asked what projects Sergei built, name the reviewed published projects
 from the verified catalogue rather than only listing general skill categories.
@@ -104,7 +102,7 @@ Do not invent project numbers or assert that documented repository URLs are abse
 
     def answer(self, message: str) -> dict:
         from llm.public_knowledge import (
-            public_overview, response_language, sources_for_mentioned_projects,
+            public_overview, sources_for_mentioned_projects,
             unlisted_project_reply,
         )
 
@@ -130,18 +128,10 @@ Do not invent project numbers or assert that documented repository URLs are abse
             + "\n\nAdditional owner-local/retrieved evidence:\n"
             + extra_context
         )
-        language = response_language(message)
-        language_instruction = (
-            "Response language: Russian. Write explanations and summaries in "
-            "Russian, even when the evidence below is in English. Preserve "
-            "only canonical project titles and technology names in English."
-            if language == "Russian"
-            else "Response language: English."
-        )
         response = self.client.chat(
             model=self.model,
             messages=[
-                {"role": "system", "content": self.SYSTEM_PROMPT + "\n" + language_instruction},
+                {"role": "system", "content": self.SYSTEM_PROMPT},
                 {
                     "role": "user",
                     "content": f"Portfolio evidence:\n{context}\n\nQuestion:\n{message}",
