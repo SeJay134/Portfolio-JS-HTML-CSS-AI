@@ -198,27 +198,15 @@ The technology facts and single project GitHub source were correct
 Therefore the earlier stronger English-language instruction was insufficient;
 do not mark bilingual acceptance complete.
 
-The owner's intended design is **one language-independent knowledge base**:
-RAG retrieves the original English evidence and Ollama explains it in the
-language of the user question. Maintaining a duplicate Russian facts catalogue
-would create drift and was not accepted.
-
-Revised Draft PR #15 behavior:
-- Feed the unchanged English catalogue and retrieved chunks to Ollama.
-- Request the answer in Russian when the question is in Russian.
-- When the generated answer contains no Russian prose, run a translation-only
-  follow-up with the same local model on its *draft answer only*, preserving
-  verified English titles, technology names, numbers and facts.
-- Use a time budget no greater than the existing model timeout with a small
-  reserve before attempting that second generation. If insufficient time
-  remains or the retry still lacks Russian prose, return a clear Russian
-  failure message with no sources.
-- Link only curated, explicitly named projects appearing in the final answer.
-
-This conditional extra model call can increase latency. The current frontend
-timeout is 135 seconds, and the backend model timeout defaults to 120 seconds;
-remaining-time behavior needs live owner verification on the original hardware.
-The translation instruction cannot guarantee factual equivalence, and tests
-using mocked model replies cannot establish Ollama output quality. Real local
-retests of language, source precision and worst-case latency remain required.
-No FAISS rebuild, model switch, public API or UI changes were made.
+Scope decision for Draft PR #15: source facts and attribution only.
+The English catalogue and English/private retrieved context remain unchanged.
+The earlier experiment with duplicated Russian descriptions and a conditional
+second Ollama translation pass has been **reverted** from this PR. The
+one-call language instruction is only a best-effort request to the model.
+The known English-on-Russian answer failure remains open for Phase 4.3b.
+That separate work will measure hallucinations, multilingual behavior,
+retrieval relevance and any value of one bounded model self-review before
+changing the runtime. No model switch or index rebuild is needed for
+this cleanup. Public rollout requires a separate secured, reachable backend;
+merging local-only Flask or localhost Chat UI cannot make real AI available
+to remote visitors.
