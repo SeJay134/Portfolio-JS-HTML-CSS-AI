@@ -7,11 +7,13 @@ import { Icon } from "./components/Icon";
 import { useTheme } from "./hooks/useTheme";
 import { WidgetBoundary } from "./components/WidgetBoundary";
 
-// Explicit opt-in for the Chat UI development slice. Production default is
-// unchanged; no public AI endpoint is configured or bundled.
+// Production stays disabled unless the owner explicitly enables the public
+// beta after provisioning a protected same-origin /api backend.
 const CHAT_UI_ENABLED =
-  import.meta.env?.DEV === true &&
-  import.meta.env?.VITE_ENABLE_CHAT_UI === "true";
+  (import.meta.env?.DEV === true &&
+    import.meta.env?.VITE_ENABLE_CHAT_UI === "true") ||
+  (import.meta.env?.PROD === true &&
+    import.meta.env?.VITE_ENABLE_PUBLIC_CHAT_UI === "true");
 const Chat = CHAT_UI_ENABLED
   ? lazy(() => import("./components/Chat"))
   : null;
