@@ -65,7 +65,7 @@ def _public_projects() -> list[dict]:
 # The checked public catalogue currently contains four entries; this guard does
 # not make any claim about projects that might exist outside that catalogue.
 _OUT_OF_RANGE_ORDINAL = re.compile(
-    r"\b(?P<position>\d+(?:-?(?:й|го|ый|st|nd|rd|th))?"
+    r"\b(?P<position>\d+(?:-?(?:й|го|ый|м|му|st|nd|rd|th))?"
     r"|fifth|sixth|seventh|eighth|ninth|tenth"
     r"|пят(?:ый|ого|ом|ому|ым|ая|ое|ой|ую|ые|ых)"
     r"|шест(?:ой|ого|ом|ому|ым|ая|ое|ую|ые|ых))\b"
