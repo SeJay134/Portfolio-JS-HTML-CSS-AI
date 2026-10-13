@@ -63,7 +63,7 @@ FAISS index or `data/base` files.
 The bridge expects these Vercel **server-side** environment variables
 (initially scoped to Preview):
 - `NGROK_TUNNEL_ORIGIN`: exact HTTPS ngrok origin, e.g.
-  `https://your-subdomain.ngrok.dev` (exact owner-provided hostname, no trailing slash or path; `.ngrok-free.dev` and other explicitly allowed ngrok domains are also supported)
+  `https://your-subdomain.ngrok-free.dev` (exact tunnel hostname, no trailing slash or path)
 - `LOCAL_FLASK_API_KEY`: random secret equal to Flask `LOCAL_API_KEY`.
   Treat as a Vercel **Secret**, not a public `VITE_*` value.
 - `VITE_ENABLE_PUBLIC_CHAT_UI=true`: optional non-secret Preview flag
