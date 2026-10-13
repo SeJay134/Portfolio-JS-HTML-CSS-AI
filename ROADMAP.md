@@ -189,8 +189,16 @@ hardcodes `sources: []` even when retrieval succeeds.
 - [x] Owner clarified that the pasted chat excerpt ended mid-sentence only
       because it was copied incompletely; **this is not evidence of an Ollama
       truncation or incomplete generated response**.
-- [ ] Inspect actual `sources` links on the owner-local API and verify that
-      they correspond to approved public project URLs.
+- [x] Owner-local English project-list response returned four correct
+      public GitHub repository links. The portfolio link uses a legacy path
+      that GitHub redirects to the current repository.
+- [ ] Retest source relevance and no-evidence handling after the PR #15
+      follow-up fix: the owner observed a false fifth-project answer with an
+      irrelevant Weather Explorer source. An unrelated favorite-film question
+      correctly returned no sources.
+- [ ] Retest Russian project summaries after the stronger language directive:
+      two owner-local Russian project questions were answered in English.
+      Full bilingual quality/retrieval evaluation remains Phase 4.3b.
 - [ ] Confirm honest fallback for absent evidence, bilingual factual answers,
       and no source misattribution on actual owner data in Phase 4.3b.
 - [ ] Keep index and JSON metadata consistent across updates; current two-file
