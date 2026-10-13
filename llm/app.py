@@ -104,8 +104,8 @@ Do not invent project numbers or assert that documented repository URLs are abse
 
     def answer(self, message: str) -> dict:
         from llm.public_knowledge import (
-            public_overview, response_language, sources_for_mentioned_projects,
-            unlisted_project_reply,
+            public_overview, response_language, retrieved_text_for_language,
+            sources_for_mentioned_projects, unlisted_project_reply,
         )
 
         # The public catalogue is exhaustive only for reviewed published cards.
@@ -114,6 +114,7 @@ Do not invent project numbers or assert that documented repository URLs are abse
         if unlisted_reply is not None:
             return {"reply": unlisted_reply, "sources": []}
 
+        language = response_language(message)
         retriever = self._retriever()
         vector_count = int(getattr(retriever.index, "ntotal", 0))
         chunks = (
@@ -122,30 +123,46 @@ Do not invent project numbers or assert that documented repository URLs are abse
             else []
         )
         extra_context = (
-            "\n\n".join(str(chunk.get("text", "")) for chunk in chunks if chunk.get("text"))
-            or "No relevant additional local portfolio evidence was found."
+            "\n\n".join(
+                retrieved_text_for_language(chunk, language)
+                for chunk in chunks if chunk.get("text")
+            )
+            or (
+                "Дополнительных релевантных локальных сведений не найдено."
+                if language == "Russian"
+                else "No relevant additional local portfolio evidence was found."
+            )
         )
-        context = (
-            public_overview()
-            + "\n\nAdditional owner-local/retrieved evidence:\n"
-            + extra_context
-        )
-        language = response_language(message)
-        language_instruction = (
-            "Response language: Russian. Write explanations and summaries in "
-            "Russian, even when the evidence below is in English. Preserve "
-            "only canonical project titles and technology names in English."
-            if language == "Russian"
-            else "Response language: English."
-        )
+        if language == "Russian":
+            context = (
+                public_overview("Russian")
+                + "\n\nДополнительные локальные и найденные сведения:\n"
+                + extra_context
+            )
+            language_instruction = (
+                "Response language: Russian. Отвечай на русском языке. "
+                "Используй русские формулировки из проверенного каталога. "
+                "Не переводи только точные названия проектов и технологий. "
+                "Не копируй английские описания целиком."
+            )
+            user_prompt = (
+                f"Проверенные сведения о портфолио:\n{context}\n\n"
+                f"Вопрос пользователя:\n{message}\n\n"
+                "Ответь по-русски на основании сведений выше."
+            )
+        else:
+            context = (
+                public_overview()
+                + "\n\nAdditional owner-local/retrieved evidence:\n"
+                + extra_context
+            )
+            language_instruction = "Response language: English."
+            user_prompt = f"Portfolio evidence:\n{context}\n\nQuestion:\n{message}"
         response = self.client.chat(
             model=self.model,
             messages=[
                 {"role": "system", "content": self.SYSTEM_PROMPT + "\n" + language_instruction},
-                {
-                    "role": "user",
-                    "content": f"Portfolio evidence:\n{context}\n\nQuestion:\n{message}",
-                },
+                {"role": "user", "content": user_prompt},
             ],
             options={"temperature": 0, "num_predict": 350},
         )
