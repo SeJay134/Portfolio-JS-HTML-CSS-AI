@@ -195,7 +195,7 @@ def test_retrieved_public_chunk_does_not_automatically_become_a_source():
     assert "github.com" not in str(result)
 
 
-def test_russian_question_adds_explicit_language_instruction_and_preserves_sources():
+def test_russian_question_uses_same_grounded_prompt_and_verified_sources():
     project = load_public_documents()[1]
     class PublicRetriever:
         index = SimpleNamespace(ntotal=1)
@@ -217,7 +217,9 @@ def test_russian_question_adds_explicit_language_instruction_and_preserves_sourc
     service.client = FakeClient()
     service.model = "test-model"
     result = service.answer("Какие технологии использованы? Ответь по-русски.")
-    assert "Response language: Russian." in captured[0]["messages"][0]["content"]
-    assert "translate English catalogue descriptions" in captured[0]["messages"][0]["content"]
+    assert len(captured) == 1
+    assert "Answer in the language of the current question" in captured[0]["messages"][0]["content"]
+    assert "Response language: Russian." not in captured[0]["messages"][0]["content"]
+    assert "Technologies: Python, Streamlit, Pandas, Plotly" in captured[0]["messages"][1]["content"]
     assert result["sources"] == [project["source"]]
     assert "рус" not in result["sources"][0]["url"]
