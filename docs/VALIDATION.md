@@ -185,3 +185,25 @@ This answer is the new deterministic catalogue guard, not an Ollama
 generation-quality result. The stronger Russian prompt for generated replies,
 source precision on other unknown questions, and broader bilingual relevance
 evaluation remain unverified on the updated local runtime.
+
+### October 13 — Russian technology answer still failed after prompt-only fix
+
+Owner repeated `Какие технологии использованы в Chocolate sales dashboard?
+Ответь по-русски.` against updated local Flask. Ollama returned:
+
+`Technologies used in Chocolate sales dashboard: Python, Streamlit, Pandas, Plotly.`
+
+The technology facts and single project GitHub source were correct
+(`sources.Count = 1`), **but the output was entirely in English again**.
+Therefore the earlier stronger English-language instruction was insufficient;
+do not mark bilingual acceptance complete.
+
+Next Draft PR #15 experiment: `public_overview("Russian")` and trusted
+FAISS public-project chunks now have manually reviewed Russian-language
+wording, while canonical titles, tags, project IDs and source URLs stay bound
+to `content/public-projects.json`. All private/untrusted chunks keep their
+original text. The model still makes a single local Ollama call; no UI, model
+or embedding/index format changes were made. CI mock tests exercise language
+selection, localized prompt evidence, and private-source isolation; **live
+Russian answer quality remains pending owner retest** after fetching the new
+PR #15 head and restarting Flask, without an index rebuild.
