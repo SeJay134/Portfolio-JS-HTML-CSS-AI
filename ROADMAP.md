@@ -183,6 +183,11 @@ hardcodes `sources: []` even when retrieval succeeds.
 - [x] Add initial tests for source provenance, malicious links, and canonical
       facts in the generation prompt. Real local reindex/browser acceptance is
       **not** established by mocked tests.
+- [x] Owner rebuilt the local index and obtained a real Ollama `/chat`
+      200 listing the exact four public projects on October 13, 2026.
+      This proves one English factual example, **not** universal accuracy.
+- [ ] Confirm the full returned JSON reply and visible `sources` links;
+      the supplied chat transcript ends mid-sentence and omits link details.
 - [ ] Confirm honest fallback for absent evidence, bilingual factual answers,
       and no source misattribution on actual owner data in Phase 4.3b.
 - [ ] Keep index and JSON metadata consistent across updates; current two-file

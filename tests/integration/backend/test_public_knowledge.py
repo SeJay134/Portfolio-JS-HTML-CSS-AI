@@ -5,6 +5,7 @@ import pytest
 
 from llm.public_knowledge import (
     load_public_documents, public_overview, trusted_source,
+    sources_for_mentioned_projects,
 )
 from llm.splitter import split_text
 from llm.app import LocalPortfolioService
@@ -99,3 +100,39 @@ def test_bad_public_catalogue_source_rejected(tmp_path, monkeypatch):
     monkeypatch.setattr(public, "CATALOG_PATH", dest)
     with pytest.raises(ValueError):
         public.load_public_documents()
+
+
+def test_exact_project_mentions_have_reviewed_links_without_public_faiss_hits():
+    docs = load_public_documents()
+    answer = "\n".join(doc["source"]["title"] for doc in docs[1:])
+    trusted = sources_for_mentioned_projects(answer)
+    assert trusted == [doc["source"] for doc in docs[1:]]
+    assert sources_for_mentioned_projects("Data analysis solutions only") == []
+    assert sources_for_mentioned_projects(
+        "Fake project with https://github.com.evil.example/project"
+    ) == []
+
+
+def test_generation_links_named_projects_even_when_only_private_notes_retrieved():
+    docs = load_public_documents()
+    class PrivateOnlyRetriever:
+        index = SimpleNamespace(ntotal=1)
+        def retrieve(self, message, top_k):
+            return [{"doc_id": "notes.txt", "text": "generic notes about data",
+                     "source": {"title": "Attack", "url": "https://evil.example"}}]
+
+    class FakeClient:
+        def chat(self, **kwargs):
+            return {"message": {"content": "\n".join(
+                doc["source"]["title"] for doc in docs[1:]
+            )}}
+
+    service = LocalPortfolioService.__new__(LocalPortfolioService)
+    service._retriever = lambda: PrivateOnlyRetriever()
+    service.client = FakeClient()
+    service.model = "test-model"
+
+    result = service.answer("What projects has Sergei built?")
+    assert result["sources"] == [doc["source"] for doc in docs[1:]]
+    assert "Attack" not in str(result)
+    assert "evil.example" not in str(result)

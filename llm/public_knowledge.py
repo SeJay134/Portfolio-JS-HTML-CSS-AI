@@ -94,6 +94,24 @@ def load_public_documents() -> list[dict]:
     return documents
 
 
+def sources_for_mentioned_projects(reply: str) -> list[dict]:
+    """Return exact approved project references for public titles in a model reply.
+
+    The verified overview is supplied to every model call, so citations must not
+    depend on a public chunk winning one of the top-3 FAISS matches. Return
+    sources only when the answer actually names their exact curated title.
+    Untrusted local knowledge cannot add URLs or edit these references.
+    """
+    if not isinstance(reply, str):
+        return []
+    normalized = reply.casefold()
+    return [
+        {"title": project["title"], "url": project["repository"]}
+        for project in _public_projects()
+        if project["title"].casefold() in normalized
+    ]
+
+
 def trusted_source(doc_id: object, source: object) -> dict | None:
     """Only pass provenance matching an exact reviewed ID/title/URL combination.
 

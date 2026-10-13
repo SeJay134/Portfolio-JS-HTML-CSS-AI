@@ -103,3 +103,32 @@ It is based on Draft PR #13, does not include uncommitted private
 `data/base/` materials, and is **not yet owner-tested against the rebuilt
 local index**. Any resulting factual answers and source links require manual
 retesting before accepting Phase 4.3a.
+
+## October 13, 2026 — owner Windows live RAG project-list check
+
+Owner checked out `feat/rag-public-project-provenance`, backed up
+`data/embeddings/`, ran `python -m llm.indexer` successfully, restarted
+Flask on 127.0.0.1:5002, and tested the existing Vite Chat UI.
+Flask returned `OPTIONS /chat` 200, `/ready` 200, and
+`POST /chat` 200 on October 12 (16:38:50) and October 13 (06:45:40)
+as shown in the submitted terminal logs.
+
+The visible reply to "What projects has Sergei built?" named all four
+reviewed public projects with summaries matching the curated React cards:
+Chocolate sales dashboard; GDP dashboard; Open API weather explorer;
+Portfolio website & AI prototype.
+
+- [x] Real local index rebuild accepted as completed.
+- [x] One English project-list answer includes the four canonical titles.
+- [ ] End of response appears cut off after "The assistant is not ena" in
+      the pasted transcript; confirm the exact full JSON reply before
+      diagnosing whether this was copying/truncation or Ollama completion.
+- [ ] API `sources` were not included in the supplied Chat transcript.
+      This dependent PR adds deterministic approved links for exactly named
+      catalogue projects even when FAISS's top results are local-only. Live
+      links still need inspection; do not claim source acceptance yet.
+- [ ] Compare Russian questions, unknown facts and other private owner-local
+      content before closing answer-quality acceptance.
+
+No private knowledge bytes or local path strings were committed.
+All work remains owner-local, with no production deployment.
