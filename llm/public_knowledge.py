@@ -103,100 +103,13 @@ def unlisted_project_reply(question: str) -> str | None:
     )
 
 
-_RU_PROJECT_TEXT = {
-    "chocolate": {
-        "summary": (
-            "Интерактивная панель Streamlit для анализа продаж шоколада "
-            "по странам, товарам и продавцам."
-        ),
-        "detail": (
-            "Загружает CSV с продажами шоколада, удаляет пустые и повторяющиеся "
-            "строки, преобразует суммы и даты и предоставляет фильтры, "
-            "линейные, столбчатые и круговые диаграммы и таблицу."
-        ),
-    },
-    "gdp": {
-        "summary": "Панель Streamlit для изучения динамики ВВП стран мира по годам.",
-        "detail": (
-            "Загружает данные ВВП Всемирного банка из CSV, преобразует столбцы "
-            "с годами в записи «год — значение», фильтрует страны и годы, "
-            "показывает временные графики и показатели стран."
-        ),
-    },
-    "api": {
-        "summary": (
-            "Приложение о погоде на HTML, CSS и JavaScript, использующее "
-            "API Open-Meteo для поиска городов и данных о погоде."
-        ),
-        "detail": (
-            "Принимает название города, получает его координаты через "
-            "Open-Meteo, запрашивает текущую погоду, отображает температуру "
-            "в градусах Фаренгейта и показывает состояние погоды по коду."
-        ),
-    },
-    "portfolio": {
-        "summary": (
-            "Портфолио на React и TypeScript с отдельно разрабатываемым "
-            "прототипом RAG на Flask и Ollama. На публичном сайте "
-            "AI-ассистент не включён."
-        ),
-        "detail": (
-            "Отдельный, ещё не опубликованный прототип RAG использует FAISS, "
-            "all-MiniLM-L6-v2 и qwen2.5:7b для ответов на основании данных "
-            "портфолио. Публичная версия сайта не предоставляет AI-чат."
-        ),
-    },
-}
-
-
-def _russian_project(project: dict) -> dict:
-    """Localize presentation only; ID, tags, title and URL come from the catalogue."""
-    if set(_RU_PROJECT_TEXT) != REQUIRED_IDS:
-        raise ValueError("Russian project summaries are not aligned with catalogue IDs.")
-    return _RU_PROJECT_TEXT[project["id"]]
-
-
-def public_overview(language: str = "English") -> str:
-    """Provide trusted project overview in the question language."""
-    projects = _public_projects()
-    if language == "Russian":
-        lines = ["Проверенные опубликованные проекты портфолио (4 проекта):"]
-        for project in projects:
-            lines.append(
-                f"- {project['title']}: {_russian_project(project)['summary']}"
-            )
-        return "\n".join(lines)
+def public_overview() -> str:
+    """Stable list of reviewed facts, independent of the question language."""
     lines = ["Published portfolio projects (verified public catalogue):"]
-    for project in projects:
+    for project in _public_projects():
         lines.append(f"- {project['title']}: {project['summary']}")
     return "\n".join(lines)
 
-
-def retrieved_text_for_language(chunk: dict, language: str) -> str:
-    """Use draft Russian presentation text for verified public chunks, never private text.
-
-    Local FAISS documents are left unchanged. Their metadata cannot trigger
-    substitution unless it matches a fully trusted public source.
-    """
-    original = str(chunk.get("text", ""))
-    if language != "Russian":
-        return original
-    source = trusted_source(chunk.get("doc_id"), chunk.get("source"))
-    if source is None:
-        return original
-    if chunk.get("doc_id") == "verified-projects-overview":
-        return public_overview("Russian")
-    for project in _public_projects():
-        if chunk.get("doc_id") == f"verified-project-{project['id']}":
-            translation = _russian_project(project)
-            return (
-                f"Проект: {project['title']}. "
-                f"Описание: {translation['summary']} "
-                f"Подробности: {translation['detail']} "
-                f"Технологии: {', '.join(project['tags'])}. "
-                f"Репозиторий: {project['repository']}"
-            )
-    return original
 
 def load_public_documents() -> list[dict]:
     """Attach only reviewed public title/URL metadata to generated documents."""
