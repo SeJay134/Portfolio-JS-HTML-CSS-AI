@@ -169,3 +169,19 @@ relevance threshold for private FAISS chunks. Repeat real owner-local Flask
 tests after pulling the PR #15 head and restarting Flask. The existing local
 FAISS index requires **no rebuild** for this code-only change. No public
 deployment or merge is authorized.
+
+### October 13 — live retest of fifth-project fallback
+
+After pulling the PR #15 follow-up and restarting the owner-local Flask API,
+the owner ran `POST /chat` with:
+
+`Как называется пятый опубликованный проект Сергея?`
+
+The real endpoint replied (in Russian) that the verified public catalogue
+contains four projects and has no information about the requested project
+number or its GitHub repository. The printed `sources.Count` was **0**.
+**PASS** for this exact numbered-project fallback and source suppression.
+This answer is the new deterministic catalogue guard, not an Ollama
+generation-quality result. The stronger Russian prompt for generated replies,
+source precision on other unknown questions, and broader bilingual relevance
+evaluation remain unverified on the updated local runtime.
