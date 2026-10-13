@@ -63,7 +63,7 @@ FAISS index or `data/base` files.
 The bridge expects these Vercel **server-side** environment variables
 (initially scoped to Preview):
 - `NGROK_TUNNEL_ORIGIN`: exact HTTPS ngrok origin, e.g.
-  `https://your-subdomain.ngrok-free.app` (no trailing path)
+  `https://your-subdomain.ngrok-free.dev` (no trailing path; free dev domains also supported)
 - `LOCAL_FLASK_API_KEY`: random secret equal to Flask `LOCAL_API_KEY`.
   Treat as a Vercel **Secret**, not a public `VITE_*` value.
 - `VITE_ENABLE_PUBLIC_CHAT_UI=true`: optional non-secret Preview flag
@@ -100,7 +100,7 @@ but the repository README itself describes the LLM backend as running
 not establish a working public Ollama inference service. Do not point
 visitors at that project without checking a real protected /chat endpoint.
 
-**Deployment decision remains open:** select a protected, reachable
-inference host and operational budget; implement same-origin API routes,
-public-only corpus and abuse controls; test live. Do not set
-`VITE_ENABLE_PUBLIC_CHAT_UI=true` yet.
+**Hosting selected:** owner's local Flask/Ollama, public-only FAISS, and
+an authenticated HTTPS ngrok tunnel. The Vercel relay exists. Complete
+end-to-end checks and review abuse controls before setting
+`VITE_ENABLE_PUBLIC_CHAT_UI=true`.
