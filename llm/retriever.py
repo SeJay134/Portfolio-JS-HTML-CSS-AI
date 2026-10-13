@@ -1,41 +1,37 @@
-# llm/retriever.py
+"""Local FAISS retrieval without logging document text or questions."""
+from __future__ import annotations
 
-import numpy as np
-from llm.vector_store import load_index
-from llm.embedder import model
-import logging
-# logger = logging.getLogger(__name__)
-from llm.dec_logging import logger
+
 class Retriever:
     def __init__(self):
+        from llm.vector_store import load_index
+
         self.index, self.chunks = load_index()
-    @logger
-    def retrieve(self, query, top_k=1):
-        # logging.info('retriever retrieve was invoked')
-        q_emb = model.encode([query], convert_to_numpy=True) # Кодирует запрос
-        distances, ids = self.index.search(q_emb, top_k) # Ищет похожие embeddings
 
-        logging.info(
-            "Retriever distance=%s",
-            distances[0][0]
-        )
+    def retrieve(self, query: str, top_k: int = 1) -> list[dict]:
+        if not isinstance(query, str) or not query.strip():
+            return []
+        count = int(getattr(self.index, "ntotal", 0))
+        k = max(0, min(int(top_k), count, len(self.chunks)))
+        if k == 0:
+            return []
 
+        from llm.embedder import model
+
+        embeddings = model.encode([query], convert_to_numpy=True)
+        distances, ids = self.index.search(embeddings, k)
         results = []
-        for i, dist in zip(ids[0], distances[0]):
-            chunk = self.chunks[i] # Собирает результаты
+        for idx, distance in zip(ids[0], distances[0]):
+            index_id = int(idx)
+            if index_id < 0 or index_id >= len(self.chunks):
+                continue
+            chunk = self.chunks[index_id]
+            if not isinstance(chunk, dict) or not isinstance(chunk.get("text"), str):
+                continue
             results.append({
-                "id": chunk["id"],
-                "doc_id": chunk["doc_id"],
+                "id": chunk.get("id"),
+                "doc_id": chunk.get("doc_id"),
                 "text": chunk["text"],
-                "score": float(dist),
-        })
-            
-        for r in results:
-            logging.info("Chunk:\n%s", r["text"])
-
-        return results # возвращает список:
-# [
-#     {"text": "...", "score": 0.78},
-#     ...
-# ]
-
+                "score": float(distance),
+            })
+        return results

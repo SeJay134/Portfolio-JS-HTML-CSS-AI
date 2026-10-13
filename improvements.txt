@@ -5,6 +5,39 @@ Reviewed branch: main
 Baseline commit: 7c03e1eee59ab21351b89be5a5baa376b45ab164
 Status: active implementation plan. Accepted subphases, release gates, test evidence, and contracts are tracked in ROADMAP.md, docs/VALIDATION.md, tests/, and docs/CONTRACTS.md.
 
+LOCAL AI RUNTIME DECISION — October 7, 2026
+
+Current hosting policy:
+- The public portfolio remains a static Vercel deployment and must work without AI.
+- The Flask/RAG/Ollama backend is hosted only on Sergei's own computer at this stage.
+- Do not add a paid/free cloud AI server yet. Revisit hosting only after an explicit
+  owner decision.
+- Normal local AI startup is `python -m llm.app` on 127.0.0.1:5002.
+- ngrok is not part of the normal runtime and is not required for the public site.
+  It may be used only as a short-lived, explicit test tunnel.
+- Never put a local API key or other secret in VITE_* variables or public browser code.
+
+Local API security baseline:
+- bind Flask to loopback only (127.0.0.1), never 0.0.0.0 by default;
+- validate Host against localhost/127.0.0.1 unless a test tunnel is explicitly allowed;
+- allow CORS only from configured local frontend origins; CORS is not authentication;
+- keep requests stateless: no process-global chat history;
+- accept only a JSON object containing a string `message`, trimmed to 1–300 chars;
+- cap request bodies at 16 KiB, rate-limit requests and allow one model generation
+  at a time by default;
+- never log user messages or model replies; return generic errors with request IDs;
+- do not serve repository/static files through Flask;
+- run with debug/reloader disabled in the app.py entry point;
+- if a temporary tunnel is explicitly enabled, add its host/origin to configuration
+  and require an API key; startup rejects external hosts/origins without a key;
+- do not log RAG retrieved text or deserialize pickle index metadata; use JSON and
+  rebuild old local indexes from owner-controlled text documents;
+- indexer errors must exit nonzero and readiness must reject missing/mismatched
+  index metadata. The key is for private testing only, never the public frontend.
+
+This decision supersedes earlier text that treated ngrok or a remote backend as
+the next default deployment path. Production AI hosting is deferred.
+
 1. SOURCES, REVIEW LIMITATIONS, AND RECOMMENDED DIRECTION
 
 Both attached files were read. www.sergei-luna.vercel.app.txt contains only
