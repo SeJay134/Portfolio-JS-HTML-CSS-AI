@@ -59,3 +59,26 @@ server or private FAISS corpus directly.**
 The user has requested public chat testing; that authorizes planning a safe
 release, but does not supply an inference host or credentials. This branch
 intentionally changes no production deployment until those are available.
+
+## October 13, 2026 — authenticated Vercel connection inspection
+
+Authenticated connection confirms the team `Sergei's projects` uses the
+**Hobby** plan. The `sergei-luna` project's latest production deployment is
+READY and sourced from GitHub `main` SHA
+`cea29189a7e961735f95d13ee086eb6a80016469`, the intentionally
+static/Chat-disabled React release. The project lists no configured
+project environment variables, and its project routing-rule list is empty;
+this is **not** evidence of a functional public model backend.
+
+There is a separate Vercel project
+`portfolio_ai_rag_chatbot_faiss` connected to a different historical
+repository. Its single initial production deployment is marked READY,
+but the repository README itself describes the LLM backend as running
+**locally or on a private server**. A READY deployment by itself does
+not establish a working public Ollama inference service. Do not point
+visitors at that project without checking a real protected /chat endpoint.
+
+**Deployment decision remains open:** select a protected, reachable
+inference host and operational budget; implement same-origin API routes,
+public-only corpus and abuse controls; test live. Do not set
+`VITE_ENABLE_PUBLIC_CHAT_UI=true` yet.
