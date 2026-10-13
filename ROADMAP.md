@@ -186,8 +186,11 @@ hardcodes `sources: []` even when retrieval succeeds.
 - [x] Owner rebuilt the local index and obtained a real Ollama `/chat`
       200 listing the exact four public projects on October 13, 2026.
       This proves one English factual example, **not** universal accuracy.
-- [ ] Confirm the full returned JSON reply and visible `sources` links;
-      the supplied chat transcript ends mid-sentence and omits link details.
+- [x] Owner clarified that the pasted chat excerpt ended mid-sentence only
+      because it was copied incompletely; **this is not evidence of an Ollama
+      truncation or incomplete generated response**.
+- [ ] Inspect actual `sources` links on the owner-local API and verify that
+      they correspond to approved public project URLs.
 - [ ] Confirm honest fallback for absent evidence, bilingual factual answers,
       and no source misattribution on actual owner data in Phase 4.3b.
 - [ ] Keep index and JSON metadata consistent across updates; current two-file

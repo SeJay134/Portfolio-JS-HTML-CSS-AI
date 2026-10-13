@@ -120,9 +120,10 @@ Portfolio website & AI prototype.
 
 - [x] Real local index rebuild accepted as completed.
 - [x] One English project-list answer includes the four canonical titles.
-- [ ] End of response appears cut off after "The assistant is not ena" in
-      the pasted transcript; confirm the exact full JSON reply before
-      diagnosing whether this was copying/truncation or Ollama completion.
+- [x] The owner subsequently clarified that "The assistant is not ena"
+      was only the point where **their manual copying stopped**, not an
+      Ollama/Flask truncation. No incomplete-generation failure was observed
+      in this case; do not create a model-output defect from that excerpt.
 - [ ] API `sources` were not included in the supplied Chat transcript.
       This dependent PR adds deterministic approved links for exactly named
       catalogue projects even when FAISS's top results are local-only. Live
