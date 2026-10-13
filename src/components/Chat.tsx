@@ -24,7 +24,7 @@ export default function Chat({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [lastText, setLastText] = useState("");
-  const [status, setStatus] = useState("Checking local assistant…");
+  const [status, setStatus] = useState("Checking assistant…");
   const [unread, setUnread] = useState(false);
   const controller = useRef<AbortController | null>(null);
   const counter = useRef(0),
@@ -56,7 +56,7 @@ export default function Chat({
     const timer = setTimeout(() => c.abort(), 5000);
     readiness(c.signal)
       .then((ready) =>
-        setStatus(ready ? "Assistant online" : "Assistant offline (local-only)"),
+        setStatus(ready ? "Assistant online" : "Assistant offline"),
       )
       .catch(() => setStatus("Assistant offline (local-only)"))
       .finally(() => clearTimeout(timer));
@@ -181,8 +181,7 @@ export default function Chat({
             </h3>
             <p>
               Ask about projects, skills, or experience. Answers use portfolio
-              evidence. Each question is independent. The assistant connects
-              only when the local Flask server is running.
+              evidence. Each question is independent. The public beta connects only when a secure AI service is available.
             </p>
             <div className="suggestions">
               {[
