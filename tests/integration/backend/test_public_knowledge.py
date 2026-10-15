@@ -223,3 +223,48 @@ def test_russian_question_uses_same_grounded_prompt_and_verified_sources():
     assert "Technologies: Python, Streamlit, Pandas, Plotly" in captured[0]["messages"][1]["content"]
     assert result["sources"] == [project["source"]]
     assert "рус" not in result["sources"][0]["url"]
+
+
+@pytest.mark.parametrize("question", [
+    "Назови 5 технологий в проектах",
+    "Перечисли 5 технологий в проекте",
+    "Назови 5 проектов, использующих Python",
+    "Name 5 technologies in the projects",
+    "List 5 projects using Python",
+    "What are 5 technologies used by this project?",
+])
+def test_counted_items_are_not_treated_as_fifth_project(question):
+    assert unlisted_project_reply(question) is None
+
+
+@pytest.mark.parametrize("question", [
+    "Where is project #5?",
+    "Где проект №5?",
+    "Tell me about the 5th public project",
+    "Расскажи о 5-м опубликованном проекте",
+])
+def test_explicit_fifth_project_remains_out_of_range(question):
+    assert unlisted_project_reply(question) is not None
+
+
+def test_technology_count_question_reaches_model():
+    calls = []
+
+    class FakeRetriever:
+        index = SimpleNamespace(ntotal=0)
+
+        def retrieve(self, message, top_k):
+            return []
+
+    class FakeClient:
+        def chat(self, **kwargs):
+            calls.append(kwargs)
+            return {"message": {"content": "Python, Streamlit, Pandas, Plotly, JavaScript"}}
+
+    service = LocalPortfolioService.__new__(LocalPortfolioService)
+    service._retriever = lambda: FakeRetriever()
+    service.client = FakeClient()
+    service.model = "test-model"
+    result = service.answer("Назови 5 технологий в проектах")
+    assert len(calls) == 1
+    assert "Python" in result["reply"]
