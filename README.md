@@ -120,7 +120,14 @@ python -m llm.app
 ```
 
 The API listens only on `http://127.0.0.1:5002`. It loads a FAISS index
-and safe `meta.json` metadata from `data/embeddings/`. Old `meta.pkl`
+and safe JSON metadata from the generation selected by `data/embeddings/active.json`.
+Each rebuild writes an immutable pair under `data/embeddings/versions/<id>/`
+and atomically switches that pointer only after validating the new pair. Older
+generations are retained, including after interrupted builds, so remove unused
+ones manually only when sure no reader needs them. Existing direct
+`index.faiss`/`meta.json` pairs remain readable until the next successful
+rebuild; an existing mixed pair must be rebuilt from trusted source documents.
+Old `meta.pkl`
 files are intentionally **not** deserialized: rebuild the index from trusted
 local text documents after updating.
 
