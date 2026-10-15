@@ -16,7 +16,8 @@
     "typecheck": "tsc -b --pretty false",
     "lint": "eslint src scripts/prerender.tsx vite.config.ts playwright.config.ts tests",
     "format": "prettier --write src scripts tests *.ts *.json *.md .github/workflows/ci.yml",
-    "test:chat-dev": "playwright test --config playwright.chat.config.ts"
+    "test:chat-dev": "playwright test --config playwright.chat.config.ts",
+    "test:chat-hydration": "playwright test --config playwright.public-chat.config.ts"
   },
   "dependencies": {
     "react": "19.3.0",
