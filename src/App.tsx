@@ -1,5 +1,5 @@
 import React from "react";
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Drawer, sections, type SectionId } from "./components/Drawer";
 import { Projects } from "./components/Projects";
 import { Contact } from "./components/Contact";
@@ -17,6 +17,12 @@ const CHAT_UI_ENABLED =
 const Chat = CHAT_UI_ENABLED
   ? lazy(() => import("./components/Chat"))
   : null;
+
+// Keep the very first client render identical to prerendered HTML.
+// Chat is client-only until React finishes hydrating the portfolio.
+const subscribeNoop = () => () => {};
+const clientReadySnapshot = () => true;
+const serverReadySnapshot = () => false;
 
 function getViewportSection(): SectionId {
   const headerBottom =
@@ -89,6 +95,7 @@ export default function App() {
   const [menu, setMenu] = useState(false);
   const [chat, setChat] = useState(false);
   const [chatLoaded, setChatLoaded] = useState(false);
+  const chatHydrated = useSyncExternalStore(subscribeNoop, clientReadySnapshot, serverReadySnapshot);
   const { theme, selectTheme } = useTheme();
   const [active, setActive] = useState<(typeof sections)[number][0]>("Home");
   const pendingMenuNavigation = useRef<
@@ -444,7 +451,7 @@ export default function App() {
         <p>© {new Date().getFullYear()} Sergei Patrushev</p>
         <a href="#Home">Back to top ↑</a>
       </footer>
-      {CHAT_UI_ENABLED && (
+      {CHAT_UI_ENABLED && chatHydrated && (
         <>
           <button
             type="button"
