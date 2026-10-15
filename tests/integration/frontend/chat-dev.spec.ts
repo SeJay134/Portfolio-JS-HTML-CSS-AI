@@ -96,3 +96,130 @@ test("mobile chat releases body scroll lock when resized to desktop", async ({ p
     .getByRole("button", { name: "Close chat" }).click();
   await expect.poll(overflow).not.toBe("hidden");
 });
+
+
+test("503 changes online status to temporarily unavailable and Retry restores it", async ({ page }) => {
+  let calls = 0;
+  const cors = {
+    "access-control-allow-origin": "http://127.0.0.1:5001",
+    "access-control-allow-methods": "GET, POST, OPTIONS",
+    "access-control-allow-headers": "content-type",
+  };
+  await page.route("http://127.0.0.1:5002/**", async (route) => {
+    const request = route.request();
+    if (request.method() === "OPTIONS") {
+      await route.fulfill({ status: 204, headers: cors });
+    } else if (request.url().endsWith("/ready")) {
+      await route.fulfill({
+        status: 200, contentType: "application/json", headers: cors,
+        body: JSON.stringify({ status: "ready" }),
+      });
+    } else if (request.url().endsWith("/chat")) {
+      calls++;
+      await route.fulfill({
+        status: calls === 1 ? 503 : 200,
+        contentType: "application/json",
+        headers: cors,
+        body: calls === 1
+          ? JSON.stringify({ error: "Temporary outage" })
+          : JSON.stringify({ reply: "Recovered assistant response", sources: [] }),
+      });
+    } else {
+      await route.abort();
+    }
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Open portfolio assistant" }).click();
+  const chat = page.getByRole("dialog", { name: "Ask about Sergei" });
+  await expect(chat.getByText("Assistant online", { exact: true })).toBeVisible();
+  await chat.getByLabel("Your question").fill("Tell me about Python");
+  await chat.getByRole("button", { name: /Send/ }).click();
+  await expect(chat.getByText("Assistant temporarily unavailable")).toBeVisible();
+  await expect(chat.getByText("Assistant online", { exact: true })).toHaveCount(0);
+  await expect(chat.getByRole("alert")).toContainText("unavailable or taking too long");
+  await chat.getByRole("button", { name: "Retry" }).click();
+  await expect(chat.getByText("Recovered assistant response")).toBeVisible();
+  await expect(chat.getByText("Assistant online", { exact: true })).toBeVisible();
+  expect(calls).toBe(2);
+});
+
+test("a delayed successful /ready cannot overwrite a later 503", async ({ page }) => {
+  let releaseReady: (() => void) | undefined;
+  const cors = {
+    "access-control-allow-origin": "http://127.0.0.1:5001",
+    "access-control-allow-methods": "GET, POST, OPTIONS",
+    "access-control-allow-headers": "content-type",
+  };
+  await page.route("http://127.0.0.1:5002/**", async (route) => {
+    const request = route.request();
+    if (request.method() === "OPTIONS") {
+      await route.fulfill({ status: 204, headers: cors });
+    } else if (request.url().endsWith("/ready")) {
+      await new Promise<void>((resolve) => { releaseReady = resolve; });
+      await route.fulfill({
+        status: 200, contentType: "application/json", headers: cors,
+        body: JSON.stringify({ status: "ready" }),
+      });
+    } else if (request.url().endsWith("/chat")) {
+      await route.fulfill({
+        status: 503, contentType: "application/json", headers: cors,
+        body: JSON.stringify({ error: "Unavailable" }),
+      });
+    } else {
+      await route.abort();
+    }
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Open portfolio assistant" }).click();
+  const chat = page.getByRole("dialog", { name: "Ask about Sergei" });
+  await expect.poll(() => Boolean(releaseReady)).toBe(true);
+  await chat.getByLabel("Your question").fill("Which projects?");
+  await chat.getByRole("button", { name: /Send/ }).click();
+  await expect(chat.getByText("Assistant temporarily unavailable")).toBeVisible();
+  releaseReady?.();
+  await expect(chat.getByText("Assistant online", { exact: true })).toHaveCount(0);
+  await expect(chat.getByText("Assistant temporarily unavailable")).toBeVisible();
+});
+
+test("429 is rate limited, not offline, and Retry can recover", async ({ page }) => {
+  let calls = 0;
+  const cors = {
+    "access-control-allow-origin": "http://127.0.0.1:5001",
+    "access-control-allow-methods": "GET, POST, OPTIONS",
+    "access-control-allow-headers": "content-type",
+  };
+  await page.route("http://127.0.0.1:5002/**", async (route) => {
+    const request = route.request();
+    if (request.method() === "OPTIONS") {
+      await route.fulfill({ status: 204, headers: cors });
+    } else if (request.url().endsWith("/ready")) {
+      await route.fulfill({
+        status: 200, contentType: "application/json", headers: cors,
+        body: JSON.stringify({ status: "ready" }),
+      });
+    } else if (request.url().endsWith("/chat")) {
+      calls++;
+      await route.fulfill({
+        status: calls === 1 ? 429 : 200,
+        contentType: "application/json", headers: cors,
+        body: calls === 1
+          ? JSON.stringify({ error: "Rate limited" })
+          : JSON.stringify({ reply: "Assistant recovered", sources: [] }),
+      });
+    } else {
+      await route.abort();
+    }
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Open portfolio assistant" }).click();
+  const chat = page.getByRole("dialog", { name: "Ask about Sergei" });
+  await expect(chat.getByText("Assistant online", { exact: true })).toBeVisible();
+  await chat.getByLabel("Your question").fill("What projects?");
+  await chat.getByRole("button", { name: /Send/ }).click();
+  await expect(chat.getByText("Assistant rate limited")).toBeVisible();
+  await expect(chat.getByRole("alert")).toContainText("Too many requests");
+  await chat.getByRole("button", { name: "Retry" }).click();
+  await expect(chat.getByText("Assistant recovered")).toBeVisible();
+  await expect(chat.getByText("Assistant online", { exact: true })).toBeVisible();
+  expect(calls).toBe(2);
+});
