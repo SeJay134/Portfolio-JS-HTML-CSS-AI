@@ -69,13 +69,13 @@ def _public_projects() -> list[dict]:
 # Bare digits are accepted only after singular "project/проект" or an explicit
 # project-number marker (# or №).
 _OUT_OF_RANGE_ORDINAL = re.compile(
-    r"\\b(?P<position>\\d+(?:-?(?:й|го|ый|м|му|st|nd|rd|th))"
+    r"\b(?P<position>\d+(?:-?(?:й|го|ый|м|му|st|nd|rd|th))"
     r"|fifth|sixth|seventh|eighth|ninth|tenth"
     r"|пят(?:ый|ого|ом|ому|ым|ая|ое|ой|ую|ые|ых)"
-    r"|шест(?:ой|ого|ом|ому|ым|ая|ое|ую|ые|ых))\\b"
-    r"(?:\\s+[\\w-]+){0,3}\\s+(?:projects?|проект\\w*)\\b"
-    r"|\\b(?:project|проект)\\s+(?P<after>\\d+)\\b"
-    r"|\\b(?:projects?|проект\\w*)\\s*[#№]\\s*(?P<marked>\\d+)\\b",
+    r"|шест(?:ой|ого|ом|ому|ым|ая|ое|ую|ые|ых))\b"
+    r"(?:\s+[\w-]+){0,3}\s+(?:projects?|проект\w*)\b"
+    r"|\b(?:project|проект)\s+(?P<after>\d+)\b"
+    r"|\b(?:projects?|проект\w*)\s*[#№]\s*(?P<marked>\d+)\b",
     re.IGNORECASE,
 )
 
