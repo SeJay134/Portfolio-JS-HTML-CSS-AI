@@ -111,7 +111,8 @@ export function requestFailureStatus(error: unknown, timedOut: boolean):
   | "cancelled"
   | Exclude<RequestPhase, "idle" | "generating"> {
   if (timedOut) return "timed-out";
-  if (error instanceof Error && error.name === "AbortError") return "cancelled";
+  if (typeof error === "object" && error !== null && "name" in error
+    && error.name === "AbortError") return "cancelled";
   // ApiError adds a numeric HTTP status; plain network errors have none.
   const code =
     typeof error === "object" && error !== null && "status" in error
