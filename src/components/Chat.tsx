@@ -1,9 +1,16 @@
 import React from "react";
 import "../chat.css";
 import { containModalFocus } from "../lib/dialog";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import { ApiError, readiness, requestAnswer, type Source } from "../lib/api";
 import { Icon } from "./Icon";
+import {
+  ASSISTANT_STATUS_LABELS,
+  assistantStatus,
+  assistantStatusReducer,
+  initialAssistantState,
+  requestFailureStatus,
+} from "../lib/chatStatus";
 interface Message {
   id: number;
   role: "user" | "assistant";
@@ -24,7 +31,7 @@ export default function Chat({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [lastText, setLastText] = useState("");
-  const [status, setStatus] = useState("Checking assistant…");
+  const [statusState, dispatchStatus] = useReducer(assistantStatusReducer, initialAssistantState);
   const [unread, setUnread] = useState(false);
   const controller = useRef<AbortController | null>(null);
   const counter = useRef(0),
@@ -52,15 +59,27 @@ export default function Chat({
   }, [open]);
   useEffect(() => {
     if (!open) return;
+    dispatchStatus({ type: "check" });
+    // Reopening the dialog should not retain an unrelated earlier error.
+    if (!busy.current) setError("");
     const c = new AbortController();
-    const timer = setTimeout(() => c.abort(), 5000);
+    let active = true;
+    const timer = setTimeout(() => {
+      if (active) dispatchStatus({ type: "ready", ready: false });
+      c.abort();
+    }, 5000);
     readiness(c.signal)
-      .then((ready) =>
-        setStatus(ready ? "Assistant online" : "Assistant offline"),
-      )
-      .catch(() => setStatus("Assistant offline (local-only)"))
+      .then((ready) => {
+        if (active && !c.signal.aborted)
+          dispatchStatus({ type: "ready", ready });
+      })
+      .catch(() => {
+        if (active && !c.signal.aborted)
+          dispatchStatus({ type: "ready", ready: false });
+      })
       .finally(() => clearTimeout(timer));
     return () => {
+      active = false;
       c.abort();
       clearTimeout(timer);
     };
@@ -76,6 +95,7 @@ export default function Chat({
     if (!clean || [...clean].length > 300 || busy.current) return;
     busy.current = true;
     setPending(true);
+    dispatchStatus({ type: "request-start" });
     setError("");
     setLastText(clean);
     if (!retry)
@@ -103,8 +123,15 @@ export default function Chat({
           sources: result.sources,
         },
       ]);
-      setStatus("Assistant online");
+      dispatchStatus({ type: "request-success" });
     } catch (e) {
+      const outcome = c.signal.aborted && !timedOut
+        ? "cancelled"
+        : requestFailureStatus(e, timedOut);
+      if (outcome === "cancelled")
+        dispatchStatus({ type: "request-cancelled" });
+      else
+        dispatchStatus({ type: "request-failure", status: outcome });
       setDraft(clean);
       setError(
         c.signal.aborted
@@ -139,7 +166,7 @@ export default function Chat({
         </div>
         <div>
           <h2 id="chat-title">Ask about Sergei</h2>
-          <p>{status}</p>
+          <p aria-live="polite">{ASSISTANT_STATUS_LABELS[assistantStatus(statusState)]}</p>
         </div>
         <button
           className="icon-button chat-menu-button"
