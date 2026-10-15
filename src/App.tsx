@@ -151,9 +151,15 @@ export default function App() {
 
   useEffect(() => {
     const previous = document.body.style.overflow;
-    const mobileChat = chat && window.matchMedia("(max-width: 600px)").matches;
-    document.body.style.overflow = menu || mobileChat ? "hidden" : previous;
+    const mobileViewport = window.matchMedia("(max-width: 600px)");
+    const syncScrollLock = () => {
+      document.body.style.overflow =
+        menu || (chat && mobileViewport.matches) ? "hidden" : previous;
+    };
+    syncScrollLock();
+    mobileViewport.addEventListener("change", syncScrollLock);
     return () => {
+      mobileViewport.removeEventListener("change", syncScrollLock);
       document.body.style.overflow = previous;
     };
   }, [menu, chat]);
