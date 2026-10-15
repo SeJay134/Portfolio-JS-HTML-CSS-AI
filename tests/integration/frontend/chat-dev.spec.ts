@@ -92,6 +92,7 @@ test("mobile chat releases body scroll lock when resized to desktop", async ({ p
   await page.setViewportSize({ width: 390, height: 844 });
   await expect.poll(overflow).toBe("hidden");
 
-  await page.getByRole("button", { name: "Close portfolio assistant" }).click();
+  await page.getByRole("dialog", { name: "Ask about Sergei" })
+    .getByRole("button", { name: "Close chat" }).click();
   await expect.poll(overflow).not.toBe("hidden");
 });
