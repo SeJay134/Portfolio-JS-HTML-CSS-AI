@@ -1,2 +1,3 @@
 -r requirements-local-api.txt
 pytest==8.4.2
+faiss-cpu==1.12.0

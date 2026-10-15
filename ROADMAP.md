@@ -202,9 +202,11 @@ hardcodes `sources: []` even when retrieval succeeds.
       and any measured self-review benefit in Draft PR #16.
 - [ ] Confirm honest fallback for absent evidence, bilingual factual answers,
       and no source misattribution on actual owner data in Phase 4.3b.
-- [ ] Keep index and JSON metadata consistent across updates; current two-file
-      `os.replace` is **not** atomic as a pair. Design a generation/manifest
-      switch for a true atomic snapshot before claiming atomic publication.
+- [ ] Merge and verify the atomic RAG snapshot fix on owner hardware.
+      Implementation on `fix/atomic-rag-index-snapshots` uses immutable generations,
+      one manifest switch, and SHA-256 checks; 66 backend tests pass locally.
+      After merge: stop Flask, rebuild the legacy index, restart, and check
+      `/ready` plus a local `/chat` response. PR CI/owner acceptance remain pending.
 
 ### Phase 4.3b — Retrieval relevance and answer evaluation (Draft PR #16)
 

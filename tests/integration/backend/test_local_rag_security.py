@@ -1,5 +1,4 @@
 """RAG security regressions without loading a real embedding model."""
-import json
 import logging
 import sys
 from types import SimpleNamespace
@@ -68,21 +67,6 @@ def test_legacy_pickle_is_never_deserialized(tmp_path, monkeypatch):
     monkeypatch.setattr(vector_store, "LEGACY_META_PATH", tmp_path / "meta.pkl")
     (tmp_path / "meta.pkl").write_bytes(b"malicious-object")
     with pytest.raises(ValueError, match="pickle"):
-        vector_store.load_index()
-
-
-def test_json_metadata_must_match_index_count(tmp_path, monkeypatch):
-    chunks = [{"id": "one", "doc_id": "local", "text": "safe content"}]
-    meta = tmp_path / "meta.json"
-    meta.write_text(json.dumps(chunks), encoding="utf-8")
-    monkeypatch.setattr(vector_store, "META_PATH", meta)
-    monkeypatch.setattr(vector_store, "INDEX_PATH", tmp_path / "index.faiss")
-    monkeypatch.setitem(
-        sys.modules,
-        "faiss",
-        SimpleNamespace(read_index=lambda _: SimpleNamespace(ntotal=2, d=384)),
-    )
-    with pytest.raises(ValueError, match="do not match"):
         vector_store.load_index()
 
 

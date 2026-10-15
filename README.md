@@ -119,10 +119,24 @@ python -m llm.indexer
 python -m llm.app
 ```
 
-The API listens only on `http://127.0.0.1:5002`. It loads a FAISS index
-and safe `meta.json` metadata from `data/embeddings/`. Old `meta.pkl`
-files are intentionally **not** deserialized: rebuild the index from trusted
-local text documents after updating.
+The API listens only on `http://127.0.0.1:5002`. The local RAG store uses
+`data/embeddings/current.json` to select one immutable `gen-<id>/` directory
+containing `index.faiss` and `meta.json`. Both files are checked against the
+manifest's SHA-256 digests before loading. Readers see one complete generation.
+
+**One-time index migration:** stop Flask, run `python -m llm.indexer` from the
+project root with the AI dependencies installed, then restart Flask. Existing
+root-level `index.faiss`/`meta.json` pairs cannot prove matching provenance and
+are rejected with a rebuild message. Old `meta.pkl` is never deserialized.
+Rebuilding preserves the old files and your `data/base/` documents. Restart is
+required because an already-running retriever keeps its in-memory snapshot.
+Public-only mode builds its reviewed catalogue in memory and needs no migration.
+
+Previous generations and interrupted unpublished generations are retained to
+protect concurrent readers. They are not automatically deleted; reclaim disk
+space only while all local index readers and writers are stopped. Publication
+uses a same-filesystem atomic manifest replacement for process interruption and
+concurrent access; this is not a guarantee against disk failure or power loss.
 
 ### If the local API refuses to start
 

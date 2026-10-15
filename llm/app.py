@@ -11,7 +11,6 @@ import logging
 import os
 import threading
 import uuid
-from pathlib import Path
 from urllib.parse import urlsplit
 
 from dotenv import load_dotenv
@@ -23,7 +22,6 @@ from werkzeug.exceptions import HTTPException
 
 load_dotenv()
 log = logging.getLogger(__name__)
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def _csv(value: str) -> list[str]:
@@ -84,11 +82,6 @@ Do not invent project numbers or assert that documented repository URLs are abse
             return self._retriever_instance
 
     def ready(self) -> bool:
-        index_path = PROJECT_ROOT / "data" / "embeddings" / "index.faiss"
-        meta_path = PROJECT_ROOT / "data" / "embeddings" / "meta.json"
-        if not getattr(self, "public_only", False):
-            if not index_path.is_file() or not meta_path.is_file():
-                return False
         try:
             if getattr(self, "public_only", False):
                 # Validate that the PUBLIC index can be built entirely from
