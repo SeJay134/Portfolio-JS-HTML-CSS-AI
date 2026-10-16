@@ -166,7 +166,7 @@ def create_app(config: dict | None = None, service=None) -> Flask:
         TRUSTED_HOSTS=_csv(os.getenv("TRUSTED_HOSTS", "127.0.0.1,localhost")),
         RATELIMIT_STORAGE_URI=os.getenv("RATELIMIT_STORAGE_URI", "memory://"),
         CHAT_LIMIT=os.getenv("CHAT_LIMIT", "10/minute"),
-        MODEL_NAME=os.getenv("MODEL_NAME", "qwen2.5:7b"),
+        MODEL_NAME=os.getenv("MODEL_NAME", "qwen2.5:3b"),
         OLLAMA_HOST=os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434"),
         MODEL_TIMEOUT=float(os.getenv("MODEL_TIMEOUT", "120")),
         MAX_GENERATIONS=max(1, int(os.getenv("MAX_GENERATIONS", "1"))),
