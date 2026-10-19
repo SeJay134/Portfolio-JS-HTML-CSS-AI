@@ -137,7 +137,7 @@ def test_missing_versioned_metadata_fails_closed(fake_storage):
     pointer = json.loads(vector_store.ACTIVE_PATH.read_text())
     meta_path = vector_store.VERSIONS_DIR / pointer["version"] / "meta.json"
     meta_path.unlink()
-    with pytest.raises(FileNotFoundError, match="metadata not found"):
+    with pytest.raises(ValueError, match="incomplete active RAG snapshot"):
         vector_store.load_index()
 
 
