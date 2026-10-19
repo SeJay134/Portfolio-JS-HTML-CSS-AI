@@ -24,11 +24,18 @@ def test_wrong_branch_is_blocked_without_changing_git(monkeypatch):
     called = []
     def git(*args):
         called.append(args)
-        return "main"
+        return "some-unrelated-feature"
     monkeypatch.setattr(runner, "git", git)
     with pytest.raises(runner.CheckFailure, match="Expected PR #19 branch"):
         runner.assert_branch()
     assert called == [("branch", "--show-current")]
+
+
+def test_merged_main_is_supported_for_regression_after_pr_closure(monkeypatch):
+    monkeypatch.setattr(runner, "git", lambda *args: (
+        "main" if args == ("branch", "--show-current") else "abc1234"
+    ))
+    assert runner.assert_branch() == "abc1234"
 
 
 def test_child_process_is_forced_to_loopback_private_mode_without_mutating_input():

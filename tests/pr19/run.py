@@ -39,10 +39,10 @@ def git(*args: str) -> str:
 
 def assert_branch() -> str:
     branch = git("branch", "--show-current")
-    if branch != EXPECTED_BRANCH:
+    if branch not in {EXPECTED_BRANCH, "main"}:
         raise CheckFailure(
-            f"Expected PR #19 branch '{EXPECTED_BRANCH}', found '{branch or 'detached'}'. "
-            "No changes were made. Open the PR #19 worktree and run this file there."
+            f"Expected PR #19 branch '{EXPECTED_BRANCH}' or merged 'main', "
+            f"found '{branch or 'detached'}'. No Git changes were made."
         )
     return git("rev-parse", "--short", "HEAD")
 
@@ -284,9 +284,11 @@ def main() -> int:
     }
     try:
         sha = assert_branch()
+        actual_branch = git("branch", "--show-current")
         report["commit"] = sha
+        report["branch"] = actual_branch
         report["checks"]["branch"] = "pass"
-        print(f"[OK] PR #19 branch and commit: {sha}", flush=True)
+        print(f"[OK] PR #19 verification on {actual_branch} at {sha}", flush=True)
         ensure_packages()
         report["checks"]["dependencies"] = "pass"
         print("[RUN] Automated backend / FAISS regression suite...", flush=True)

@@ -1,9 +1,10 @@
 # PR #19 — one-click verification (Windows)
 
-**Only one user action:** double-click `tests/pr19/RUN_PR19.cmd` in the
-PR #19 working tree (or run that file in a terminal). You do not type
-credentials, switch branches, copy headers, start Flask manually, or select
-a port. The script verifies its own branch. It does **not** merge or switch.
+**Only one user action:** double-click `tests/pr19/RUN_PR19.cmd` on PR #19 or, after merge,
+on `main` (or run that file in a terminal). You do not type credentials,
+switch branches, copy headers, start Flask manually, or select a port. The
+script verifies that the branch is PR #19 or `main`; it does **not** merge,
+switch or reset any branch.
 
 The launcher uses the project's existing `.venv`, automatically installs
 missing Python dependencies **into that environment only** from the pinned
