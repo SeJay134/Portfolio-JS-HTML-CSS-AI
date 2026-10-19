@@ -8,6 +8,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import shutil
 from pathlib import Path
 import socket
 import subprocess
@@ -65,6 +66,55 @@ def ensure_packages() -> None:
     still_missing = [p for p in packages if importlib.util.find_spec(p) is None]
     if still_missing:
         raise CheckFailure("Some required Python packages are still unavailable.")
+
+
+def run_frontend_suite() -> None:
+    """Exercise JavaScript unit/build/browser tests without manual commands.
+
+    Full cross-browser matrix remains in GitHub Actions; the local launcher
+    exercises Chromium, including smoke, E2E, regression and chat variants.
+    """
+    npm = shutil.which("npm.cmd" if os.name == "nt" else "npm")
+    node = shutil.which("node.exe" if os.name == "nt" else "node")
+    if not npm or not node:
+        raise CheckFailure("Node.js and npm are required for automated frontend tests.")
+
+    def execute(label: str, command: list[str], env: dict | None = None) -> None:
+        print(f"[RUN] {label}", flush=True)
+        if subprocess.run(command, cwd=ROOT, env=env, check=False).returncode != 0:
+            raise CheckFailure(f"Frontend check failed: {label}")
+
+    if not (ROOT / "node_modules" / ".bin" / (
+        "playwright.cmd" if os.name == "nt" else "playwright"
+    )).is_file():
+        execute("Install locked JavaScript dependencies", [npm, "ci"])
+
+    for label, command in [
+        ("ESLint", [npm, "run", "lint"]),
+        ("TypeScript", [npm, "run", "typecheck"]),
+        ("Vitest unit tests", [npm, "run", "test:unit"]),
+        ("Vercel proxy integration", [
+            node, "--test", "tests/integration/frontend/ngrok-bridge.test.mjs"
+        ]),
+        ("Production frontend build", [npm, "run", "build"]),
+    ]:
+        execute(label, command)
+
+    execute("Install Playwright Chromium if needed",
+            [npm, "exec", "--", "playwright", "install", "chromium"])
+
+    # CI=1 avoids attaching to an already-running Vite preview from another
+    # branch, and also matches CI's browser test behavior.
+    browser_env = dict(os.environ, CI="1")
+    execute("Chromium smoke, E2E and regression",
+            [npm, "run", "test:browser", "--", "--project=chromium"],
+            browser_env)
+    execute("Chat dev browser tests", [npm, "run", "test:chat-dev"], browser_env)
+    public_build_env = dict(os.environ, VITE_ENABLE_PUBLIC_CHAT_UI="true")
+    execute("Public chat build", [npm, "run", "build"], public_build_env)
+    execute("Chat hydration browser tests", [npm, "run", "test:chat-hydration"],
+            browser_env)
+    print("[OK] Frontend and local Chromium regressions passed.", flush=True)
 
 
 def load_config() -> dict[str, str]:
@@ -249,6 +299,8 @@ def main() -> int:
             raise CheckFailure(f"Automated regression tests failed (exit {status}).")
         report["checks"]["automated_tests"] = "pass"
         print("[OK] All backend and PR #19 runner tests passed.", flush=True)
+        run_frontend_suite()
+        report["checks"]["frontend_browser"] = "pass"
         config = load_config()
         run_live(config)
         report["checks"]["local_ready_chat"] = "pass"
