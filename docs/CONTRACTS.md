@@ -53,11 +53,13 @@ this local-development contract.
 
 ## 3. Local RAG knowledge <-> index contract
 
-**Current Draft PR #13 implementation:** local `data/base/*.txt` and `*.md`
-files, selected by the owner and ignored by Git, are the input to
-`python -m llm.indexer`. Runtime output is `data/embeddings/index.faiss`
-with safe `meta.json`; legacy pickle metadata is rejected. Generated files
-are not canonical public portfolio facts.
+Owner-local `data/base/*.txt` and `*.md` files, ignored by Git, are
+the input to `python -m llm.indexer`. The active index is selected via
+`data/embeddings/active.json` and stored under
+`data/embeddings/versions/<uuid>/{index.faiss,meta.json}`. Legacy pickle
+metadata is prohibited. Unversioned safe JSON pairs remain readable until the
+first rebuild. Source documents and generated files are never canonical public
+portfolio facts.
 
 - The current public catalogue is `src/data/projects.ts`. Reconciliation with
   locally held knowledge is an **unaccepted follow-up**, not already guaranteed.
@@ -65,9 +67,15 @@ are not canonical public portfolio facts.
   current local indexer.
 - Index vectors and JSON metadata must have matching counts and valid chunk
   fields; FAISS sentinel IDs such as `-1` are discarded.
-- Current publication uses two separate `os.replace` calls: individual files
-  are replaced atomically, but the pair is **not** an atomic snapshot. A future
-  generation/manifest switch is required before claiming that guarantee.
+- Writers publish immutable generations by replacing **one** `active.json`
+  pointer. New schema-2 pointers include SHA-256 for both files; readers verify
+  the exact bytes they deserialize, reject malformed/partial pointers and never
+  silently fall back from an invalid active version. Earlier `{"version": ...}`
+  pointers are supported without claiming unrecorded checksum validation.
+- `/ready` uses `load_index()` rather than obsolete root-file existence checks.
+  The loaded active index and installed Ollama model must both be available.
+- Interrupted publication retains the previous generation. Existing generations
+  are not garbage-collected while readers may still reference them.
 - Current `POST /chat` implementation returns `sources: []` even after
   retrieval. Source IDs, verified public URLs and provenance checks are
   pending Phase 4.3a; never invent or leak local paths as sources.

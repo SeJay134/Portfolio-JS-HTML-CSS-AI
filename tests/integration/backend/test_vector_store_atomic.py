@@ -48,13 +48,22 @@ def fake_storage(tmp_path, monkeypatch):
         index.add(data["vectors"])
         return index
 
+    def deserialize_index(buffer):
+        data = json.loads(bytes(buffer).decode("utf-8"))
+        index = FakeIndex(data["d"])
+        index.add(data["vectors"])
+        return index
+
     monkeypatch.setitem(sys.modules, "faiss", SimpleNamespace(
         IndexFlatL2=FakeIndex,
         write_index=write_index,
         read_index=read_index,
+        deserialize_index=deserialize_index,
     ))
     monkeypatch.setitem(sys.modules, "numpy", SimpleNamespace(
         float32="float32",
+        uint8="uint8",
+        frombuffer=lambda data, dtype: list(data),
         ascontiguousarray=lambda values, dtype: FakeArray(values),
     ))
     return tmp_path
@@ -128,7 +137,7 @@ def test_missing_versioned_metadata_fails_closed(fake_storage):
     pointer = json.loads(vector_store.ACTIVE_PATH.read_text())
     meta_path = vector_store.VERSIONS_DIR / pointer["version"] / "meta.json"
     meta_path.unlink()
-    with pytest.raises(FileNotFoundError, match="metadata not found"):
+    with pytest.raises(ValueError, match="incomplete active RAG snapshot"):
         vector_store.load_index()
 
 
@@ -139,3 +148,55 @@ def test_legacy_pair_still_loads_when_pointer_absent(fake_storage):
     vector_store.META_PATH.write_text(json.dumps(sample("legacy")), encoding="utf-8")
     index, chunks = vector_store.load_index()
     assert (index.vectors, chunks) == ([[4.0, 3.0]], sample("legacy"))
+
+
+def test_new_pointer_records_two_integrity_digests(fake_storage):
+    import hashlib
+    vector_store.save_index(sample("verified"), [[5.0, 6.0]])
+    pointer = json.loads(vector_store.ACTIVE_PATH.read_text())
+    assert pointer["schema_version"] == 2
+    snapshot = vector_store.VERSIONS_DIR / pointer["version"]
+    assert pointer["index_sha256"] == hashlib.sha256((snapshot / "index.faiss").read_bytes()).hexdigest()
+    assert pointer["metadata_sha256"] == hashlib.sha256((snapshot / "meta.json").read_bytes()).hexdigest()
+
+
+def test_mismatched_metadata_same_count_is_not_loaded(fake_storage):
+    vector_store.save_index(sample("old"), [[1.0, 2.0]])
+    old = json.loads(vector_store.ACTIVE_PATH.read_text())
+    vector_store.save_index(sample("new"), [[9.0, 8.0]])
+    new = json.loads(vector_store.ACTIVE_PATH.read_text())
+    # Counts and vector dimensions are equal. Only the digest detects a
+    # cross-generation substitution of metadata.
+    (vector_store.VERSIONS_DIR / new["version"] / "meta.json").write_bytes(
+        (vector_store.VERSIONS_DIR / old["version"] / "meta.json").read_bytes()
+    )
+    with pytest.raises(ValueError, match="checksum mismatch"):
+        vector_store.load_index()
+
+
+@pytest.mark.parametrize("invalid", [
+    {"schema_version": 2, "version": "0" * 32},
+    {"schema_version": 1, "version": "0" * 32},
+    {"schema_version": 2, "version": "0" * 32,
+     "index_sha256": "bad", "metadata_sha256": "1" * 64},
+    {"schema_version": True, "version": "0" * 32,
+     "index_sha256": "1" * 64, "metadata_sha256": "1" * 64},
+])
+def test_rejects_invalid_or_incomplete_v2_pointer(fake_storage, invalid):
+    vector_store.save_index(sample("old"), [[1.0, 2.0]])
+    valid = json.loads(vector_store.ACTIVE_PATH.read_text())
+    invalid["version"] = valid["version"]
+    vector_store.ACTIVE_PATH.write_text(json.dumps(invalid))
+    with pytest.raises(ValueError, match="Invalid active RAG index pointer"):
+        vector_store.load_index()
+
+
+def test_accepts_preupgrade_v1_active_pointer(fake_storage):
+    vector_store.save_index(sample("existing"), [[1.0, 2.0]])
+    v2 = json.loads(vector_store.ACTIVE_PATH.read_text())
+    vector_store.ACTIVE_PATH.write_text(json.dumps({"version": v2["version"]}))
+    index, chunks = vector_store.load_index()
+    assert (index.vectors, chunks) == ([[1.0, 2.0]], sample("existing"))
+    vector_store.save_index(sample("upgraded"), [[4.0, 3.0]])
+    assert json.loads(vector_store.ACTIVE_PATH.read_text())["schema_version"] == 2
+    assert vector_store.load_index()[1] == sample("upgraded")

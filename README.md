@@ -122,14 +122,25 @@ python -m llm.app
 The API listens only on `http://127.0.0.1:5002`. It loads a FAISS index
 and safe JSON metadata from the generation selected by `data/embeddings/active.json`.
 Each rebuild writes an immutable pair under `data/embeddings/versions/<id>/`
-and atomically switches that pointer only after validating the new pair. Older
-generations are retained, including after interrupted builds, so remove unused
-ones manually only when sure no reader needs them. Existing direct
-`index.faiss`/`meta.json` pairs remain readable until the next successful
-rebuild; an existing mixed pair must be rebuilt from trusted source documents.
-Old `meta.pkl`
-files are intentionally **not** deserialized: rebuild the index from trusted
-local text documents after updating.
+and atomically switches that pointer only after validating the new pair. New
+`active.json` pointers (schema 2) record SHA-256 digests for **both** files;
+the reader verifies these exact bytes before FAISS deserialization. Prior
+`active.json` pointers containing only `{"version": "..."}` remain readable
+and are upgraded on the next successful rebuild. They have no authenticated
+checksums, so rebuild from trusted knowledge sources to gain the new guarantee.
+Older generations remain on disk, including after interrupted builds. Never
+delete versions still in use. Existing direct `index.faiss`/`meta.json` pairs
+remain readable if no active pointer exists; a mixed legacy pair cannot be
+verified and should be rebuilt. Old `meta.pkl` files are never deserialized.
+
+The local Flask `/ready` endpoint uses the same `load_index()` as `/chat`
+and no longer requires the obsolete root-level pair. It additionally checks
+whether the configured Ollama model is present. A successful readiness check
+does **not** guarantee the next generation completes within its timeout.
+To migrate safely: keep `data/base/`, `data/embeddings/`, and `.env` intact;
+stop Flask, back up local data, run `python -m llm.indexer`, restart Flask, and
+check `GET /ready` plus a real local `POST /chat`. Never force-delete indices
+or commit local source documents. These operations are not part of CI.
 
 ### If the local API refuses to start
 

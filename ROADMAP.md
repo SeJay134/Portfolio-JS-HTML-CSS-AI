@@ -202,9 +202,11 @@ hardcodes `sources: []` even when retrieval succeeds.
       and any measured self-review benefit in Draft PR #16.
 - [ ] Confirm honest fallback for absent evidence, bilingual factual answers,
       and no source misattribution on actual owner data in Phase 4.3b.
-- [ ] Keep index and JSON metadata consistent across updates; current two-file
-      `os.replace` is **not** atomic as a pair. Design a generation/manifest
-      switch for a true atomic snapshot before claiming atomic publication.
+- [x] Publish immutable FAISS/JSON generations via one atomic `active.json`
+      switch (PR #20); use shared index loading for `/ready` and add SHA-256
+      integrity checks with legacy pointer compatibility in PR #19.
+      Owner-local rebuild and live Flask/Ollama verification are still required
+      before declaring the local deployment accepted.
 
 ### Phase 4.3b — Retrieval relevance and answer evaluation (Draft PR #16)
 
