@@ -210,23 +210,3 @@ changing the runtime. No model switch or index rebuild is needed for
 this cleanup. Public rollout requires a separate secured, reachable backend;
 merging local-only Flask or localhost Chat UI cannot make real AI available
 to remote visitors.
-
-
-## Atomic local RAG snapshot fix — October 15, 2026
-
-- Base: `main` at `906bfb2ddeef4d1caae3d77c4dc139e856ed5ddc`.
-- Scope: immutable FAISS/JSON generations, one atomic manifest publication,
-  checksum verification, readiness compatibility, and explicit legacy migration.
-- Local Python 3.12 with real `faiss-cpu==1.12.0`: **66 backend tests passed**.
-  Seventeen snapshot cases cover round-trip/readiness, four interrupted-write
-  stages, a reader spanning publication, concurrent writers, same-count file
-  substitution, structural/count validation, path validation, malformed/missing
-  snapshot data, legacy migration, and interrupted first publication.
-- The existing mocked count-mismatch test was replaced by a real FAISS test
-  preserving that assertion after successful checksum validation.
-- CI installs the same FAISS version used by the AI runtime and discovers the
-  entire backend integration directory. No model download or live Ollama is needed.
-- PR CI and owner-local post-merge rebuild/restart/ready/chat verification are
-  pending. No production deployment or merge is claimed.
-- Previous/orphan generations are retained to avoid invalidating in-flight readers.
-  Hardware failure/power-loss durability and automatic cleanup are out of scope.

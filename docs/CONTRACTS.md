@@ -55,10 +55,9 @@ this local-development contract.
 
 **Current Draft PR #13 implementation:** local `data/base/*.txt` and `*.md`
 files, selected by the owner and ignored by Git, are the input to
-`python -m llm.indexer`. Runtime output is an immutable
-`data/embeddings/gen-<id>/index.faiss` and `meta.json` pair selected by
-`data/embeddings/current.json`. Legacy root-level pairs require a one-time rebuild;
-pickle metadata is never loaded. Generated files are not canonical public facts.
+`python -m llm.indexer`. Runtime output is `data/embeddings/index.faiss`
+with safe `meta.json`; legacy pickle metadata is rejected. Generated files
+are not canonical public portfolio facts.
 
 - The current public catalogue is `src/data/projects.ts`. Reconciliation with
   locally held knowledge is an **unaccepted follow-up**, not already guaranteed.
@@ -66,17 +65,9 @@ pickle metadata is never loaded. Generated files are not canonical public facts.
   current local indexer.
 - Index vectors and JSON metadata must have matching counts and valid chunk
   fields; FAISS sentinel IDs such as `-1` are discarded.
-- Publication writes and flushes both files to a unique generation before a
-  single atomic `current.json` replacement. Readers pin that manifest once and
-  verify both SHA-256 digests before deserializing the exact verified bytes.
-- A failed publication leaves the prior manifest intact. Concurrent writers use
-  separate generations; the last successful switch wins. Existing generations
-  are retained for in-flight readers; no automatic garbage collection is performed.
-- An invalid/incomplete manifest or checksum mismatch fails closed, without
-  falling back to old files. Only a validated generation name can select a path.
-- Restart Flask after rebuilding to reload the cached retriever. The public-only
-  in-memory retriever is unchanged. Power-loss/disk-failure durability is outside
-  this process-interruption and concurrent-publication guarantee.
+- Current publication uses two separate `os.replace` calls: individual files
+  are replaced atomically, but the pair is **not** an atomic snapshot. A future
+  generation/manifest switch is required before claiming that guarantee.
 - Current `POST /chat` implementation returns `sources: []` even after
   retrieval. Source IDs, verified public URLs and provenance checks are
   pending Phase 4.3a; never invent or leak local paths as sources.

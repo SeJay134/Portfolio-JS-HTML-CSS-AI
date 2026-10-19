@@ -17,8 +17,6 @@ All automated tests, fixtures, and manual scenarios live under this directory.
 ## Commands
 
 ```bash
-python -m pip install -r requirements-local-api-dev.txt
-python -m pytest -q tests/integration/backend
 npm run test:unit
 npm run build
 npm run test:smoke
