@@ -97,3 +97,36 @@ def test_report_contains_no_api_key(tmp_path, monkeypatch):
     report = json.loads((tmp_path / "latest.json").read_text())
     assert report["status"] == "passed"
     assert "LOCAL_API_KEY" not in str(report)
+
+
+def test_one_click_frontend_suite_is_an_automatic_deterministic_sequence(
+    tmp_path, monkeypatch,
+):
+    monkeypatch.setattr(runner, "ROOT", tmp_path)
+    binary = tmp_path / "node_modules" / ".bin" / (
+        "playwright.cmd" if runner.os.name == "nt" else "playwright"
+    )
+    binary.parent.mkdir(parents=True)
+    binary.write_text("placeholder", encoding="utf-8")
+    monkeypatch.setattr(runner.shutil, "which", lambda name: name)
+    commands = []
+
+    def fake_run(command, **kwargs):
+        commands.append((command, kwargs.get("env")))
+        return SimpleNamespace(returncode=0)
+
+    monkeypatch.setattr(runner.subprocess, "run", fake_run)
+    runner.run_frontend_suite()
+    assert len(commands) == 10
+    assert any("test:browser" in command for command, _ in commands)
+    assert any("test:chat-hydration" in command for command, _ in commands)
+    assert any(env is not None and env.get("CI") == "1"
+               for command, env in commands)
+    assert any(env is not None and env.get("VITE_ENABLE_PUBLIC_CHAT_UI") == "true"
+               for command, env in commands)
+
+
+def test_node_absent_is_reported_without_attempting_install(monkeypatch):
+    monkeypatch.setattr(runner.shutil, "which", lambda _: None)
+    with pytest.raises(runner.CheckFailure, match="Node.js and npm"):
+        runner.run_frontend_suite()
