@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 from llm import vector_store as store
-from llm.app import LocalPortfolioService
+from llm.app import LocalPortfolioService, create_app
 
 
 @pytest.fixture(autouse=True)
@@ -61,8 +61,14 @@ def test_readiness_accepts_real_active_index_without_root_files():
         })()
     })()
     assert service.ready() is True
+    app = create_app({"TESTING": True}, service=service)
+    client = app.test_client()
+    assert client.get("/ready").status_code == 200
+    assert client.get("/ready").json == {"status": "ready"}
+
     (store.VERSIONS_DIR / pointer()["version"] / "meta.json").unlink()
     assert service.ready() is False
+    assert client.get("/ready").status_code == 503
 
 
 def test_old_v1_active_pointer_remains_readable_and_migrates():
