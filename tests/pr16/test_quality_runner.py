@@ -75,3 +75,42 @@ def test_required_python_tests_are_launched_in_single_call(monkeypatch):
     assert len(calls) == 1
     assert "tests/pr16/test_evaluator.py" in calls[0]
     assert "tests/integration/backend" in calls[0]
+
+
+def test_safe_config_passes_offline_flags_to_flask_child(monkeypatch):
+    monkeypatch.setenv("OLLAMA_HOST", "http://127.0.0.1:11434")
+    cfg = runner.safe_config()
+    assert cfg["HF_HUB_OFFLINE"] == "1"
+    assert cfg["TRANSFORMERS_OFFLINE"] == "1"
+
+
+def test_repeated_runs_compare_only_same_model_and_catalogue(tmp_path, monkeypatch):
+    monkeypatch.setattr(runner, "REPORTS", tmp_path)
+    old = {
+        "status": "passed",
+        "public_quality": {
+            "model": "test-model", "catalogue_sha256": "abcd",
+            "summary": {"pass_rate": .9, "p50_seconds": 10,
+                        "p95_seconds": 25},
+            "cases": [{"id": "T-1", "status": "pass"}],
+        }
+    }
+    runner.write_report(old)
+    new = {
+        "status": "passed",
+        "public_quality": {
+            "model": "test-model", "catalogue_sha256": "abcd",
+            "summary": {"pass_rate": 1., "p50_seconds": 7,
+                        "p95_seconds": 20},
+            "cases": [{"id": "T-1", "status": "pass"}],
+        }
+    }
+    runner.compare_previous(new)
+    assert new["comparison"] == {
+        "pass_rate_change": .1, "p50_seconds_change": -3,
+        "p95_seconds_change": -5
+    }
+    other_model = json.loads(json.dumps(new))
+    other_model["public_quality"]["model"] = "different-model"
+    runner.compare_previous(other_model)
+    assert "comparison" not in other_model

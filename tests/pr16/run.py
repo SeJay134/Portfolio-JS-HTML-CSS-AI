@@ -71,6 +71,10 @@ def safe_config() -> dict:
     # dependency during evaluation. Existing cached embedding model is required.
     os.environ["HF_HUB_OFFLINE"] = "1"
     os.environ["TRANSFORMERS_OFFLINE"] = "1"
+    # Keep the child Flask smoke process offline too; no surprise downloads
+    # or mutation of the owner's cached models during quality evaluation.
+    config["HF_HUB_OFFLINE"] = "1"
+    config["TRANSFORMERS_OFFLINE"] = "1"
     return config
 
 
@@ -131,6 +135,30 @@ def public_quality(config: dict) -> dict:
         "summary": summary, "cases": results, "retrieval": probes,
         "notes": "Exact fact/source checks only; semantic truth needs review.",
     }
+
+
+def compare_previous(report: dict) -> None:
+    """Attach only aggregate deltas when model, public corpus and sample match."""
+    existing = REPORTS / "latest.json"
+    if not existing.is_file() or "public_quality" not in report:
+        return
+    try:
+        previous = json.loads(existing.read_text(encoding="utf-8"))
+        old = previous.get("public_quality", {})
+        new = report["public_quality"]
+        if (old.get("model") != new.get("model")
+                or old.get("catalogue_sha256") != new.get("catalogue_sha256")
+                or len(old.get("cases", [])) != len(new.get("cases", []))):
+            return
+        old_metrics, new_metrics = old["summary"], new["summary"]
+        deltas = {}
+        for key in ("pass_rate", "p50_seconds", "p95_seconds"):
+            a, b = old_metrics.get(key), new_metrics.get(key)
+            if isinstance(a, (float, int)) and isinstance(b, (float, int)):
+                deltas[key + "_change"] = round(b - a, 3)
+        report["comparison"] = deltas
+    except (OSError, ValueError, TypeError, KeyError, AttributeError):
+        return
 
 
 def write_report(report: dict) -> None:
@@ -209,6 +237,7 @@ def main() -> int:
         return 1
     finally:
         try:
+            compare_previous(report)
             write_report(report)
             print("[REPORT] tests/pr16/reports/latest.html and latest.json", flush=True)
         except OSError:
