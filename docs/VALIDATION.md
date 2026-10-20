@@ -229,3 +229,20 @@ to remote visitors.
   owner's hardware, back up local index/source files, rebuild with trusted data,
   restart Flask, verify `/ready` and a real `/chat` response. Do not delete
   `data/base`, `data/embeddings`, `.env`, or orphaned generations.
+
+
+## PR #16 — RAG quality evaluation automation (October 20, 2026)
+
+- PR #16 rebased by a merge commit onto `main` including PR #19.
+- 36 curated public-catalogue tests: 30 mandatory and 6 language diagnostics.
+- New one-click `tests/pr16/RUN_PR16.cmd` plus automated evaluator, retrieval
+  probe, safe local JSON/HTML reports and CI regression tests.
+- Public evaluation is performed with in-memory reviewed catalogue only;
+  no owner-local knowledge content is recorded.
+- [ ] Latest PR #16 CI verified.
+- [ ] Owner ran `RUN_PR16.cmd` against the real local Ollama and private index.
+- [ ] Baseline correctness/unknown behavior and p50/p95 reviewed locally.
+- [ ] If needed, document measured focused fixes and an optional bounded
+      self-review experiment before claiming quality improvement.
+- [ ] Owner approval to merge PR #16.
+Language compliance is **diagnostic** and cannot independently block merge.

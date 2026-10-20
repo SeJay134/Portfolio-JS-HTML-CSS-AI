@@ -210,24 +210,24 @@ hardcodes `sources: []` even when retrieval succeeds.
 
 ### Phase 4.3b — Retrieval relevance and answer evaluation (Draft PR #16)
 
-Answer-quality experiments are isolated from PR #15. Begin with a measured
-single-pass baseline and consider an optional bounded self-review only if
-evidence shows it improves correctness. See `docs/RAG_ANSWER_EVALUATION.md`
-on the follow-up branch.
+- [x] Rebase/merge current `main` including PR #19 active FAISS snapshots.
+- [x] Implement 36 public-catalogue evaluation scenarios (30 mandatory,
+      6 optional language diagnostics) under `tests/pr16/cases/`.
+- [x] Add reproducible local-only public RAG baseline with safe source
+      checking, uncertainty reporting and p50/p95 latency measurements.
+- [x] Add read-only FAISS retrieval probes and one-click `RUN_PR16.cmd`
+      with ignored JSON/HTML reports, no manual keys and no private logs.
+- [x] Add deterministic evaluator and launcher regression tests in CI.
+- [ ] Owner runs real local Ollama/FAISS evaluation and reviews the results.
+- [ ] Investigate reproducible generation/retrieval failures, then optionally
+      compare one bounded self-review call if baseline justifies it.
+- [ ] Confirm >=90% narrow deterministic mandatory PASS and zero definite
+      safety violations; review unverified semantic claims separately.
+- [ ] Obtain explicit owner merge approval, then main regression.
 
-
-- [ ] Calibrate FAISS squared-L2 distance on labeled queries; drop irrelevant
-      chunks rather than always passing up to three retrieved matches.
-- [ ] Evaluate Russian and English queries; compare all-MiniLM-L6-v2 with
-      multilingual embeddings only after measurable evidence.
-- [ ] Maintain 30–50 bilingual tests: exact projects, paraphrases, projects not
-      present, missing biographies, prompt injection in source text, unrelated
-      questions and invented-claim traps.
-- [ ] Report source retrieval recall separately from final answer correctness,
-      record latency on owner hardware, and review answers manually.
-- [ ] Aim for >=90% correct supported answers and zero unsupported claims in
-      unknown-fact tests before marking quality accepted. These are release
-      criteria, not guarantees about every user question.
+**Language output is diagnostic only:** PR #16 never fails solely because a
+particular Ollama model cannot reliably reply in Russian. See
+`docs/RAG_ANSWER_EVALUATION.md` for the criteria and limitations.
 
 ### Phase 4.2 — React Chat UI functional parity (dependent Draft PR #14; local tested)
 
