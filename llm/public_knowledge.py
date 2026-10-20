@@ -64,13 +64,18 @@ def _public_projects() -> list[dict]:
 # Detect only explicit numbered catalogue-project questions (not arbitrary missing facts).
 # The checked public catalogue currently contains four entries; this guard does
 # not make any claim about projects that might exist outside that catalogue.
+# A number before "projects" can be a quantity ("name 5 technologies in
+# projects"), not an ordinal. Require an ordinal suffix/word in that position.
+# Bare digits are accepted only after singular "project/проект" or an explicit
+# project-number marker (# or №).
 _OUT_OF_RANGE_ORDINAL = re.compile(
-    r"\b(?P<position>\d+(?:-?(?:й|го|ый|м|му|st|nd|rd|th))?"
+    r"\b(?P<position>\d+(?:-?(?:й|го|ый|м|му|st|nd|rd|th))"
     r"|fifth|sixth|seventh|eighth|ninth|tenth"
     r"|пят(?:ый|ого|ом|ому|ым|ая|ое|ой|ую|ые|ых)"
     r"|шест(?:ой|ого|ом|ому|ым|ая|ое|ую|ые|ых))\b"
     r"(?:\s+[\w-]+){0,3}\s+(?:projects?|проект\w*)\b"
-    r"|\b(?:projects?|проект\w*)\s+(?:#\s*)?(?P<after>\d+)\b",
+    r"|\b(?:project|проект)\s+(?P<after>\d+)\b"
+    r"|\b(?:projects?|проект\w*)\s*[#№]\s*(?P<marked>\d+)\b",
     re.IGNORECASE,
 )
 
@@ -85,7 +90,7 @@ def unlisted_project_reply(question: str) -> str | None:
     match = _OUT_OF_RANGE_ORDINAL.search(question)
     if not match:
         return None
-    ordinal = (match.group("position") or match.group("after")).casefold()
+    ordinal = (match.group("position") or match.group("after") or match.group("marked")).casefold()
     numeric = re.match(r"\d+", ordinal)
     position = int(numeric.group()) if numeric else 5
     count = len(_public_projects())

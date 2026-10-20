@@ -196,16 +196,25 @@ hardcodes `sources: []` even when retrieval succeeds.
       follow-up fix: the owner observed a false fifth-project answer with an
       irrelevant Weather Explorer source. An unrelated favorite-film question
       correctly returned no sources.
-- [ ] Retest Russian project summaries after the stronger language directive:
-      two owner-local Russian project questions were answered in English.
-      Full bilingual quality/retrieval evaluation remains Phase 4.3b.
+- [ ] Russian-language compliance is **out of scope for PR #15**:
+      live owner tests still found English answers to Russian project queries.
+      No extra translation pass remains; evaluate a simple one-call baseline
+      and any measured self-review benefit in Draft PR #16.
 - [ ] Confirm honest fallback for absent evidence, bilingual factual answers,
       and no source misattribution on actual owner data in Phase 4.3b.
-- [ ] Keep index and JSON metadata consistent across updates; current two-file
-      `os.replace` is **not** atomic as a pair. Design a generation/manifest
-      switch for a true atomic snapshot before claiming atomic publication.
+- [x] Publish immutable FAISS/JSON generations via one atomic `active.json`
+      switch (PR #20); use shared index loading for `/ready` and add SHA-256
+      integrity checks with legacy pointer compatibility in PR #19.
+      Owner-local rebuild and live Flask/Ollama verification are still required
+      before declaring the local deployment accepted.
 
-### Phase 4.3b — Retrieval relevance and answer evaluation (separate PR)
+### Phase 4.3b — Retrieval relevance and answer evaluation (Draft PR #16)
+
+Answer-quality experiments are isolated from PR #15. Begin with a measured
+single-pass baseline and consider an optional bounded self-review only if
+evidence shows it improves correctness. See `docs/RAG_ANSWER_EVALUATION.md`
+on the follow-up branch.
+
 
 - [ ] Calibrate FAISS squared-L2 distance on labeled queries; drop irrelevant
       chunks rather than always passing up to three retrieved matches.
@@ -251,8 +260,12 @@ accepted React design, drawer, themes, projects and Contact.
 - [ ] Phase 6 — Optional Three.js scene/effects.
 - [ ] Phase 7.1 — Final cross-browser, accessibility, and performance checks.
 - [ ] Phase 7.2 — Real-device checks and final production release hardening.
-- [ ] Remote/cloud AI hosting — **not currently planned**. Reconsider only
-      after an explicit owner decision; the $0, own-computer preference wins.
+- [ ] Public chat beta now requested by the owner (October 13, 2026).
+      This is a **separate deployment slice**, not completion of this
+      local-only backend PR. The selected inference host, costs, public
+      knowledge boundary, abuse controls, and private-data isolation require
+      review before enabling external access. The existing localhost Flask
+      and dev-only React UI cannot serve visitors on Vercel.
 
 ## Next execution order
 

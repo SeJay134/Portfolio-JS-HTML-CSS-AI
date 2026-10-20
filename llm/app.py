@@ -41,9 +41,7 @@ class LocalPortfolioService:
 
     SYSTEM_PROMPT = """You are Sergei Patrushev's portfolio assistant.
 Answer in the language of the current question and keep the answer concise.
-For Russian questions, write every explanation and bullet summary in Russian.
-Keep reviewed English project titles and technology names unchanged, but
-translate English catalogue descriptions instead of copying them verbatim.
+Preserve the exact reviewed project titles and technology names.
 Use only the supplied portfolio evidence for facts about Sergei or his work.
 When asked what projects Sergei built, name the reviewed published projects
 from the verified catalogue rather than only listing general skill categories.
@@ -62,6 +60,7 @@ Do not invent project numbers or assert that documented repository URLs are abse
         import ollama
 
         self.model = config["MODEL_NAME"]
+        self.public_only = bool(config["PUBLIC_ONLY_MODE"])
         self.client = ollama.Client(
             host=config["OLLAMA_HOST"],
             timeout=config["MODEL_TIMEOUT"],
@@ -76,20 +75,23 @@ Do not invent project numbers or assert that documented repository URLs are abse
     def _retriever(self):
         with self._retriever_lock:
             if self._retriever_instance is None:
-                from llm.retriever import Retriever
-
-                self._retriever_instance = Retriever()
+                if getattr(self, "public_only", False):
+                    from llm.public_retriever import PublicCatalogueRetriever
+                    self._retriever_instance = PublicCatalogueRetriever()
+                else:
+                    from llm.retriever import Retriever
+                    self._retriever_instance = Retriever()
             return self._retriever_instance
 
     def ready(self) -> bool:
-        index_path = PROJECT_ROOT / "data" / "embeddings" / "index.faiss"
-        meta_path = PROJECT_ROOT / "data" / "embeddings" / "meta.json"
-        if not index_path.is_file() or not meta_path.is_file():
-            return False
         try:
-            # The metadata must be safe JSON and match the FAISS vector count.
-            from llm.vector_store import load_index
-            load_index()
+            if getattr(self, "public_only", False):
+                # Validate that the PUBLIC index can be built entirely from
+                # the reviewed catalogue; never inspect mixed private index.
+                self._retriever()
+            else:
+                from llm.vector_store import load_index
+                load_index()
             response = self.health_client.list()
             models = getattr(response, "models", [])
             for item in models:
@@ -104,7 +106,7 @@ Do not invent project numbers or assert that documented repository URLs are abse
 
     def answer(self, message: str) -> dict:
         from llm.public_knowledge import (
-            public_overview, response_language, sources_for_mentioned_projects,
+            public_overview, sources_for_mentioned_projects,
             unlisted_project_reply,
         )
 
@@ -130,18 +132,10 @@ Do not invent project numbers or assert that documented repository URLs are abse
             + "\n\nAdditional owner-local/retrieved evidence:\n"
             + extra_context
         )
-        language = response_language(message)
-        language_instruction = (
-            "Response language: Russian. Write explanations and summaries in "
-            "Russian, even when the evidence below is in English. Preserve "
-            "only canonical project titles and technology names in English."
-            if language == "Russian"
-            else "Response language: English."
-        )
         response = self.client.chat(
             model=self.model,
             messages=[
-                {"role": "system", "content": self.SYSTEM_PROMPT + "\n" + language_instruction},
+                {"role": "system", "content": self.SYSTEM_PROMPT},
                 {
                     "role": "user",
                     "content": f"Portfolio evidence:\n{context}\n\nQuestion:\n{message}",
@@ -167,11 +161,12 @@ def create_app(config: dict | None = None, service=None) -> Flask:
         TRUSTED_HOSTS=_csv(os.getenv("TRUSTED_HOSTS", "127.0.0.1,localhost")),
         RATELIMIT_STORAGE_URI=os.getenv("RATELIMIT_STORAGE_URI", "memory://"),
         CHAT_LIMIT=os.getenv("CHAT_LIMIT", "10/minute"),
-        MODEL_NAME=os.getenv("MODEL_NAME", "qwen2.5:7b"),
+        MODEL_NAME=os.getenv("MODEL_NAME", "qwen2.5:3b"),
         OLLAMA_HOST=os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434"),
         MODEL_TIMEOUT=float(os.getenv("MODEL_TIMEOUT", "120")),
         MAX_GENERATIONS=max(1, int(os.getenv("MAX_GENERATIONS", "1"))),
         REQUIRE_API_KEY=_enabled(os.getenv("REQUIRE_API_KEY", "false")),
+        PUBLIC_ONLY_MODE=_enabled(os.getenv("PUBLIC_ONLY_MODE", "false")),
         LOCAL_API_KEY=os.getenv("LOCAL_API_KEY", ""),
     )
     if config:
@@ -180,6 +175,10 @@ def create_app(config: dict | None = None, service=None) -> Flask:
     if app.config["REQUIRE_API_KEY"] and len(app.config["LOCAL_API_KEY"]) < 24:
         raise RuntimeError(
             "REQUIRE_API_KEY is enabled but LOCAL_API_KEY is missing or too short."
+        )
+    if app.config["PUBLIC_ONLY_MODE"] and not app.config["REQUIRE_API_KEY"]:
+        raise RuntimeError(
+            "PUBLIC_ONLY_MODE requires REQUIRE_API_KEY=true for the public tunnel."
         )
 
     origins = _csv(app.config["FRONTEND_URLS"])
@@ -220,6 +219,12 @@ def create_app(config: dict | None = None, service=None) -> Flask:
             + "An explicitly exposed temporary tunnel requires "
             + "REQUIRE_API_KEY=true and a private LOCAL_API_KEY."
         )
+    if (external_hosts or external_origins) and not app.config["PUBLIC_ONLY_MODE"]:
+        raise RuntimeError(
+            "Non-local access requires PUBLIC_ONLY_MODE=true. "
+            "Do not expose private owner-local RAG through a tunnel."
+        )
+
     CORS(
         app,
         origins=origins,
@@ -228,8 +233,12 @@ def create_app(config: dict | None = None, service=None) -> Flask:
         expose_headers=["Retry-After", "X-Request-ID"],
     )
 
+    # Public beta: use one conservative global bucket. Vercel/ngrok are
+    # proxies, so Flask cannot trust arbitrary forwarded visitor IP headers.
+    # Combined with MAX_GENERATIONS=1 this bounds modest test traffic.
     limiter = Limiter(
-        get_remote_address,
+        (lambda: "public-beta-global")
+        if app.config["PUBLIC_ONLY_MODE"] else get_remote_address,
         app=app,
         default_limits=["60/minute"],
     )

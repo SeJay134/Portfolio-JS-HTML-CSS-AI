@@ -15,6 +15,7 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test:unit
+      - run: node --test tests/integration/frontend/ngrok-bridge.test.mjs
       - run: npm run build
   local-api:
     runs-on: ubuntu-latest
@@ -26,7 +27,7 @@ jobs:
           cache: pip
           cache-dependency-path: requirements-local-api-dev.txt
       - run: pip install -r requirements-local-api-dev.txt
-      - run: python -m pytest -q tests/integration/backend/test_local_api.py tests/integration/backend/test_local_rag_security.py tests/integration/backend/test_public_knowledge.py
+      - run: python -m pytest -q tests/integration/backend tests/pr19/test_runner.py
   smoke:
     runs-on: ubuntu-latest
     steps:
@@ -37,6 +38,9 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:smoke -- --project=chromium
+      - run: npm run test:chat-dev
+      - run: VITE_ENABLE_PUBLIC_CHAT_UI=true npm run build
+      - run: npm run test:chat-hydration
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

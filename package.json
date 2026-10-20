@@ -4,7 +4,7 @@
   "version": "2.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1 --port 5001",
+    "dev": "vite --host 127.0.0.1 --port 5001 --strictPort",
     "build": "tsc -b && vite build && node --import tsx scripts/prerender.tsx",
     "preview": "vite preview --host 127.0.0.1 --port 4173",
     "test": "npm run test:unit",
@@ -15,7 +15,9 @@
     "test:browser": "playwright test tests/smoke tests/e2e tests/regression",
     "typecheck": "tsc -b --pretty false",
     "lint": "eslint src scripts/prerender.tsx vite.config.ts playwright.config.ts tests",
-    "format": "prettier --write src scripts tests *.ts *.json *.md .github/workflows/ci.yml"
+    "format": "prettier --write src scripts tests *.ts *.json *.md .github/workflows/ci.yml",
+    "test:chat-dev": "playwright test --config playwright.chat.config.ts",
+    "test:chat-hydration": "playwright test --config playwright.public-chat.config.ts"
   },
   "dependencies": {
     "react": "19.3.0",

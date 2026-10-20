@@ -210,3 +210,22 @@ changing the runtime. No model switch or index rebuild is needed for
 this cleanup. Public rollout requires a separate secured, reachable backend;
 merging local-only Flask or localhost Chat UI cannot make real AI available
 to remote visitors.
+
+## PR #19 — active RAG generation compatibility and integrity
+
+- Updated PR #19 against current `main` while retaining its original history.
+  The existing `active.json` / `versions/<uuid>` layout remains canonical;
+  the incompatible `current.json` format proposed in the first PR commit is
+  **not** introduced into the resulting code.
+- `LocalPortfolioService.ready()` now delegates to `load_index()` and checks
+  the configured Ollama model, without testing obsolete root paths.
+- New v2 pointers contain SHA-256 digests of the exact FAISS and JSON bytes;
+  malformed manifests and changed files fail closed. Previous active v1 pointers
+  and valid root-level legacy pairs remain readable until reindexing.
+- Backend CI executes the complete integration directory, including real FAISS
+  serialization, same-count tamper tests, concurrent readers/writers, legacy
+  migration and negative readiness tests. CI never accesses the owner's corpus.
+- Before merge: obtain green PR CI and owner's explicit manual approval. On the
+  owner's hardware, back up local index/source files, rebuild with trusted data,
+  restart Flask, verify `/ready` and a real `/chat` response. Do not delete
+  `data/base`, `data/embeddings`, `.env`, or orphaned generations.

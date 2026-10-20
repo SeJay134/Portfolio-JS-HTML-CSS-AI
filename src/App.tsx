@@ -1,10 +1,28 @@
 import React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Drawer, sections, type SectionId } from "./components/Drawer";
 import { Projects } from "./components/Projects";
 import { Contact } from "./components/Contact";
 import { Icon } from "./components/Icon";
 import { useTheme } from "./hooks/useTheme";
+import { WidgetBoundary } from "./components/WidgetBoundary";
+
+// Production stays disabled unless the owner explicitly enables the public
+// beta after provisioning a protected same-origin /api backend.
+const CHAT_UI_ENABLED =
+  (import.meta.env?.DEV === true &&
+    import.meta.env?.VITE_ENABLE_CHAT_UI === "true") ||
+  (import.meta.env?.PROD === true &&
+    import.meta.env?.VITE_ENABLE_PUBLIC_CHAT_UI === "true");
+const Chat = CHAT_UI_ENABLED
+  ? lazy(() => import("./components/Chat"))
+  : null;
+
+// Keep the very first client render identical to prerendered HTML.
+// Chat is client-only until React finishes hydrating the portfolio.
+const subscribeNoop = () => () => {};
+const clientReadySnapshot = () => true;
+const serverReadySnapshot = () => false;
 
 function getViewportSection(): SectionId {
   const headerBottom =
@@ -75,6 +93,9 @@ const skills = [
 ];
 export default function App() {
   const [menu, setMenu] = useState(false);
+  const [chat, setChat] = useState(false);
+  const [chatLoaded, setChatLoaded] = useState(false);
+  const chatHydrated = useSyncExternalStore(subscribeNoop, clientReadySnapshot, serverReadySnapshot);
   const { theme, selectTheme } = useTheme();
   const [active, setActive] = useState<(typeof sections)[number][0]>("Home");
   const pendingMenuNavigation = useRef<
@@ -82,6 +103,7 @@ export default function App() {
   >(null);
   const menuOpenRef = useRef(false);
   const menuButton = useRef<HTMLButtonElement>(null);
+  const chatButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     let frame = 0;
     const syncActiveSection = () => {
@@ -129,16 +151,34 @@ export default function App() {
 
   useEffect(() => {
     const previous = document.body.style.overflow;
-    document.body.style.overflow = menu ? "hidden" : previous;
+    const mobileViewport = window.matchMedia("(max-width: 600px)");
+    const syncScrollLock = () => {
+      document.body.style.overflow =
+        menu || (chat && mobileViewport.matches) ? "hidden" : previous;
+    };
+    syncScrollLock();
+    mobileViewport.addEventListener("change", syncScrollLock);
     return () => {
+      mobileViewport.removeEventListener("change", syncScrollLock);
       document.body.style.overflow = previous;
     };
-  }, [menu]);
+  }, [menu, chat]);
   const prepareMenuOpen = useCallback(() => {
     const focused = document.activeElement;
     const focusedSection = sections.find(([id]) => focused?.id === id)?.[0];
     if (focusedSection) setActive(focusedSection);
     menuOpenRef.current = true;
+  }, []);
+  const closeChat = useCallback(() => {
+    setChat(false);
+    requestAnimationFrame(() => chatButton.current?.focus({ preventScroll: true }));
+  }, []);
+  const openMenuFromChat = useCallback(() => {
+    setChat(false);
+    requestAnimationFrame(() => {
+      menuOpenRef.current = true;
+      setMenu(true);
+    });
   }, []);
   const closeMenu = useCallback((reason: "dismiss" | "navigate") => {
     menuOpenRef.current = false;
@@ -194,6 +234,7 @@ export default function App() {
               onPointerDown={prepareMenuOpen}
               onClick={() => {
                 if (!menuOpenRef.current) prepareMenuOpen();
+                setChat(false);
                 setMenu(true);
               }}
             >
@@ -416,6 +457,38 @@ export default function App() {
         <p>© {new Date().getFullYear()} Sergei Patrushev</p>
         <a href="#Home">Back to top ↑</a>
       </footer>
+      {CHAT_UI_ENABLED && chatHydrated && (
+        <>
+          <button
+            type="button"
+            ref={chatButton}
+            className="chat-launcher"
+            aria-expanded={chat}
+            aria-label={chat ? "Close portfolio assistant" : "Open portfolio assistant"}
+            onClick={() => {
+              if (chat) closeChat();
+              else {
+                setChatLoaded(true);
+                setChat(true);
+              }
+            }}
+          >
+            <Icon name={chat ? "close" : "chat"} />
+            <span>Ask about me</span>
+          </button>
+          {chatLoaded && Chat && (
+            <WidgetBoundary fallback={
+              <div className="widget-fallback" role="alert">
+                Assistant could not load. <a href="#Connect">Use Contact</a>.
+              </div>
+            }>
+              <Suspense fallback={<div className="widget-fallback" role="status">Opening assistant…</div>}>
+                <Chat open={chat} onClose={closeChat} onOpenMenu={openMenuFromChat} />
+              </Suspense>
+            </WidgetBoundary>
+          )}
+        </>
+      )}
     </>
   );
 }
