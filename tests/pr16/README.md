@@ -22,3 +22,19 @@ Only case IDs, status codes, timings, public catalogue hash and safe metadata
 are recorded; generated model answers/questions and private data are omitted.
 CI runs deterministic cases, not actual owner Ollama.
 See `docs/RAG_ANSWER_EVALUATION.md` for gates and caveats.
+
+
+## User-local `pytest_failed` diagnosis
+
+The launcher now isolates deterministic backend test settings from the real
+`.env`. In particular, it disables dotenv loading **only for the synthetic
+pytest subprocess**, with local-only Flask options and no API key in that
+process. Real Ollama quality and authenticated Flask smoke still use the
+existing `.env` automatically and never require typing a secret.
+
+If a stage fails, `reports/latest.json` now records `stage`, `error_code`,
+and for Python test failures a safe `diagnostics` section with the pytest
+exit code and verified test identifiers. Full pytest tracebacks, local
+absolute paths, environment secrets and model outputs are never stored.
+After updating the PR #16 branch, double-click the same `RUN_PR16.cmd`
+and share only `latest.json` if an error persists.

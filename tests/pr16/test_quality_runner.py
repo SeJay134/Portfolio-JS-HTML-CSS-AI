@@ -114,3 +114,69 @@ def test_repeated_runs_compare_only_same_model_and_catalogue(tmp_path, monkeypat
     other_model["public_quality"]["model"] = "different-model"
     runner.compare_previous(other_model)
     assert "comparison" not in other_model
+
+
+def test_pytest_isolation_does_not_modify_real_env_or_key(monkeypatch):
+    monkeypatch.setenv("REQUIRE_API_KEY", "true")
+    monkeypatch.setenv("LOCAL_API_KEY", "private-do-not-share")
+    monkeypatch.setenv("PUBLIC_ONLY_MODE", "true")
+    monkeypatch.setenv("FRONTEND_URLS", "https://external.example")
+    monkeypatch.setenv("TRUSTED_HOSTS", "external.example")
+    test_env = runner.isolated_test_env()
+    assert test_env["PYTHON_DOTENV_DISABLED"] == "1"
+    assert test_env["REQUIRE_API_KEY"] == "false"
+    assert test_env["PUBLIC_ONLY_MODE"] == "false"
+    assert test_env["FRONTEND_URLS"].startswith("http://127.0.0.1")
+    assert "LOCAL_API_KEY" not in test_env
+    assert runner.os.environ["LOCAL_API_KEY"] == "private-do-not-share"
+    assert runner.os.environ["REQUIRE_API_KEY"] == "true"
+
+
+def test_pytest_failure_reports_only_safe_test_ids(monkeypatch):
+    output = (
+        "FAILED tests/integration/backend/test_local_api.py::test_health_ready_cors_and_static_files - AssertionError\n"
+        "ERROR tests/pr16/test_evaluator.py\n"
+        "secret path C:\\Users\\private\\data\\base\\do-not-share.md\n"
+    )
+    class Result:
+        returncode = 1
+        stdout = output
+        stderr = ""
+    monkeypatch.setattr(
+        runner.subprocess, "run", lambda *args, **kwargs: Result()
+    )
+    with pytest.raises(runner.VerificationError) as caught:
+        runner.run_pytest()
+    assert caught.value.code == "pytest_failed"
+    info = caught.value.details
+    assert info["pytest_exit_code"] == 1
+    assert "tests/integration/backend/test_local_api.py::test_health_ready_cors_and_static_files" in info["failed_tests"]
+    assert "tests/pr16/test_evaluator.py" in info["failed_tests"]
+    assert "do-not-share" not in str(info)
+
+
+def test_failure_report_identifies_exact_stage(tmp_path, monkeypatch):
+    class FakeSmoke:
+        def ensure_packages(self):
+            return None
+    monkeypatch.setattr(runner, "REPORTS", tmp_path)
+    monkeypatch.setattr(
+        runner, "check_branch",
+        lambda: ("feat/rag-answer-quality-evaluation", "abc123")
+    )
+    monkeypatch.setattr(runner, "import_pr19_runner", lambda: FakeSmoke())
+    def fail_pytest():
+        raise runner.VerificationError(
+            "Python regressions failed.", code="pytest_failed",
+            details={"pytest_exit_code": 1, "category": "test_assertion",
+                     "failed_tests": ["tests/pr16/test_evaluator.py"]},
+        )
+    monkeypatch.setattr(runner, "run_pytest", fail_pytest)
+    assert runner.main() == 1
+    data = json.loads((tmp_path / "latest.json").read_text())
+    assert data["stage"] == "deterministic_tests"
+    assert data["error_code"] == "pytest_failed"
+    assert data["checks"] == {
+        "branch": "pass", "dependencies": "pass", "deterministic_tests": "fail"
+    }
+    assert data["diagnostics"]["failed_tests"] == ["tests/pr16/test_evaluator.py"]

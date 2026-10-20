@@ -10,6 +10,7 @@ import html
 import importlib.util
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -27,7 +28,12 @@ EXPECTED = {"feat/rag-answer-quality-evaluation", "main"}
 
 
 class VerificationError(Exception):
-    pass
+    def __init__(self, message: str, *, code: str = "verification_failed",
+                 details: dict | None = None):
+        super().__init__(message)
+        self.code = code
+        self.details = details or {}
+
 
 
 def git(*args: str) -> str:
@@ -78,16 +84,93 @@ def safe_config() -> dict:
     return config
 
 
+def isolated_test_env() -> dict[str, str]:
+    """Run synthetic tests independently of the owner's live .env.
+
+    No permanent changes to the current environment. Production/integration
+    smoke continues to load the real local key after this subprocess exits.
+    """
+    env = dict(os.environ)
+    for key in (
+        "REQUIRE_API_KEY", "LOCAL_API_KEY", "PUBLIC_ONLY_MODE",
+        "FRONTEND_URLS", "TRUSTED_HOSTS", "CHAT_LIMIT",
+        "RATELIMIT_STORAGE_URI", "OLLAMA_HOST", "MODEL_NAME",
+        "MODEL_TIMEOUT", "MAX_GENERATIONS",
+    ):
+        env.pop(key, None)
+    env.update({
+        "PYTHON_DOTENV_DISABLED": "1",
+        "REQUIRE_API_KEY": "false",
+        "PUBLIC_ONLY_MODE": "false",
+        "FRONTEND_URLS": "http://127.0.0.1:5001,http://localhost:5001",
+        "TRUSTED_HOSTS": "127.0.0.1,localhost",
+        "HF_HUB_OFFLINE": "1",
+        "TRANSFORMERS_OFFLINE": "1",
+    })
+    return env
+
+
+def safe_pytest_diagnostics(output: str, exit_code: int) -> dict:
+    """Retain only static test identifiers and generic error categories.
+
+    Never persist raw stdout/tracebacks, absolute paths, env, case questions,
+    or arbitrary exception messages.
+    """
+    failures = []
+    expr = re.compile(
+        r"(?:^|\\s)(?:FAILED|ERROR)\\s+"
+        r"(tests/(?:integration/backend|pr16|pr19)/"
+        r"[A-Za-z0-9_./-]+\\.py)"
+        r"(?:::(test_[A-Za-z0-9_]+))?"
+    )
+    for line in output.splitlines():
+        match = expr.search(line)
+        if match:
+            ident = match.group(1)
+            if match.group(2):
+                ident += "::" + match.group(2)
+            if ident not in failures:
+                failures.append(ident)
+    normalized = output.lower()
+    category = (
+        "collection_error" if ("error collecting" in normalized
+                               or "import file mismatch" in normalized)
+        else "missing_dependency" if ("modulenotfounderror" in normalized
+                                      or "no module named" in normalized)
+        else "test_assertion" if ("failed tests/" in normalized
+                                  or "assertionerror" in normalized)
+        else "test_process_error"
+    )
+    return {"pytest_exit_code": int(exit_code),
+            "category": category, "failed_tests": failures[:12]}
+
+
 def run_pytest() -> None:
     print("[RUN] Deterministic backend, evaluator and prior snapshot tests.", flush=True)
-    rc = subprocess.run([
+    completed = subprocess.run([
         sys.executable, "-m", "pytest", "-q",
         "tests/integration/backend", "tests/pr19/test_runner.py",
         "tests/pr16/test_evaluator.py", "tests/pr16/test_quality_runner.py",
         "tests/pr16/test_retrieval_probe.py"
-    ], cwd=ROOT, check=False).returncode
+    ], cwd=ROOT, env=isolated_test_env(), capture_output=True,
+       text=True, errors="replace", check=False)
+    rc = completed.returncode
     if rc:
-        raise VerificationError("Python regressions failed.")
+        diagnostics = safe_pytest_diagnostics(
+            str(getattr(completed, "stdout", "") or "") + "\n"
+            + str(getattr(completed, "stderr", "") or ""), rc
+        )
+        print(
+            f"[FAIL] Python tests: {diagnostics['category']} "
+            f"(exit {rc}). Failed test IDs: "
+            f"{', '.join(diagnostics['failed_tests']) or 'not identified'}.",
+            flush=True,
+        )
+        raise VerificationError(
+            "Python regressions failed; see safe report diagnostics.",
+            code="pytest_failed", details=diagnostics,
+        )
+    print("[OK] Deterministic Python regressions passed.", flush=True)
 
 
 def public_quality(config: dict) -> dict:
@@ -203,23 +286,34 @@ def main() -> int:
         "checks": {},
     }
     try:
+        report["stage"] = "branch"
         branch, sha = check_branch()
         report["branch"], report["commit"] = branch, sha
+        report["checks"]["branch"] = "pass"
         print(f"[OK] Verification branch: {branch} at {sha}", flush=True)
+        report["stage"] = "dependencies"
         smoke = import_pr19_runner()
         smoke.ensure_packages()
+        report["checks"]["dependencies"] = "pass"
+        report["stage"] = "deterministic_tests"
         run_pytest()
         report["checks"]["deterministic_tests"] = "pass"
+        report["stage"] = "frontend_browser"
         smoke.run_frontend_suite()
         report["checks"]["frontend_browser"] = "pass"
+        report["stage"] = "local_config"
         config = safe_config()
+        report["checks"]["local_config"] = "pass"
+        report["stage"] = "public_quality"
         print("[RUN] Real Ollama quality baseline on PUBLIC catalogue.", flush=True)
         public = public_quality(config)
         report["public_quality"] = public
         report["checks"]["public_quality"] = public["summary"]["status"]
+        report["stage"] = "private_api_smoke"
         print("[RUN] Authenticated private /ready and /chat via PR19 smoke.", flush=True)
         smoke.run_live(config)
         report["checks"]["private_api_smoke"] = "pass"
+        report["stage"] = "complete"
         # A semantic review remains necessary even if the narrow automatic
         # checks pass: do not misrepresent this as complete quality assurance.
         report["status"] = public["summary"]["status"]
@@ -230,12 +324,19 @@ def main() -> int:
         )
         return 0 if report["status"] == "passed" else 1
     except VerificationError as exc:
-        report["error_code"] = "verification_failed"
-        print(f"[FAIL] {exc}", flush=True)
+        report["error_code"] = exc.code
+        report["checks"][report.get("stage", "unknown")] = "fail"
+        if exc.details:
+            report["diagnostics"] = exc.details
+        print(f"[FAIL] At {report.get('stage', 'unknown')}: {exc}", flush=True)
         return 1
     except Exception as exc:
         report["error_code"] = type(exc).__name__
-        print(f"[FAIL] {type(exc).__name__}; private data not printed.", flush=True)
+        report["checks"][report.get("stage", "unknown")] = "fail"
+        print(
+            f"[FAIL] At {report.get('stage', 'unknown')}: "
+            f"{type(exc).__name__}; private data not printed.", flush=True,
+        )
         return 1
     finally:
         try:
