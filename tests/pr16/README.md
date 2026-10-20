@@ -38,3 +38,8 @@ exit code and verified test identifiers. Full pytest tracebacks, local
 absolute paths, environment secrets and model outputs are never stored.
 After updating the PR #16 branch, double-click the same `RUN_PR16.cmd`
 and share only `latest.json` if an error persists.
+
+After a Windows run ends, the launcher automatically opens the local HTML
+report in the default browser. The page now shows failure stage, safe error
+code and test IDs as well as quality metrics; there is no need to open JSON
+manually unless further diagnosis is needed.

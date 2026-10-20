@@ -180,3 +180,24 @@ def test_failure_report_identifies_exact_stage(tmp_path, monkeypatch):
         "branch": "pass", "dependencies": "pass", "deterministic_tests": "fail"
     }
     assert data["diagnostics"]["failed_tests"] == ["tests/pr16/test_evaluator.py"]
+
+
+def test_safe_html_shows_stage_and_failure_identifiers(tmp_path, monkeypatch):
+    monkeypatch.setattr(runner, "REPORTS", tmp_path)
+    runner.write_report({
+        "status": "failed", "stage": "deterministic_tests",
+        "error_code": "pytest_failed",
+        "diagnostics": {
+            "category": "test_assertion",
+            "failed_tests": ["tests/integration/backend/test_local_api.py"],
+        }
+    })
+    html_text = (tmp_path / "latest.html").read_text()
+    assert "deterministic_tests" in html_text
+    assert "pytest_failed" in html_text
+    assert "tests/integration/backend/test_local_api.py" in html_text
+
+
+def test_windows_launcher_opens_generated_report_automatically():
+    script = (DIR / "RUN_PR16.cmd").read_text(encoding="utf-8")
+    assert 'start "" "%~dp0reports\\latest.html"' in script

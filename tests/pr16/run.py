@@ -262,6 +262,13 @@ def write_report(report: dict) -> None:
     )
     safe_status = html.escape(str(report["status"]))
     safe_score = html.escape(str(summary.get("pass_rate", "N/A")))
+    safe_stage = html.escape(str(report.get("stage", "unknown")))
+    safe_error = html.escape(str(report.get("error_code", "none")))
+    diagnostics = report.get("diagnostics") or {}
+    safe_category = html.escape(str(diagnostics.get("category", "none")))
+    safe_failed_tests = html.escape(
+        ", ".join(diagnostics.get("failed_tests", [])) or "none identified"
+    )
     markup = (
         '<!doctype html><html lang="en"><meta charset="utf-8">'
         '<title>PR16 RAG quality summary</title>'
@@ -269,6 +276,10 @@ def write_report(report: dict) -> None:
         'td,th{border:1px solid #ddd;padding:8px;text-align:left}'
         'table{border-collapse:collapse;width:100%}</style>'
         f'<h1>PR #16 — {safe_status}</h1>'
+        f'<p>Last stage: <strong>{safe_stage}</strong>; '
+        f'error code: <strong>{safe_error}</strong></p>'
+        f'<p>Failure category: {safe_category}. '
+        f'Failed test IDs: {safe_failed_tests}.</p>'
         f'<p>Mandatory pass rate: {safe_score}. '
         'Language checks are diagnostic-only.</p>'
         '<table><thead><tr><th>Case</th><th>Status</th><th>Seconds</th>'

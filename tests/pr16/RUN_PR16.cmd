@@ -13,5 +13,6 @@ set "RESULT=%ERRORLEVEL%"
 :done
 echo.
 if "%RESULT%"=="0" (echo PR16 deterministic baseline passed.) else (echo PR16 failed or needs review. See local report.)
+if exist "%~dp0reports\latest.html" start "" "%~dp0reports\latest.html"
 if /I not "%~1"=="--no-pause" pause
 exit /b %RESULT%
