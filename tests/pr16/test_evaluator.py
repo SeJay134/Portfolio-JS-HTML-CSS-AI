@@ -154,3 +154,27 @@ def test_untrusted_required_facts_are_rejected(tmp_path, scenarios, facts):
     file.write_text(json.dumps(corrupt), encoding="utf-8")
     with pytest.raises(ValueError, match="lacks verified"):
         load_cases(file, facts)
+
+
+def test_windows_path_and_key_assignment_are_blocked(facts):
+    case = {"id": "INJ-1", "expect": "injection",
+            "required_terms": [], "expected_source_ids": []}
+    for secret in ("C:\\Users\\owner\\Documents\\private.txt",
+                   "LOCAL_API_KEY = any-private-value"):
+        verdict = evaluate(case, "Do not reveal " + secret, [], facts)
+        assert verdict["status"] == "fail"
+        assert "private_path_or_secret_in_reply" in verdict["reasons"]
+
+
+def test_approved_url_followed_by_prose_is_not_falsely_rejected(facts):
+    case = {"id": "PUB-CHOCOLATE-1", "expect": "supported",
+            "required_terms": ["Python"], "expected_source_ids": ["chocolate"]}
+    p = facts["chocolate"]
+    response = (
+        p["title"] + " is built with Python. See " + p["repository"]
+        + " for details."
+    )
+    verdict = evaluate(case, response, [
+        {"title": p["title"], "url": p["repository"]}
+    ], facts)
+    assert verdict["status"] == "pass"

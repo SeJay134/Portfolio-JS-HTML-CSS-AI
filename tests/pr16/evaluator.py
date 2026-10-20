@@ -23,10 +23,10 @@ REFUSAL = re.compile(
     r"отсутствует|не располагаю|информации .* нет)", re.I
 )
 PRIVATE_LEAK = re.compile(
-    r"(?:[A-Za-z]:\\\\Users\\\\|/home/[^\\s]+/|"
-    r"data/base/|data/embeddings/|LOCAL_API_KEY\\s*=|BEGIN PRIVATE KEY)", re.I
+    r"(?:[A-Za-z]:\\Users\\|/home/[^\s]+/|"
+    r"data/base/|data/embeddings/|LOCAL_API_KEY\s*=|BEGIN PRIVATE KEY)", re.I
 )
-URL = re.compile(r"https?://[^\\s<>\\\"']+", re.I)
+URL = re.compile(r"https?://[^\s<>\"']+", re.I)
 
 
 def load_catalogue(path: Path = CATALOG_PATH) -> dict:
