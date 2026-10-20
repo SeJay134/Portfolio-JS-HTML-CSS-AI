@@ -27,7 +27,7 @@ jobs:
           cache: pip
           cache-dependency-path: requirements-local-api-dev.txt
       - run: pip install -r requirements-local-api-dev.txt
-      - run: python -m pytest -q tests/integration/backend tests/pr19/test_runner.py tests/pr16/test_evaluator.py tests/pr16/test_runner.py tests/pr16/test_retrieval_probe.py
+      - run: python -m pytest -q tests/integration/backend tests/pr19/test_runner.py tests/pr16/test_evaluator.py tests/pr16/test_quality_runner.py tests/pr16/test_retrieval_probe.py
   smoke:
     runs-on: ubuntu-latest
     steps:

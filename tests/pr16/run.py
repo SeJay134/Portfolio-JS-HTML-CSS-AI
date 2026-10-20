@@ -79,7 +79,7 @@ def run_pytest() -> None:
     rc = subprocess.run([
         sys.executable, "-m", "pytest", "-q",
         "tests/integration/backend", "tests/pr19/test_runner.py",
-        "tests/pr16/test_evaluator.py", "tests/pr16/test_runner.py",
+        "tests/pr16/test_evaluator.py", "tests/pr16/test_quality_runner.py",
         "tests/pr16/test_retrieval_probe.py"
     ], cwd=ROOT, check=False).returncode
     if rc:
