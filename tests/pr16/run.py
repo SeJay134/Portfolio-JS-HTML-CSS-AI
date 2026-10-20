@@ -118,9 +118,9 @@ def safe_pytest_diagnostics(output: str, exit_code: int) -> dict:
     """
     failures = []
     expr = re.compile(
-        r"(?:^|\\s)(?:FAILED|ERROR)\\s+"
+        r"(?:^|\s)(?:FAILED|ERROR)\s+"
         r"(tests/(?:integration/backend|pr16|pr19)/"
-        r"[A-Za-z0-9_./-]+\\.py)"
+        r"[A-Za-z0-9_./-]+\.py)"
         r"(?:::(test_[A-Za-z0-9_]+))?"
     )
     for line in output.splitlines():
