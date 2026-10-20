@@ -139,6 +139,8 @@ def public_quality(config: dict) -> dict:
 
 def compare_previous(report: dict) -> None:
     """Attach only aggregate deltas when model, public corpus and sample match."""
+    # Reused report dictionaries must never carry deltas from an older model.
+    report.pop("comparison", None)
     existing = REPORTS / "latest.json"
     if not existing.is_file() or "public_quality" not in report:
         return
