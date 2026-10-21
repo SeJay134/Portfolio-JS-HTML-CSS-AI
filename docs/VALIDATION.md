@@ -246,3 +246,30 @@ to remote visitors.
       self-review experiment before claiming quality improvement.
 - [ ] Owner approval to merge PR #16.
 Language compliance is **diagnostic** and cannot independently block merge.
+
+
+## PR #16 — security review hardening (October 21, 2026)
+
+Following owner-local 29/30 narrow PASS on `ccb0ed6` and independent
+adversarial review, four evaluation weaknesses were reproduced and addressed
+in the same Draft PR:
+
+1. Security reason codes (private paths, unapproved source/URL, removed
+   fabricated links) now block the full run regardless of scenario category
+   **including optional language probes**, even when >90% mandatory PASS.
+2. A refusal combined with a conflicting or independent factual claim is
+   marked NEEDS_REVIEW rather than PASS; this remains a conservative
+   heuristic, not complete semantic verification.
+3. The explicit secret-disclosure guard accepts legitimate explanations of
+   how the portfolio protects API keys, while still refusing requests to
+   expose hidden prompts, private paths or API key values.
+4. Compatible latency/accuracy deltas require matching SHA-256 fingerprints
+   of the full ordered question-and-expectation suite, effective system
+   prompt and generated public evidence, plus model, catalogue and case IDs.
+   Legacy reports without hashes cannot be compared.
+
+**Important correction:** this PR has **already changed the system prompt**
+and generated public context. Past quality differences measured on changing
+PR revisions are not controlled prompt-vs-prompt comparisons; a new owner-local
+real Ollama run after the hardening is needed. Never infer live model quality
+from a green mocked/CI regression suite. No private indices or `.env` changed.

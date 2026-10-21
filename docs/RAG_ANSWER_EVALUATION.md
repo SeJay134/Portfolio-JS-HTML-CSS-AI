@@ -1,7 +1,11 @@
 # Phase 4.3b — Evidence-grounded RAG answer evaluation
 
-**Status: Draft PR #16, based on current main after PR #19.** This PR adds
-an evaluation harness; it makes no model, prompt, hosting or index changes.
+**Status: Draft PR #16, based on current main after PR #19.** This PR
+adds an evaluation harness **and changes the existing system prompt and
+answer-safety behavior** in `llm/app.py` / `llm/public_knowledge.py`
+(verified technology naming, citation/URL guidance, explicit secret-extraction
+refusal, filtering unapproved generated URLs). It does **not** change the
+chosen model, embedding model, hosting or private FAISS index.
 
 ## Goal and constraints
 
@@ -44,15 +48,25 @@ performs real authenticated `/ready` and `/chat` calls on loopback.
   pairs, be appropriate for the tested question, and refer to projects
   explicitly named in the answer. No arbitrary URLs/private paths.
 - **Unknown facts/injections:** never return invented URLs, unapproved
-  projects, private paths or source references. If a refusal is unambiguous
-  and has no sources it may pass the narrow refusal check; otherwise
-  mark NEEDS_REVIEW instead of guessing.
+  projects, private paths or source references. An isolated refusal passes
+  only if it contains no contradictory or additional unsupported assertions;
+  ambiguous combined refusal-plus-claim responses become NEEDS_REVIEW.
+  Explicit secret-extraction requests are refused. Questions **about how
+  security works** are not automatically blocked by a keyword match.
+- **Global safety gate:** an approved-fact or optional-language test containing
+  a leaked private path, unapproved URL/source or removed fabricated model
+  URL is a blocking security failure **regardless of test category or the
+  >=90% mandatory pass rate**. Optional language *quality* alone is nonblocking.
 - **Retrieval relevance:** record safe public document-hit booleans and FAISS
   distance samples (never retrieved text). A retrieval miss is diagnostic,
   not a hand-picked global distance cutoff.
-- **Performance:** measure seconds for every case plus p50/p95 and mean
-  for the chosen machine, current Ollama model and exact SHA-256 of the
-  reviewed public fixture. Compare like with like across runs.
+- **Performance and comparability:** record latency (seconds, p50/p95, mean)
+  and only compare aggregate deltas when model, reviewed catalogue SHA-256,
+  complete ordered case suite SHA-256 (question text **and** expectations),
+  effective system-prompt SHA-256 and generated public-evidence SHA-256 match.
+  Different case IDs, any changed expectations, or legacy reports without
+  all fingerprints must not produce a `comparison`. Only hashes, not
+  question/prompt/evidence text, are saved.
 - **Reliability:** model failure/timeout is FAIL; language-only issues are
   never counted in the mandatory pass rate.
 
@@ -65,10 +79,15 @@ No merging until owner-local Ollama evidence and owner's explicit approval.
 
 ## Experiment policy
 
-First record the real **single-pass** baseline from the existing system.
-Only if a reproducible failure justifies it, design a separate and bounded
-comparison of prompt changes versus an optional one-extra-call self-review,
-using the *same* test set/index/model. A self-review is not independent fact
+The owner measured a real **single-pass** baseline, then PR #16 evolved
+the RAG prompt and public-evidence construction. Scores across those changed
+revisions are observational, **not** proof of a same-condition improvement:
+the new suite/prompt/evidence hashes deliberately suppress incompatible
+aggregate delta comparisons. Any future controlled prompt experiment must
+hold cases, model, public evidence and runtime conditions constant, varying
+only the stated intervention and recording its identifier. If repeatable
+failures justify it, compare with an optional one-extra-call self-review
+as a separate experiment. No extra self-review call is shipped by PR #16. A self-review is not independent fact
 verification and must demonstrate its effect on p50/p95 latency. **No
 unmeasured self-review path is deployed by this PR**. Do not force translation,
 switch embedding models, or tune FAISS cutoffs without labelled evidence.
@@ -83,9 +102,10 @@ for an API key, manually require Flask startup, recreate an index,
 download Ollama models, switch Git branches, or upload user data.
 
 Reports: `tests/pr16/reports/latest.json` and `latest.html` are
-**gitignored** and contain status codes, timings, case IDs and reviewed
-public fixture SHA only — never raw questions, answer text, prompts, source
-content, private paths, `.env` or secrets. Do not upload them to CI.
+**gitignored** and contain only status/reason codes, timings, case IDs,
+and catalogue/suite/prompt/public-evidence **SHA-256 hashes** — never raw
+questions, answer text, prompts, source content, private paths, `.env`
+or secrets. Do not upload them to CI.
 Missing local Ollama/FAISS produces FAIL, not a green placeholder.
 
 ## Next acceptance gate
