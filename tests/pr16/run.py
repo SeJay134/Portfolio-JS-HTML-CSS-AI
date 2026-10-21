@@ -195,6 +195,7 @@ def _classify_frontend_failure(output: str, step: str) -> str:
     if any(s in lowered for s in (
         "eaddrinuse", "port 5001 is already in use", "port 4173 is already in use",
         "address already in use", "is already in use", "already in use by another",
+        "port 5001 is in use", "port 4173 is in use", "is already used",
     )):
         return "port_in_use"
     if any(s in lowered for s in (
@@ -214,6 +215,25 @@ def _classify_frontend_failure(output: str, step: str) -> str:
             or "error:" in lowered or "tests failed" in lowered):
         return "test_or_build_failure"
     return "command_failed"
+
+
+def _safe_chat_dev_test_locations(output: str) -> list[str]:
+    """Extract only source line numbers in the fixed public chat test file.
+
+    Never expose Playwright test names, assertion text, screenshots or
+    arbitrary source paths that could contain private data.
+    """
+    found = []
+    pattern = re.compile(
+        r"(?m)^\\s*\\d+\\)\\s+\\[chromium\\]\\s+›\\s+"
+        r"tests[/\\\\]integration[/\\\\]frontend[/\\\\]"
+        r"chat-dev\\.spec\\.ts:(\\d+):\\d+\\s+›"
+    )
+    for match in pattern.finditer(output):
+        line = int(match.group(1))
+        if 1 <= line <= 2000 and line not in found:
+            found.append(line)
+    return [f"chat-dev.spec.ts:{line}" for line in found[:10]]
 
 
 def run_frontend_suite(report: dict) -> None:
@@ -255,11 +275,17 @@ def run_frontend_suite(report: dict) -> None:
             report["frontend_steps"][step] = "fail"
             print(f"[FAIL] Frontend step '{step}': {category} "
                   f"(exit {result.returncode}).", flush=True)
+            details = {"step": step, "category": category,
+                       "exit_code": int(result.returncode)}
+            if step == "chat_dev":
+                locations = _safe_chat_dev_test_locations(
+                    (result.stdout or "") + "\\n" + (result.stderr or "")
+                )
+                if locations:
+                    details["failed_test_locations"] = locations
             raise VerificationError(
                 f"Frontend step '{step}' failed; see safe diagnostic report.",
-                code="frontend_failed",
-                details={"step": step, "category": category,
-                         "exit_code": int(result.returncode)},
+                code="frontend_failed", details=details,
             )
         report["frontend_steps"][step] = "pass"
         print(f"[OK] Frontend: {label}", flush=True)
@@ -398,6 +424,9 @@ def write_report(report: dict) -> None:
     safe_frontend_step = html.escape(str(frontend.get("step", "none")))
     safe_frontend_category = html.escape(str(frontend.get("category", "none")))
     safe_frontend_exit_code = html.escape(str(frontend.get("exit_code", "N/A")))
+    safe_failed_chat_locations = html.escape(
+        ", ".join(frontend.get("failed_test_locations", [])) or "not identified"
+    )
     markup = (
         '<!doctype html><html lang="en"><meta charset="utf-8">'
         '<title>PR16 RAG quality summary</title>'
@@ -411,7 +440,8 @@ def write_report(report: dict) -> None:
         f'Failed test IDs: {safe_failed_tests}.</p>'
         f'<p>Frontend diagnostic: {safe_frontend_step}; '
         f'category: {safe_frontend_category}; '
-        f'exit code: {safe_frontend_exit_code}.</p>'
+        f'exit code: {safe_frontend_exit_code}; '
+        f'failed chat test locations: {safe_failed_chat_locations}.</p>'
         f'<p>Mandatory pass rate: {safe_score}. '
         'Language checks are diagnostic-only.</p>'
         '<table><thead><tr><th>Case</th><th>Status</th><th>Seconds</th>'

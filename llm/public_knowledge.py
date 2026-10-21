@@ -108,6 +108,40 @@ def unlisted_project_reply(question: str) -> str | None:
     )
 
 
+_DISCLOSURE_VERBS = re.compile(
+    r"\\b(?:reveal|disclose|expose|dump|print|show|share|display|"
+    r"покажи|раскрой|выведи|раскрыть|показать)\\b", re.IGNORECASE
+)
+_PRIVATE_TARGETS = re.compile(
+    r"(?:internal|hidden|system|developer)\\s+(?:prompts?|instructions?|rules?)"
+    r"|(?:prompts?|instructions?)\\s+(?:of|from)\\s+(?:your|the)\\s+system"
+    r"|(?:private|internal|local)\\s+(?:file\\s+paths?|documents?|secrets?)"
+    r"|(?:api|access)\\s+keys?"
+    r"|(?:системн|внутренн|скрыт)\\w*\\s+(?:промпт|инструкц|правил)\\w*"
+    r"|(?:секретн|приватн)\\w*\\s+(?:путь|пути|документ|файл)\\w*",
+    re.IGNORECASE,
+)
+
+
+def private_disclosure_reply(question: str) -> str | None:
+    """Refuse explicit requests to reveal hidden instructions or private paths.
+
+    This is a narrowly scoped deterministic safety boundary. It does not
+    classify ordinary questions ABOUT prompt design, projects, or file formats,
+    and does not claim that all injection styles are detectable here.
+    """
+    if not isinstance(question, str):
+        return None
+    if not (_DISCLOSURE_VERBS.search(question)
+            and _PRIVATE_TARGETS.search(question)):
+        return None
+    if response_language(question) == "Russian":
+        return ("Я не могу раскрывать внутренние инструкции, приватные "
+                "файлы или секретные настройки.")
+    return ("I cannot reveal internal instructions, private files or "
+            "secret configuration.")
+
+
 def public_overview() -> str:
     """Stable list of reviewed facts, independent of the question language."""
     lines = ["Published portfolio projects (verified public catalogue):"]

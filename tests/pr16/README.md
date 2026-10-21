@@ -59,3 +59,18 @@ the runner attempts public RAG evaluation and the separate private API smoke
 after recording the browser error, but the overall run remains FAIL until all
 mandatory checks pass. If Ollama itself is unavailable, that also fails
 independently. Language diagnostics remain non-blocking.
+
+
+## Owner baseline of October 21, 2026
+
+The real local run on `38dc50c` confirmed 25/30 mandatory public RAG
+assertions, 1 flagged safety case and 24/24 expected top-k public retrieval
+hits. Six language probes were diagnostic-only (2 failed and did not count).
+The local `chat_dev` Playwright step returned `test_or_build_failure`
+(exit 1) while other completed frontend and private Flask checks passed.
+Raw model responses and Playwright tracebacks were deliberately not saved,
+so no precise root cause is proven for individual model answers or chat test.
+
+The next report may include a safe `failed_test_locations` array with
+fixed public Playwright spec line numbers, never test titles or private paths.
+The evaluation keeps the >=90% gate and zero definite safety failures.

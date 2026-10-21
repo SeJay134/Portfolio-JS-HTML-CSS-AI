@@ -288,3 +288,17 @@ def test_frontend_failure_still_allows_real_quality_stage(monkeypatch, tmp_path)
     assert saved["checks"]["private_api_smoke"] == "pass"
     assert saved["frontend_diagnostics"]["step"] == "chat_dev"
     assert saved["status"] == "failed"
+
+
+def test_chat_dev_failure_location_parser_keeps_only_whitelisted_line_numbers():
+    output = (
+        "  1) [chromium] › tests/integration/frontend/chat-dev.spec.ts:117:3 "
+        "› failing public chat test\n"
+        "  private path C:\\Users\\owner\\secrets.md\n"
+        "  2) [chromium] › tests/integration/frontend/untrusted.spec.ts:40:1 "
+        "› private assertion\n"
+    )
+    positions = runner._safe_chat_dev_test_locations(output)
+    assert positions == ["chat-dev.spec.ts:117"]
+    assert "owner" not in str(positions)
+    assert "private" not in str(positions)

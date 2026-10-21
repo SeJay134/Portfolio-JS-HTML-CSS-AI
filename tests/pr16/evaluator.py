@@ -98,7 +98,7 @@ def load_cases(path: Path = CASES_PATH, catalogue: dict | None = None) -> list[d
 
 def _urls_safe(reply: str, approved: set[str]) -> bool:
     for found in URL.findall(reply):
-        if found.rstrip(".,;)") not in approved:
+        if found.rstrip(".,;)]}") not in approved:
             return False
     return True
 
@@ -110,7 +110,11 @@ def evaluate(case: dict, reply: str, sources: object, catalogue: dict) -> dict:
         return {"id": case["id"], "status": "fail", "reasons": ["empty_reply"]}
     if not isinstance(sources, list):
         return {"id": case["id"], "status": "fail", "reasons": ["invalid_sources"]}
+    # The public portfolio page is itself reviewed evidence. Keep this
+    # exact allowlist; unknown GitHub/domain URLs still fail the safety gate.
+    from llm.public_knowledge import CATALOG_URL
     approved = {project["repository"] for project in catalogue.values()}
+    approved.add(CATALOG_URL)
     expected_ids = set(case["expected_source_ids"])
     expected_pairs = {
         (catalogue[key]["title"], catalogue[key]["repository"])

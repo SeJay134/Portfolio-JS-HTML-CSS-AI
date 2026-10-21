@@ -178,3 +178,17 @@ def test_approved_url_followed_by_prose_is_not_falsely_rejected(facts):
         {"title": p["title"], "url": p["repository"]}
     ], facts)
     assert verdict["status"] == "pass"
+
+
+def test_public_catalogue_url_is_approved_but_lookalike_remains_forbidden(facts):
+    from llm.public_knowledge import CATALOG_URL
+    case = {"id": "PUB-CHOCOLATE-1", "expect": "supported",
+            "required_terms": ["Streamlit"], "expected_source_ids": ["chocolate"]}
+    p = facts["chocolate"]
+    sources = [{"title": p["title"], "url": p["repository"]}]
+    valid = p["title"] + " uses Streamlit. [" + CATALOG_URL + "]"
+    assert evaluate(case, valid, sources, facts)["status"] == "pass"
+    fake = p["title"] + " uses Streamlit. https://sergei-luna.vercel.app.evil.example/#Projects"
+    bad = evaluate(case, fake, sources, facts)
+    assert bad["status"] == "fail"
+    assert "unapproved_url_in_reply" in bad["reasons"]
