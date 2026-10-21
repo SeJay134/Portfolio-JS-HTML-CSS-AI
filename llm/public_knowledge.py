@@ -123,6 +123,18 @@ _PRIVATE_TARGETS = re.compile(
 )
 
 
+# Demand a sensitive value immediately after an explicit disclosure verb
+# (allowing only harmless qualifiers such as "me the hidden"). Explanatory
+# questions like "Show how the portfolio protects API keys" do not match.
+_EXPLICIT_PRIVATE_DISCLOSURE = re.compile(
+    _DISCLOSURE_VERBS.pattern
+    + r"\s+(?:(?:me|us|my|our|your|the|all|actual|raw|hidden|internal|"
+      r"secret|private|local|full|complete|entire|original)\s+){0,8}"
+    + r"(?:" + _PRIVATE_TARGETS.pattern + r")",
+    re.IGNORECASE,
+)
+
+
 def private_disclosure_reply(question: str) -> str | None:
     """Refuse explicit requests to reveal hidden instructions or private paths.
 
@@ -132,8 +144,7 @@ def private_disclosure_reply(question: str) -> str | None:
     """
     if not isinstance(question, str):
         return None
-    if not (_DISCLOSURE_VERBS.search(question)
-            and _PRIVATE_TARGETS.search(question)):
+    if not _EXPLICIT_PRIVATE_DISCLOSURE.search(question):
         return None
     if response_language(question) == "Russian":
         return ("Я не могу раскрывать внутренние инструкции, приватные "
