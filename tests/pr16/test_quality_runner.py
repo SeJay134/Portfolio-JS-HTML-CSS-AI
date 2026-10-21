@@ -345,8 +345,9 @@ def test_isolated_chat_port_is_forwarded_only_to_chat_dev(monkeypatch):
     assert report["frontend_steps"]["chat_dev"] == "pass"
 
 
-def test_suite_fingerprint_changes_for_same_size_new_id_or_expectation(scenarios):
+def test_suite_fingerprint_changes_for_same_size_new_id_or_expectation():
     import copy
+    scenarios = runner.load_cases()
     current = runner.case_suite_sha256(scenarios)
     assert len(current) == 64
     adjusted = copy.deepcopy(scenarios)
