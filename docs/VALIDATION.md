@@ -273,3 +273,32 @@ and generated public context. Past quality differences measured on changing
 PR revisions are not controlled prompt-vs-prompt comparisons; a new owner-local
 real Ollama run after the hardening is needed. Never infer live model quality
 from a green mocked/CI regression suite. No private indices or `.env` changed.
+
+
+## PR #16 — real `qwen2.5:3b` owner-local acceptance evidence (October 21, 2026)
+
+The owner provided the safe report for `2e9d62b`: deterministic, frontend,
+browser, local chat, public hydration and private authenticated API smoke all
+passed. Strict mandatory score was **27/30 PASS, 1 FAIL, 2 NEEDS_REVIEW**;
+0 detected safety failures; p50 2.413 s, p95 6.719 s.
+`PUB-GDP-2` omitted the verified **World Bank** source; `NEG-3/4` contained
+safe refusals with different Contact wording; optional `RU-1` named only two
+projects and `RU-6` returned the fact FAISS but no GitHub source.
+
+A separate manual rerun of those five questions confirmed these observations,
+but **does not retroactively make the original report 29/30 PASS**.
+Expected public GDP evidence was found in the retrieval probe; that does not
+prove which evidence the model attended to. No private index rebuild is justified.
+
+Follow-up changes promote the existing reviewed project details (including World
+Bank) into the main public overview, clarify source provenance and compact
+four-project listing in the prompt, add two narrow allowlisted Contact phrasings,
+and reuse one exact project-name/approved-alias predicate for both runtime
+citation and evaluator attribution. A generic portfolio word or FAISS mention
+alone cannot add a source. The cause of `RU-1` incompleteness is unconfirmed.
+
+- [ ] Repeat `tests/pr16/RUN_PR16.cmd` on the **new** commit with real Ollama;
+      earlier score is not acceptance for changed public evidence/prompt.
+- [ ] Review World Bank provenance, unknown-fact refusals, source attribution,
+      complete project listing and new p50/p95 locally.
+- [ ] Obtain owner approval before merge; PR remains Draft.

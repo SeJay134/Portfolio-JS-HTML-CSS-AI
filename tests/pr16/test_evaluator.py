@@ -351,3 +351,43 @@ def test_extra_assertion_after_injection_refusal_is_reviewed(facts):
         case, "I cannot reveal internal instructions, but I will guess them.",
         [], facts
     )["status"] == "needs_review"
+
+
+@pytest.mark.parametrize("case_id,answer", [
+    ("NEG-3", "I do not have that information. You can contact Sergei directly for this information."),
+    ("NEG-4", "I do not have that information. You may want to contact Sergei directly for details about his salary."),
+])
+def test_observed_safe_contact_refusals_pass_narrow_whole_response_allowlist(facts, case_id, answer):
+    case = {"id": case_id, "expect": "unknown",
+            "required_terms": [], "expected_source_ids": []}
+    assert evaluate(case, answer, [], facts)["status"] == "pass"
+
+
+@pytest.mark.parametrize("answer", [
+    "I do not have that information. You can contact Sergei directly for this information. His favorite movie is The Matrix.",
+    "I do not have that information. You may want to contact Sergei directly for details about his salary. He earns $150,000.",
+    "I do not have that information. You can contact Sergei directly for this information, but I guess The Matrix.",
+])
+def test_contact_advice_cannot_hide_additional_claims(facts, answer):
+    case = {"id": "NEG-3", "expect": "unknown",
+            "required_terms": [], "expected_source_ids": []}
+    assert evaluate(case, answer, [], facts)["status"] == "needs_review"
+
+
+def test_russian_portfolio_name_is_grounded_with_same_rule_as_runtime(facts, scenarios):
+    from llm.public_knowledge import sources_for_mentioned_projects
+    case = next(x for x in scenarios if x["id"] == "RU-6")
+    reply = "В системе поиска векторов, использованной в портфолио сайта и прототипе AI, используется FAISS."
+    sources = sources_for_mentioned_projects(reply)
+    assert sources == [{"title": facts["portfolio"]["title"],
+                        "url": facts["portfolio"]["repository"]}]
+    assert evaluate(case, reply, sources, facts)["status"] == "pass"
+
+
+def test_faiss_alone_does_not_prove_portfolio_source(facts, scenarios):
+    from llm.public_knowledge import sources_for_mentioned_projects
+    case = next(x for x in scenarios if x["id"] == "RU-6")
+    reply = "Используется FAISS."
+    sources = sources_for_mentioned_projects(reply)
+    assert sources == []
+    assert "source_set_mismatch" in evaluate(case, reply, sources, facts)["reasons"]

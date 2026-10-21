@@ -162,6 +162,7 @@ def public_overview() -> str:
     for project in _public_projects():
         lines.append(
             f"- {project['title']}: {project['summary']} "
+            f"Verified details: {project['detail']} "
             f"Verified technologies: {', '.join(project['tags'])}."
         )
     return "\n".join(lines)
@@ -224,21 +225,49 @@ def filter_unapproved_model_urls(reply: str) -> tuple[str, bool]:
     return _GENERATED_URL.sub(replace, reply), removed
 
 
-def sources_for_mentioned_projects(reply: str) -> list[dict]:
-    """Return exact approved project references for public titles in a model reply.
+# Distinctive, reviewed alternative project names; not generic technologies.
+_PROJECT_NAME_ALIASES = {
+    "portfolio": (
+        re.compile(
+            r"\bпортфолио\s+сайта\s+и\s+прототип(?:е|а|ом)?\s+(?:AI|ИИ)\b",
+            re.IGNORECASE,
+        ),
+        re.compile(
+            r"\bсайт(?:е|а)?[-\s]+портфолио\s+и\s+"
+            r"(?:AI|ИИ)[-\s]+прототип(?:е|а|ом)?\b",
+            re.IGNORECASE,
+        ),
+    ),
+}
 
-    The verified overview is supplied to every model call, so citations must not
-    depend on a public chunk winning one of the top-3 FAISS matches. Return
-    sources only when the answer actually names their exact curated title.
-    Untrusted local knowledge cannot add URLs or edit these references.
+
+def mentions_verified_project(reply: str, project: dict) -> bool:
+    """Require an explicit project name; a technology alone is not provenance."""
+    if not isinstance(reply, str) or not isinstance(project, dict):
+        return False
+    title = project.get("title")
+    if not isinstance(title, str) or not title:
+        return False
+    if title.casefold() in reply.casefold():
+        return True
+    return any(
+        alias.search(reply)
+        for alias in _PROJECT_NAME_ALIASES.get(project.get("id"), ())
+    )
+
+
+def sources_for_mentioned_projects(reply: str) -> list[dict]:
+    """Return only reviewed title/URL pairs for explicitly named projects.
+
+    The evaluator shares the same recognition predicate. Never attribute a
+    repository solely from a technology such as FAISS or from the question.
     """
     if not isinstance(reply, str):
         return []
-    normalized = reply.casefold()
     return [
         {"title": project["title"], "url": project["repository"]}
         for project in _public_projects()
-        if project["title"].casefold() in normalized
+        if mentions_verified_project(reply, project)
     ]
 
 

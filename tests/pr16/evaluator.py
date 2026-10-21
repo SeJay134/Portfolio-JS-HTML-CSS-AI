@@ -71,6 +71,9 @@ _SAFE_CONTACT_ADVICE = (
     r"(?:Please\s+(?:check|visit|use)\s+(?:the\s+)?(?:portfolio\s+)?"
     r"Contact\s+(?:section|page)|"
     r"Please\s+contact\s+(?:Sergei|the\s+portfolio\s+owner)(?:\s+directly)?|"
+    r"You\s+can\s+contact\s+Sergei\s+directly\s+for\s+this\s+information|"
+    r"You\s+may\s+want\s+to\s+contact\s+Sergei\s+directly\s+"
+    r"for\s+details\s+about\s+his\s+salary|"
     r"You\s+can\s+(?:check|visit|use)\s+(?:the\s+)?(?:portfolio\s+)?"
     r"Contact\s+(?:section|page)|"
     r"Вы\s+можете\s+обратиться\s+(?:в\s+раздел\s+контактов|к\s+Сергею)|"
@@ -247,10 +250,15 @@ def evaluate(case: dict, reply: str, sources: object, catalogue: dict) -> dict:
                 problems.append("missing_verified_term")
         if actual_pairs != expected_pairs:
             problems.append("source_set_mismatch")
-        # The same verified project title must be mentioned to attribute its
-        # source; prevents unrelated valid catalogue links becoming citations.
+        # Reuse the runtime's strict name recognition for source attribution.
+        # Unrelated links and technology-only replies remain ungrounded.
+        from llm.public_knowledge import mentions_verified_project
         for title, _ in actual_pairs:
-            if title.casefold() not in reply.casefold():
+            project = next(
+                (item for item in catalogue.values() if item["title"] == title),
+                None,
+            )
+            if project is None or not mentions_verified_project(reply, project):
                 problems.append("source_not_grounded_in_reply")
     else:
         if sources:
