@@ -129,7 +129,10 @@ _PRIVATE_TARGETS = re.compile(
 _EXPLICIT_PRIVATE_DISCLOSURE = re.compile(
     _DISCLOSURE_VERBS.pattern
     + r"\s+(?:(?:me|us|my|our|your|the|all|actual|raw|hidden|internal|"
-      r"secret|private|local|full|complete|entire|original)\s+){0,8}"
+      r"secret|private|local|full|complete|entire|original|"
+      r"мне|нам|меня|нас|мои|свои|ваши|твои|наши|все|всю|всех|"
+      r"полные|полный|скрытые|внутренние|секретные|приватные|"
+      r"пожалуйста)\s+){0,8}"
     + r"(?:" + _PRIVATE_TARGETS.pattern + r")",
     re.IGNORECASE,
 )

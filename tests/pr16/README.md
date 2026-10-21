@@ -112,3 +112,17 @@ IDs. Older reports cannot be accurately compared this way and will not show
 deltas. Since PR #16 **does modify prompt wording** and public evidence
 formatting, quality numbers on different revisions are not controlled
 measurements of a single unchanged prompt.
+
+ 
+## Follow-up safety review: full refusals and Russian pronouns
+
+The evaluator now uses **whole-response allowlisted refusal patterns**, not
+substring detection. Unrecognized text after a refusal, including comma- or
+em-dash-prefixed speculation, becomes NEEDS_REVIEW. Explicit safe contact
+navigation remains accepted. This is a conservative heuristic and does not
+prove complete semantic truth.
+
+The pre-model private-disclosure guard understands Russian intermediate
+pronouns (`мне`, `свои`, `ваши`, etc.) without blocking normal questions
+about security. Direct extraction attempts are refused before retrieval or
+Ollama. English/Russian regression tests cover both sides.
