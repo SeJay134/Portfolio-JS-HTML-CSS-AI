@@ -225,9 +225,9 @@ def _safe_chat_dev_test_locations(output: str) -> list[str]:
     """
     found = []
     pattern = re.compile(
-        r"(?m)^\\s*\\d+\\)\\s+\\[chromium\\]\\s+›\\s+"
-        r"tests[/\\\\]integration[/\\\\]frontend[/\\\\]"
-        r"chat-dev\\.spec\\.ts:(\\d+):\\d+\\s+›"
+        r"(?m)^\s*\d+\)\s+\[chromium\]\s+›\s+"
+        r"tests[/\\]integration[/\\]frontend[/\\]"
+        r"chat-dev\.spec\.ts:(\d+):\d+\s+›"
     )
     for match in pattern.finditer(output):
         line = int(match.group(1))
@@ -279,7 +279,7 @@ def run_frontend_suite(report: dict) -> None:
                        "exit_code": int(result.returncode)}
             if step == "chat_dev":
                 locations = _safe_chat_dev_test_locations(
-                    (result.stdout or "") + "\\n" + (result.stderr or "")
+                    (result.stdout or "") + "\n" + (result.stderr or "")
                 )
                 if locations:
                     details["failed_test_locations"] = locations

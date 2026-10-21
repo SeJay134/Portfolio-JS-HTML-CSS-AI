@@ -109,16 +109,16 @@ def unlisted_project_reply(question: str) -> str | None:
 
 
 _DISCLOSURE_VERBS = re.compile(
-    r"\\b(?:reveal|disclose|expose|dump|print|show|share|display|"
-    r"покажи|раскрой|выведи|раскрыть|показать)\\b", re.IGNORECASE
+    r"\b(?:reveal|disclose|expose|dump|print|show|share|display|"
+    r"покажи|раскрой|выведи|раскрыть|показать)\b", re.IGNORECASE
 )
 _PRIVATE_TARGETS = re.compile(
-    r"(?:internal|hidden|system|developer)\\s+(?:prompts?|instructions?|rules?)"
-    r"|(?:prompts?|instructions?)\\s+(?:of|from)\\s+(?:your|the)\\s+system"
-    r"|(?:private|internal|local)\\s+(?:file\\s+paths?|documents?|secrets?)"
-    r"|(?:api|access)\\s+keys?"
-    r"|(?:системн|внутренн|скрыт)\\w*\\s+(?:промпт|инструкц|правил)\\w*"
-    r"|(?:секретн|приватн)\\w*\\s+(?:путь|пути|документ|файл)\\w*",
+    r"(?:internal|hidden|system|developer)\s+(?:prompts?|instructions?|rules?)"
+    r"|(?:prompts?|instructions?)\s+(?:of|from)\s+(?:your|the)\s+system"
+    r"|(?:private|internal|local)\s+(?:file\s+paths?|documents?|secrets?)"
+    r"|(?:api|access)\s+keys?"
+    r"|(?:системн|внутренн|скрыт)\w*\s+(?:промпт|инструкц|правил)\w*"
+    r"|(?:секретн|приватн)\w*\s+(?:путь|пути|документ|файл)\w*",
     re.IGNORECASE,
 )
 
