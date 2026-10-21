@@ -346,8 +346,26 @@ def run_frontend_suite(report: dict) -> None:
     print("[OK] All PR16 local frontend/browser regressions passed.", flush=True)
 
 
+def canonical_sha256(data: object) -> str:
+    """Hash complete deterministic evaluation input; never store its content."""
+    encoded = json.dumps(
+        data, sort_keys=True, ensure_ascii=False, separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def case_suite_sha256(cases: list[dict]) -> str:
+    """Order, question text, expected values and all diagnostic flags count.
+
+    The report contains only the digest; changes to any question/expectation,
+    even without a change in case count or IDs, make runs incomparable.
+    """
+    return canonical_sha256({"schema_version": 1, "cases": cases})
+
+
 def public_quality(config: dict) -> dict:
     from llm.app import LocalPortfolioService
+    from llm.public_knowledge import load_public_documents
     model_name = config.get("MODEL_NAME", "qwen2.5:3b")
     service = LocalPortfolioService({
         "MODEL_NAME": model_name,
@@ -394,6 +412,9 @@ def public_quality(config: dict) -> dict:
     doc_bytes = CATALOG_PATH.read_bytes()
     return {
         "model": model_name, "catalogue_sha256": hashlib.sha256(doc_bytes).hexdigest(),
+        "case_suite_sha256": case_suite_sha256(cases),
+        "prompt_sha256": hashlib.sha256(service.SYSTEM_PROMPT.encode("utf-8")).hexdigest(),
+        "public_evidence_sha256": canonical_sha256(load_public_documents()),
         "summary": summary, "cases": results, "retrieval": probes,
         "notes": "Exact fact/source checks only; semantic truth needs review.",
     }
@@ -410,9 +431,22 @@ def compare_previous(report: dict) -> None:
         previous = json.loads(existing.read_text(encoding="utf-8"))
         old = previous.get("public_quality", {})
         new = report["public_quality"]
-        if (old.get("model") != new.get("model")
-                or old.get("catalogue_sha256") != new.get("catalogue_sha256")
-                or len(old.get("cases", [])) != len(new.get("cases", []))):
+        required_hashes = ("catalogue_sha256", "case_suite_sha256",
+                           "prompt_sha256", "public_evidence_sha256")
+        if old.get("model") != new.get("model"):
+            return
+        # Old reports without full suite/prompt/evidence fingerprints are
+        # deliberately not comparable: no false precision from case count.
+        if any(
+            not isinstance(old.get(key), str)
+            or not isinstance(new.get(key), str)
+            or len(old[key]) != 64 or old[key] != new[key]
+            for key in required_hashes
+        ):
+            return
+        old_ids = [item.get("id") for item in old.get("cases", [])]
+        new_ids = [item.get("id") for item in new.get("cases", [])]
+        if not old_ids or old_ids != new_ids:
             return
         old_metrics, new_metrics = old["summary"], new["summary"]
         deltas = {}

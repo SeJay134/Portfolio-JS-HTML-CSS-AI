@@ -89,7 +89,11 @@ def test_repeated_runs_compare_only_same_model_and_catalogue(tmp_path, monkeypat
     old = {
         "status": "passed",
         "public_quality": {
-            "model": "test-model", "catalogue_sha256": "abcd",
+            "model": "test-model",
+            "catalogue_sha256": "a" * 64,
+            "case_suite_sha256": "b" * 64,
+            "prompt_sha256": "c" * 64,
+            "public_evidence_sha256": "d" * 64,
             "summary": {"pass_rate": .9, "p50_seconds": 10,
                         "p95_seconds": 25},
             "cases": [{"id": "T-1", "status": "pass"}],
@@ -99,7 +103,11 @@ def test_repeated_runs_compare_only_same_model_and_catalogue(tmp_path, monkeypat
     new = {
         "status": "passed",
         "public_quality": {
-            "model": "test-model", "catalogue_sha256": "abcd",
+            "model": "test-model",
+            "catalogue_sha256": "a" * 64,
+            "case_suite_sha256": "b" * 64,
+            "prompt_sha256": "c" * 64,
+            "public_evidence_sha256": "d" * 64,
             "summary": {"pass_rate": 1., "p50_seconds": 7,
                         "p95_seconds": 20},
             "cases": [{"id": "T-1", "status": "pass"}],
@@ -335,3 +343,78 @@ def test_isolated_chat_port_is_forwarded_only_to_chat_dev(monkeypatch):
     assert not any(env and "PR16_CHAT_DEV_PORT" in env
                    for args, env in seen if "test:chat-dev" not in args)
     assert report["frontend_steps"]["chat_dev"] == "pass"
+
+
+def test_suite_fingerprint_changes_for_same_size_new_id_or_expectation(scenarios):
+    import copy
+    current = runner.case_suite_sha256(scenarios)
+    assert len(current) == 64
+    adjusted = copy.deepcopy(scenarios)
+    adjusted[0]["id"] = "DIFFERENT-ID"
+    assert runner.case_suite_sha256(adjusted) != current
+    adjusted = copy.deepcopy(scenarios)
+    adjusted[0]["question"] = "A different question with identical case ID?"
+    assert runner.case_suite_sha256(adjusted) != current
+    adjusted = copy.deepcopy(scenarios)
+    adjusted[0]["required_terms"][0] += " amended"
+    assert runner.case_suite_sha256(adjusted) != current
+    adjusted = copy.deepcopy(scenarios)
+    adjusted[-1]["check_language"] = True
+    assert runner.case_suite_sha256(adjusted) != current
+
+
+def _baseline_stub(hash_a="a" * 64):
+    return {"status": "passed", "public_quality": {
+        "model": "test-model",
+        "catalogue_sha256": "b" * 64,
+        "case_suite_sha256": hash_a,
+        "prompt_sha256": "c" * 64,
+        "public_evidence_sha256": "d" * 64,
+        "summary": {"pass_rate": .95, "p50_seconds": 1, "p95_seconds": 5},
+        "cases": [{"id": "CASE-1", "status": "pass"}],
+    }}
+
+
+def test_report_comparison_rejects_different_suite_with_equal_count(
+    tmp_path, monkeypatch
+):
+    import copy
+    monkeypatch.setattr(runner, "REPORTS", tmp_path)
+    old = _baseline_stub()
+    runner.write_report(old)
+    new = _baseline_stub(hash_a="f" * 64)
+    new["public_quality"]["summary"]["pass_rate"] = 1.
+    runner.compare_previous(new)
+    assert "comparison" not in new
+    # A changed ID is also rejected even if someone spoofs the suite hash.
+    changed_id = copy.deepcopy(old)
+    changed_id["public_quality"]["cases"][0]["id"] = "CASE-2"
+    runner.compare_previous(changed_id)
+    assert "comparison" not in changed_id
+
+
+def test_report_comparison_rejects_legacy_and_changed_prompts(tmp_path, monkeypatch):
+    monkeypatch.setattr(runner, "REPORTS", tmp_path)
+    old = _baseline_stub()
+    runner.write_report(old)
+    changed_prompt = _baseline_stub()
+    changed_prompt["public_quality"]["prompt_sha256"] = "e" * 64
+    runner.compare_previous(changed_prompt)
+    assert "comparison" not in changed_prompt
+    legacy = _baseline_stub()
+    del legacy["public_quality"]["case_suite_sha256"]
+    runner.write_report(legacy)
+    next_run = _baseline_stub()
+    runner.compare_previous(next_run)
+    assert "comparison" not in next_run
+
+
+def test_comparable_reports_preserve_only_aggregate_deltas(tmp_path, monkeypatch):
+    monkeypatch.setattr(runner, "REPORTS", tmp_path)
+    old = _baseline_stub()
+    runner.write_report(old)
+    new = _baseline_stub()
+    new["public_quality"]["summary"]["pass_rate"] = 1.0
+    runner.compare_previous(new)
+    assert new["comparison"]["pass_rate_change"] == .05
+    assert "question" not in str(new["comparison"])
