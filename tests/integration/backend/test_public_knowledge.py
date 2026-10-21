@@ -82,7 +82,7 @@ def test_generation_receives_public_catalogue_and_exposes_only_trusted_sources()
     assert "GDP dashboard" in prompt
     assert "Open API weather explorer" in prompt
     assert "Portfolio website & AI prototype" in prompt
-    assert "World Bank" in prompt
+    assert "Focused authoritative project facts" not in prompt
     assert "private-notes.md" not in str(result)
 
 
@@ -429,8 +429,57 @@ def test_russian_pronoun_disclosure_is_blocked_before_retrieval_or_ollama():
     assert "не могу" in answer["reply"].lower()
 
 
-def test_gdp_world_bank_source_is_present_in_primary_public_overview():
-    assert "Verified details: Loads World Bank GDP data from CSV" in public_overview()
+def test_gdp_world_bank_and_framework_are_in_focused_public_evidence():
+    from llm.public_knowledge import focused_public_evidence
+    focused = focused_public_evidence("Where does GDP dashboard get GDP data?")
+    assert "GDP dashboard" in focused
+    assert "World Bank GDP data" in focused
+    assert "Streamlit" in focused
+    assert "Chocolate sales dashboard" not in focused
+    assert "World Bank" not in public_overview()
+
+
+def test_generic_project_overview_avoids_detail_duplication():
+    from llm.public_knowledge import focused_public_evidence
+    assert focused_public_evidence("Какие проекты создал Сергей?") == ""
+    assert focused_public_evidence("Tell me about the portfolio projects") == ""
+    assert "Chocolate sales dashboard" in public_overview()
+    assert "Open API weather explorer" in public_overview()
+
+
+def test_ambiguous_multi_project_question_has_no_spurious_focus():
+    from llm.public_knowledge import focused_public_evidence
+    assert focused_public_evidence(
+        "Compare GDP dashboard with Chocolate sales dashboard"
+    ) == ""
+
+
+def test_gdp_question_sends_verified_world_bank_and_streamlit_without_retrieval():
+    from llm.public_knowledge import _public_projects
+    captured = []
+
+    class EmptyRetriever:
+        index = SimpleNamespace(ntotal=0)
+
+    class FakeClient:
+        def chat(self, **kwargs):
+            captured.append(kwargs)
+            return {"message": {"content": "GDP dashboard uses Streamlit and World Bank GDP data."}}
+
+    service = LocalPortfolioService.__new__(LocalPortfolioService)
+    service._retriever = lambda: EmptyRetriever()
+    service.client = FakeClient()
+    service.model = "test-model"
+    response = service.answer("What application framework is used by GDP dashboard?")
+    assert response["sources"] == [
+        {"title": p["title"], "url": p["repository"]}
+        for p in _public_projects() if p["id"] == "gdp"
+    ]
+    prompt = captured[0]["messages"][1]["content"]
+    assert "Focused authoritative project facts" in prompt
+    assert "World Bank GDP data" in prompt
+    assert "Technologies: Python, Streamlit, Pandas" in prompt
+    assert "Details: A separate, not-yet-deployed" not in prompt
 
 
 @pytest.mark.parametrize("reply", [

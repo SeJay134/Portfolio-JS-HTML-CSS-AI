@@ -114,7 +114,8 @@ Do not invent project numbers or assert that documented repository URLs are abse
 
     def answer(self, message: str) -> dict:
         from llm.public_knowledge import (
-            public_overview, sources_for_mentioned_projects,
+            public_overview, focused_public_evidence,
+            sources_for_mentioned_projects,
             unlisted_project_reply, private_disclosure_reply,
             filter_unapproved_model_urls,
         )
@@ -143,8 +144,10 @@ Do not invent project numbers or assert that documented repository URLs are abse
             "\n\n".join(str(chunk.get("text", "")) for chunk in chunks if chunk.get("text"))
             or "No relevant additional local portfolio evidence was found."
         )
+        focused = focused_public_evidence(message)
         context = (
             public_overview()
+            + (f"\n\nFocused authoritative project facts:\n{focused}" if focused else "")
             + "\n\nAdditional owner-local/retrieved evidence:\n"
             + extra_context
         )

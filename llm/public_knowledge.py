@@ -162,10 +162,32 @@ def public_overview() -> str:
     for project in _public_projects():
         lines.append(
             f"- {project['title']}: {project['summary']} "
-            f"Verified details: {project['detail']} "
             f"Verified technologies: {', '.join(project['tags'])}."
         )
     return "\n".join(lines)
+
+
+def focused_public_evidence(question: str) -> str:
+    """Include full authoritative facts only for one explicitly named project.
+
+    General overview questions keep a compact four-project context. This
+    avoids repeating four long details in every prompt while still supplying
+    GDP's World Bank provenance and Streamlit when GDP is the subject.
+    """
+    if not isinstance(question, str):
+        return ""
+    matches = [
+        project for project in _public_projects()
+        if mentions_verified_project(question, project)
+    ]
+    if len(matches) != 1:
+        return ""
+    project = matches[0]
+    return (
+        f"Focused verified project: {project['title']}. "
+        f"Details: {project['detail']} "
+        f"Technologies: {', '.join(project['tags'])}."
+    )
 
 
 def load_public_documents() -> list[dict]:

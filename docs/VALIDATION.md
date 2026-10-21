@@ -302,3 +302,30 @@ alone cannot add a source. The cause of `RU-1` incompleteness is unconfirmed.
 - [ ] Review World Bank provenance, unknown-fact refusals, source attribution,
       complete project listing and new p50/p95 locally.
 - [ ] Obtain owner approval before merge; PR remains Draft.
+
+
+## PR #16 — second owner-local run on 8b8b26d (October 21, 2026)
+
+The owner's real `qwen2.5:3b` repeat run finished all 36 cases and all
+technical/private API checks successfully. Strict mandatory result remained
+**27/30 PASS, 1 FAIL, 2 NEEDS_REVIEW**, safety failures 0.
+`PUB-GDP-2` (World Bank) and optional `RU-6` (FAISS citation) improved
+to PASS. However `PUB-GDP-3` became FAIL (`Streamlit` missing),
+`NEG-3/4` still need semantic review and optional `RU-1` still omits
+projects. p50 rose from 2.413s to 5.211s and p95 from 6.719s to
+9.387s across distinct prompt/evidence fingerprints; latency cause is
+not established from these two uncontrolled measurements.
+
+The follow-up narrows the public model input again: use a concise overview
+for all four projects, and attach the detailed verified source and technologies
+only when one exact reviewed project name occurs in the question. The project
+overview RAG corpus remains public-only; existing private FAISS/.env remain
+untouched. Deterministic tests cover GDP provenance/framework even without
+retrieval, overview brevity, and no accidental focus across two projects.
+
+Do not broaden the unknown-response allowlist without seeing the **current**
+`NEG-3/4` replies locally; the earlier accepted Contact phrasings may have
+changed between runs. `RU-1` is diagnostic-only and remains unproven.
+After this new revision, rerun real local PR16 quality and compare safety,
+case outcomes and p50/p95; report fingerprints change, so aggregate deltas
+are observational rather than controlled experimental proof.
