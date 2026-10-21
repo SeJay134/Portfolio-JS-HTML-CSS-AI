@@ -295,3 +295,14 @@ def test_plain_refusal_and_safe_contact_suggestion_are_accepted(facts):
         "I don't have information about that. Please check the Contact section.",
     ):
         assert evaluate(case, answer, [], facts)["status"] == "pass"
+
+
+@pytest.mark.parametrize("answer", [
+    "I do not have verified information. Please check the Contact section. Sergei's favorite movie is The Matrix.",
+    "I do not have information and his favorite movie is The Matrix.",
+    "I do not have information; please check the Contact section. It is The Matrix.",
+])
+def test_safe_advice_does_not_hide_extra_personal_claims(facts, answer):
+    case = {"id": "NEG-3", "expect": "unknown",
+            "required_terms": [], "expected_source_ids": []}
+    assert evaluate(case, answer, [], facts)["status"] == "needs_review"
