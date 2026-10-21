@@ -39,6 +39,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run test:smoke -- --project=chromium
       - run: npm run test:chat-dev
+      - run: PR16_CHAT_DEV_PORT=5151 npm run test:chat-dev
       - run: VITE_ENABLE_PUBLIC_CHAT_UI=true npm run build
       - run: npm run test:chat-hydration
       - uses: actions/upload-artifact@v4
