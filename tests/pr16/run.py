@@ -11,6 +11,7 @@ import importlib.util
 import json
 import os
 import re
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -173,6 +174,129 @@ def run_pytest() -> None:
     print("[OK] Deterministic Python regressions passed.", flush=True)
 
 
+FRONTEND_CHECKS = (
+    ("javascript_dependencies", "Install locked JavaScript dependencies"),
+    ("eslint", "ESLint"),
+    ("typescript", "TypeScript"),
+    ("vitest", "Vitest unit tests"),
+    ("proxy_integration", "Vercel proxy integration"),
+    ("production_build", "Production frontend build"),
+    ("chromium_install", "Install Playwright Chromium"),
+    ("chromium_browser", "Chromium smoke, E2E and regression"),
+    ("chat_dev", "Chat dev browser tests"),
+    ("public_chat_build", "Public chat build"),
+    ("chat_hydration", "Chat hydration browser tests"),
+)
+
+
+def _classify_frontend_failure(output: str, step: str) -> str:
+    """Classify known local issues; do not return arbitrary subprocess text."""
+    lowered = output.lower()
+    if any(s in lowered for s in (
+        "eaddrinuse", "port 5001 is already in use", "port 4173 is already in use",
+        "address already in use", "is already in use", "already in use by another",
+    )):
+        return "port_in_use"
+    if any(s in lowered for s in (
+        "executable doesn't exist", "browser executable not found",
+        "please run the following command to download new browsers",
+        "playwright install",
+    )) and step != "chromium_install":
+        return "browser_not_installed"
+    if any(s in lowered for s in ("enoent", "not recognized as an internal",
+                                "command not found", "cannot find module")):
+        return "missing_tool_or_dependency"
+    if "timeout" in lowered or "timed out" in lowered:
+        return "timeout"
+    if "error loading config" in lowered or "failed to load config" in lowered:
+        return "configuration_error"
+    if "failed" in lowered or "error:" in lowered:
+        return "test_or_build_failure"
+    return "command_failed"
+
+
+def run_frontend_suite(report: dict) -> None:
+    """Run Windows-friendly browser regressions with safe per-command evidence.
+
+    Never store raw npm/Playwright output: Vite or test failures can contain
+    configuration, user paths or test application text. Only the known command
+    name, numeric return code, and allowlisted category are reported.
+    """
+    npm = shutil.which("npm.cmd" if os.name == "nt" else "npm")
+    node = shutil.which("node.exe" if os.name == "nt" else "node")
+    report["frontend_steps"] = {}
+    if not npm or not node:
+        raise VerificationError(
+            "Node.js/npm not found in PATH.",
+            code="frontend_failed",
+            details={"step": "node_npm", "category": "missing_tool_or_dependency"},
+        )
+
+    def execute(step: str, label: str, command: list[str],
+                env: dict | None = None) -> None:
+        print(f"[RUN] Frontend: {label}", flush=True)
+        try:
+            result = subprocess.run(
+                command, cwd=ROOT, env=env, capture_output=True,
+                text=True, errors="replace", check=False,
+            )
+        except OSError:
+            report["frontend_steps"][step] = "fail"
+            raise VerificationError(
+                f"Frontend step '{step}' failed to start.",
+                code="frontend_failed",
+                details={"step": step, "category": "process_start_failed"},
+            ) from None
+        if result.returncode:
+            category = _classify_frontend_failure(
+                (result.stdout or "") + "\n" + (result.stderr or ""), step
+            )
+            report["frontend_steps"][step] = "fail"
+            print(f"[FAIL] Frontend step '{step}': {category} "
+                  f"(exit {result.returncode}).", flush=True)
+            raise VerificationError(
+                f"Frontend step '{step}' failed; see safe diagnostic report.",
+                code="frontend_failed",
+                details={"step": step, "category": category,
+                         "exit_code": int(result.returncode)},
+            )
+        report["frontend_steps"][step] = "pass"
+        print(f"[OK] Frontend: {label}", flush=True)
+
+    frontend_bin = ROOT / "node_modules" / ".bin" / (
+        "playwright.cmd" if os.name == "nt" else "playwright"
+    )
+    if not frontend_bin.is_file():
+        execute("javascript_dependencies", "Install locked JavaScript dependencies",
+                [npm, "ci"])
+    for step, label, cmd in (
+        ("eslint", "ESLint", [npm, "run", "lint"]),
+        ("typescript", "TypeScript", [npm, "run", "typecheck"]),
+        ("vitest", "Vitest unit tests", [npm, "run", "test:unit"]),
+        ("proxy_integration", "Vercel proxy integration", [
+            node, "--test", "tests/integration/frontend/ngrok-bridge.test.mjs",
+        ]),
+        ("production_build", "Production frontend build", [npm, "run", "build"]),
+    ):
+        execute(step, label, cmd)
+
+    execute("chromium_install", "Install Playwright Chromium",
+            [npm, "exec", "--", "playwright", "install", "chromium"])
+    # Force Playwright's own servers to start for this run instead of reusing
+    # an unrelated Vite preview from another branch.
+    browser_env = dict(os.environ, CI="1")
+    execute("chromium_browser", "Chromium smoke, E2E and regression",
+            [npm, "run", "test:browser", "--", "--project=chromium"], browser_env)
+    execute("chat_dev", "Chat dev browser tests",
+            [npm, "run", "test:chat-dev"], browser_env)
+    public_build_env = dict(os.environ, VITE_ENABLE_PUBLIC_CHAT_UI="true")
+    execute("public_chat_build", "Public chat build",
+            [npm, "run", "build"], public_build_env)
+    execute("chat_hydration", "Chat hydration browser tests",
+            [npm, "run", "test:chat-hydration"], browser_env)
+    print("[OK] All PR16 local frontend/browser regressions passed.", flush=True)
+
+
 def public_quality(config: dict) -> dict:
     from llm.app import LocalPortfolioService
     model_name = config.get("MODEL_NAME", "qwen2.5:3b")
@@ -269,6 +393,10 @@ def write_report(report: dict) -> None:
     safe_failed_tests = html.escape(
         ", ".join(diagnostics.get("failed_tests", [])) or "none identified"
     )
+    frontend = report.get("frontend_diagnostics") or {}
+    safe_frontend_step = html.escape(str(frontend.get("step", "none")))
+    safe_frontend_category = html.escape(str(frontend.get("category", "none")))
+    safe_frontend_exit_code = html.escape(str(frontend.get("exit_code", "N/A")))
     markup = (
         '<!doctype html><html lang="en"><meta charset="utf-8">'
         '<title>PR16 RAG quality summary</title>'
@@ -280,6 +408,9 @@ def write_report(report: dict) -> None:
         f'error code: <strong>{safe_error}</strong></p>'
         f'<p>Failure category: {safe_category}. '
         f'Failed test IDs: {safe_failed_tests}.</p>'
+        f'<p>Frontend diagnostic: {safe_frontend_step}; '
+        f'category: {safe_frontend_category}; '
+        f'exit code: {safe_frontend_exit_code}.</p>'
         f'<p>Mandatory pass rate: {safe_score}. '
         'Language checks are diagnostic-only.</p>'
         '<table><thead><tr><th>Case</th><th>Status</th><th>Seconds</th>'
@@ -309,9 +440,21 @@ def main() -> int:
         report["stage"] = "deterministic_tests"
         run_pytest()
         report["checks"]["deterministic_tests"] = "pass"
+        # A broken local browser must not hide the RAG quality result.
+        # Store only allowlisted step identifiers and attempt the model after
+        # the browser diagnostics, while preserving overall FAIL status.
+        frontend_failure = None
         report["stage"] = "frontend_browser"
-        smoke.run_frontend_suite()
-        report["checks"]["frontend_browser"] = "pass"
+        try:
+            run_frontend_suite(report)
+            report["checks"]["frontend_browser"] = "pass"
+        except VerificationError as exc:
+            frontend_failure = exc
+            report["checks"]["frontend_browser"] = "fail"
+            report["frontend_diagnostics"] = exc.details
+            report["frontend_error_code"] = exc.code
+            print("[WARN] Frontend failed; continuing to local RAG baseline "
+                  "so results are not lost.", flush=True)
         report["stage"] = "local_config"
         config = safe_config()
         report["checks"]["local_config"] = "pass"
@@ -325,6 +468,13 @@ def main() -> int:
         smoke.run_live(config)
         report["checks"]["private_api_smoke"] = "pass"
         report["stage"] = "complete"
+        if frontend_failure is not None:
+            report["status"] = "failed"
+            report["stage"] = "frontend_browser"
+            report["error_code"] = frontend_failure.code
+            print("[RESULT] RAG baseline finished, but local frontend "
+                  "regressions failed. Overall status: failed.", flush=True)
+            return 1
         # A semantic review remains necessary even if the narrow automatic
         # checks pass: do not misrepresent this as complete quality assurance.
         report["status"] = public["summary"]["status"]

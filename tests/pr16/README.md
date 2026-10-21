@@ -43,3 +43,19 @@ After a Windows run ends, the launcher automatically opens the local HTML
 report in the default browser. The page now shows failure stage, safe error
 code and test IDs as well as quality metrics; there is no need to open JSON
 manually unless further diagnosis is needed.
+
+## Windows frontend/browser failures
+
+A failed frontend step is now recorded under `frontend_diagnostics` with an
+allowlisted command ID, failure category and numeric exit code. The report also
+contains `frontend_steps` PASS/FAIL information for completed checks.
+No npm stdout/stderr, absolute file paths, keys or model responses are saved.
+For example, the diagnostic category `port_in_use` means a local Vite
+development/preview port is already occupied; the runner never kills unrelated
+user processes or silently reuses a different branch's server.
+
+A local frontend failure **does not suppress the real Ollama quality baseline**:
+the runner attempts public RAG evaluation and the separate private API smoke
+after recording the browser error, but the overall run remains FAIL until all
+mandatory checks pass. If Ollama itself is unavailable, that also fails
+independently. Language diagnostics remain non-blocking.

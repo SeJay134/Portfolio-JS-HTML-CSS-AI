@@ -201,3 +201,90 @@ def test_safe_html_shows_stage_and_failure_identifiers(tmp_path, monkeypatch):
 def test_windows_launcher_opens_generated_report_automatically():
     script = (DIR / "RUN_PR16.cmd").read_text(encoding="utf-8")
     assert 'start "" "%~dp0reports\\latest.html"' in script
+
+
+def test_frontend_diagnostics_classify_port_and_missing_chromium():
+    assert runner._classify_frontend_failure(
+        "Error: Port 5001 is already in use", "chat_dev"
+    ) == "port_in_use"
+    assert runner._classify_frontend_failure(
+        "browserType.launch: Executable doesn't exist", "chromium_browser"
+    ) == "browser_not_installed"
+    assert runner._classify_frontend_failure(
+        "FAIL: unknown case", "vitest"
+    ) == "test_or_build_failure"
+
+
+def test_frontend_failing_step_reports_safe_identifier(monkeypatch):
+    monkeypatch.setattr(
+        runner.shutil, "which",
+        lambda name: "C:/test/npm.cmd" if "npm" in name else "C:/test/node.exe"
+    )
+    monkeypatch.setattr(
+        runner.Path, "is_file",
+        lambda self: True
+    )
+    class FakeResult:
+        returncode = 1
+        stdout = "Error: Port 4173 is already in use; secret=hidden"
+        stderr = ""
+    monkeypatch.setattr(runner.subprocess, "run",
+                        lambda *args, **kwargs: FakeResult())
+    report = {}
+    with pytest.raises(runner.VerificationError) as exc:
+        runner.run_frontend_suite(report)
+    assert exc.value.code == "frontend_failed"
+    assert exc.value.details["step"] == "eslint"
+    assert exc.value.details["category"] == "port_in_use"
+    assert "hidden" not in str(exc.value.details)
+    assert report["frontend_steps"]["eslint"] == "fail"
+
+
+def test_frontend_report_contains_only_safe_stage_and_exit_code(tmp_path, monkeypatch):
+    monkeypatch.setattr(runner, "REPORTS", tmp_path)
+    runner.write_report({
+        "status": "failed", "stage": "frontend_browser",
+        "frontend_diagnostics": {
+            "step": "chat_dev", "category": "port_in_use", "exit_code": 1,
+        }, "frontend_steps": {"eslint": "pass", "chat_dev": "fail"}
+    })
+    data = json.loads((tmp_path / "latest.json").read_text())
+    html_text = (tmp_path / "latest.html").read_text()
+    assert data["frontend_diagnostics"]["step"] == "chat_dev"
+    assert "chat_dev" in html_text and "port_in_use" in html_text
+    assert "LOCAL_API_KEY" not in html_text
+
+
+def test_frontend_failure_still_allows_real_quality_stage(monkeypatch, tmp_path):
+    class FakeSmoke:
+        def ensure_packages(self): pass
+        def run_live(self, config): pass
+    monkeypatch.setattr(runner, "REPORTS", tmp_path)
+    monkeypatch.setattr(
+        runner, "check_branch",
+        lambda: ("feat/rag-answer-quality-evaluation", "abc123")
+    )
+    monkeypatch.setattr(runner, "import_pr19_runner", lambda: FakeSmoke())
+    monkeypatch.setattr(runner, "run_pytest", lambda: None)
+    def failing_frontend(report):
+        report["frontend_steps"] = {"chat_dev": "fail"}
+        raise runner.VerificationError(
+            "Frontend failed", code="frontend_failed",
+            details={"step": "chat_dev", "category": "port_in_use", "exit_code": 1},
+        )
+    monkeypatch.setattr(runner, "run_frontend_suite", failing_frontend)
+    monkeypatch.setattr(runner, "safe_config", lambda: {})
+    reached = []
+    def quality(config):
+        reached.append(True)
+        return {"summary": {"status": "passed", "pass_rate": 1},
+                "cases": [], "retrieval": []}
+    monkeypatch.setattr(runner, "public_quality", quality)
+    assert runner.main() == 1
+    assert reached
+    saved = json.loads((tmp_path / "latest.json").read_text())
+    assert saved["checks"]["frontend_browser"] == "fail"
+    assert saved["checks"]["public_quality"] == "passed"
+    assert saved["checks"]["private_api_smoke"] == "pass"
+    assert saved["frontend_diagnostics"]["step"] == "chat_dev"
+    assert saved["status"] == "failed"
