@@ -210,7 +210,8 @@ def _classify_frontend_failure(output: str, step: str) -> str:
         return "timeout"
     if "error loading config" in lowered or "failed to load config" in lowered:
         return "configuration_error"
-    if "failed" in lowered or "error:" in lowered:
+    if ("failed" in lowered or "fail:" in lowered
+            or "error:" in lowered or "tests failed" in lowered):
         return "test_or_build_failure"
     return "command_failed"
 
