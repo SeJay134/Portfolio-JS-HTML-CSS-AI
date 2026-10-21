@@ -146,7 +146,10 @@ def public_overview() -> str:
     """Stable list of reviewed facts, independent of the question language."""
     lines = ["Published portfolio projects (verified public catalogue):"]
     for project in _public_projects():
-        lines.append(f"- {project['title']}: {project['summary']}")
+        lines.append(
+            f"- {project['title']}: {project['summary']} "
+            f"Verified technologies: {', '.join(project['tags'])}."
+        )
     return "\n".join(lines)
 
 
@@ -175,6 +178,36 @@ def load_public_documents() -> list[dict]:
             },
         })
     return documents
+
+
+_GENERATED_URL = re.compile(r"https?://[^\s<>'\"]+", re.IGNORECASE)
+
+
+def filter_unapproved_model_urls(reply: str) -> tuple[str, bool]:
+    """Keep only exact reviewed public URLs in model text.
+
+    Links returned as structured sources are already independently curated.
+    An unexpected generated URL is never trusted, even if hosted on GitHub.
+    The boolean is for strict evaluation; dropping the link cannot turn an
+    ungrounded LLM output into an unreported PASS.
+    """
+    if not isinstance(reply, str):
+        raise ValueError("Invalid model text")
+    allowed = {item["repository"] for item in _public_projects()}
+    allowed.add(CATALOG_URL)
+    removed = False
+
+    def replace(match: re.Match[str]) -> str:
+        nonlocal removed
+        whole = match.group(0)
+        url = whole.rstrip(".,;:!?)\\]}")  # Preserve trailing punctuation
+        trailing = whole[len(url):]
+        if url in allowed:
+            return whole
+        removed = True
+        return "[unverified link removed]" + trailing
+
+    return _GENERATED_URL.sub(replace, reply), removed
 
 
 def sources_for_mentioned_projects(reply: str) -> list[dict]:

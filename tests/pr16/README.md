@@ -84,3 +84,13 @@ origin, without killing or reusing the owner's site. Other Playwright tests
 and the regular `npm run dev` / GitHub CI retain their unchanged ports.
 The port is not included in reports. This change addresses the reported
 `port_in_use` failure while preserving the chat-dev test gate.
+
+
+## Raw URL model safety
+
+Verified public summaries give the model the exact catalogue technology tags,
+not just short descriptions. Generated URLs not matching an exact reviewed
+repository or public portfolio page are removed from the visitor's reply.
+Structured source links remain catalogue-derived. A removed unverified model
+URL is still a **FAIL** in the strict PR16 evaluation so it is not
+silently masked or treated as an artificial score improvement.

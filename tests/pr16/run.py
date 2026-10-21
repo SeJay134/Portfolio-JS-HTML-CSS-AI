@@ -371,6 +371,12 @@ def public_quality(config: dict) -> dict:
             verdict = evaluate(
                 case, response.get("reply"), response.get("sources"), catalogue
             )
+            # Sanitization protects visitors, but hallucinated model links
+            # remain a strict FAIL rather than artificial acceptance.
+            if response.get("unapproved_model_url_removed"):
+                verdict["status"] = "fail"
+                verdict["reasons"] = sorted(set(verdict["reasons"])
+                                            | {"unapproved_model_url_removed"})
         except Exception as exc:
             # Never print the exception message: some model SDK errors echo
             # submitted questions or private configuration.

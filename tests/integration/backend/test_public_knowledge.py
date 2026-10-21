@@ -320,3 +320,43 @@ def test_exact_technology_question_is_guided_to_canonical_public_fact():
     system_prompt = captured[0]["messages"][0]["content"]
     assert "exact verified technology name" in system_prompt
     assert "do not put raw URLs" in system_prompt
+
+
+def test_public_overview_exposes_verified_project_tags_to_rag():
+    from llm.public_knowledge import public_overview
+    overview = public_overview()
+    for item in ("Chocolate sales dashboard", "Streamlit", "Pandas",
+                 "Portfolio website & AI prototype", "Ollama", "FAISS"):
+        assert item in overview
+
+
+def test_model_url_filter_strips_untrusted_links_and_preserves_approved_ones():
+    from llm.public_knowledge import filter_unapproved_model_urls
+    approved = "https://github.com/SeJay134/Chocolate-Sales-Dashboard-Python"
+    original = "Chocolate sales dashboard: " + approved + " and https://evil.example/new."
+    filtered, removed = filter_unapproved_model_urls(original)
+    assert removed is True
+    assert approved in filtered
+    assert "https://evil.example" not in filtered
+    assert "[unverified link removed]" in filtered
+    assert filter_unapproved_model_urls("No links.")[1] is False
+
+
+def test_model_url_filter_runs_before_attributing_public_sources():
+    project = load_public_documents()[1]
+    class Retriever:
+        index = SimpleNamespace(ntotal=0)
+    class Client:
+        def chat(self, **kwargs):
+            return {"message": {"content": (
+                project["source"]["title"] +
+                " has source https://github.com/Unreviewed/Unverified-project"
+            )}}
+    service = LocalPortfolioService.__new__(LocalPortfolioService)
+    service.client = Client()
+    service.model = "test-model"
+    service._retriever = lambda: Retriever()
+    response = service.answer("Which projects are published?")
+    assert "Unreviewed" not in response["reply"]
+    assert response["unapproved_model_url_removed"] is True
+    assert response["sources"] == [project["source"]]

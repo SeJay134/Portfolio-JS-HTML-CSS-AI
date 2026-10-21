@@ -113,6 +113,7 @@ Do not invent project numbers or assert that documented repository URLs are abse
         from llm.public_knowledge import (
             public_overview, sources_for_mentioned_projects,
             unlisted_project_reply, private_disclosure_reply,
+            filter_unapproved_model_urls,
         )
 
         # Explicit attempts to extract internal instructions or private paths
@@ -156,10 +157,15 @@ Do not invent project numbers or assert that documented repository URLs are abse
             options={"temperature": 0, "num_predict": 350},
         )
         reply = response["message"]["content"]
+        reply, removed_unapproved_url = filter_unapproved_model_urls(reply)
         # FAISS retrieval is candidate context, not proof that a result
         # supports this answer. Only link reviewed project titles actually
         # named in the response; never leak local source metadata or paths.
-        return {"reply": reply, "sources": sources_for_mentioned_projects(reply)}
+        return {
+            "reply": reply,
+            "sources": sources_for_mentioned_projects(reply),
+            "unapproved_model_url_removed": removed_unapproved_url,
+        }
 
 
 def create_app(config: dict | None = None, service=None) -> Flask:
