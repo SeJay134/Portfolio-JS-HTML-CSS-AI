@@ -302,3 +302,36 @@ def test_chat_dev_failure_location_parser_keeps_only_whitelisted_line_numbers():
     assert positions == ["chat-dev.spec.ts:117"]
     assert "owner" not in str(positions)
     assert "private" not in str(positions)
+
+
+def test_chat_test_port_is_loopback_ephemeral_and_not_regular_site_port():
+    port = runner.choose_chat_test_port()
+    assert 1024 <= port <= 65535
+    assert port != 5001
+
+
+def test_isolated_chat_port_is_forwarded_only_to_chat_dev(monkeypatch):
+    monkeypatch.setattr(
+        runner.shutil, "which",
+        lambda name: "C:/test/npm.cmd" if "npm" in name else "C:/test/node.exe"
+    )
+    monkeypatch.setattr(runner.Path, "is_file", lambda self: True)
+    monkeypatch.setattr(runner, "choose_chat_test_port", lambda: 51019)
+    seen = []
+    class Result:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+    def fake_subprocess(command, **kwargs):
+        seen.append((command, kwargs.get("env")))
+        return Result()
+    monkeypatch.setattr(runner.subprocess, "run", fake_subprocess)
+    report = {}
+    runner.run_frontend_suite(report)
+    chat_calls = [env for args, env in seen if "test:chat-dev" in args]
+    assert len(chat_calls) == 1
+    assert chat_calls[0]["PR16_CHAT_DEV_PORT"] == "51019"
+    # No leaked temporary port is passed to other tests or the env itself.
+    assert not any(env and "PR16_CHAT_DEV_PORT" in env
+                   for args, env in seen if "test:chat-dev" not in args)
+    assert report["frontend_steps"]["chat_dev"] == "pass"

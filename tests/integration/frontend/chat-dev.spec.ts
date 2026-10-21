@@ -1,11 +1,14 @@
 import { expect, test } from "@playwright/test";
 
+// Match the isolated localhost port chosen by PR16; CI and manual runs keep 5001.
+const CHAT_TEST_ORIGIN = `http://127.0.0.1:${process.env.PR16_CHAT_DEV_PORT ?? "5001"}`;
+
 test("local React chat sends and displays a verified source without exposing untrusted links", async ({page}) => {
   let question: string | undefined;
   await page.route("http://127.0.0.1:5002/**", async (route) => {
     const request = route.request();
     const cors = {
-      "access-control-allow-origin": "http://127.0.0.1:5001",
+      "access-control-allow-origin": CHAT_TEST_ORIGIN,
       "access-control-allow-methods": "GET, POST, OPTIONS",
       "access-control-allow-headers": "content-type",
     };
@@ -56,7 +59,7 @@ test("mobile chat switches to the main drawer without competing dialogs", async 
   await page.route("http://127.0.0.1:5002/ready", route =>
     route.fulfill({
       status:503, contentType:"application/json",
-      headers:{"access-control-allow-origin":"http://127.0.0.1:5001"},
+      headers:{"access-control-allow-origin":CHAT_TEST_ORIGIN},
       body:JSON.stringify({error:"Assistant offline"}),
     }),
   );
@@ -101,7 +104,7 @@ test("mobile chat releases body scroll lock when resized to desktop", async ({ p
 test("503 changes online status to temporarily unavailable and Retry restores it", async ({ page }) => {
   let calls = 0;
   const cors = {
-    "access-control-allow-origin": "http://127.0.0.1:5001",
+    "access-control-allow-origin": CHAT_TEST_ORIGIN,
     "access-control-allow-methods": "GET, POST, OPTIONS",
     "access-control-allow-headers": "content-type",
   };
@@ -146,7 +149,7 @@ test("503 changes online status to temporarily unavailable and Retry restores it
 test("a delayed successful /ready cannot overwrite a later 503", async ({ page }) => {
   let releaseReady: (() => void) | undefined;
   const cors = {
-    "access-control-allow-origin": "http://127.0.0.1:5001",
+    "access-control-allow-origin": CHAT_TEST_ORIGIN,
     "access-control-allow-methods": "GET, POST, OPTIONS",
     "access-control-allow-headers": "content-type",
   };
@@ -184,7 +187,7 @@ test("a delayed successful /ready cannot overwrite a later 503", async ({ page }
 test("429 is rate limited, not offline, and Retry can recover", async ({ page }) => {
   let calls = 0;
   const cors = {
-    "access-control-allow-origin": "http://127.0.0.1:5001",
+    "access-control-allow-origin": CHAT_TEST_ORIGIN,
     "access-control-allow-methods": "GET, POST, OPTIONS",
     "access-control-allow-headers": "content-type",
   };

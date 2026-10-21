@@ -12,6 +12,7 @@ import json
 import os
 import re
 import shutil
+import socket
 from pathlib import Path
 import subprocess
 import sys
@@ -236,6 +237,25 @@ def _safe_chat_dev_test_locations(output: str) -> list[str]:
     return [f"chat-dev.spec.ts:{line}" for line in found[:10]]
 
 
+def choose_chat_test_port() -> int:
+    """Select a temporary loopback port; do not stop/reuse the owner's Vite.
+
+    This port is used exclusively for the local PR16 chat-dev Playwright step.
+    A small bind/close race remains possible; a failure still reports its step.
+    """
+    for _ in range(5):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listener:
+            listener.bind(("127.0.0.1", 0))
+            port = int(listener.getsockname()[1])
+        if port != 5001:
+            return port
+    raise VerificationError(
+        "Cannot allocate an isolated local chat test port.",
+        code="frontend_failed",
+        details={"step": "chat_dev", "category": "port_in_use"},
+    )
+
+
 def run_frontend_suite(report: dict) -> None:
     """Run Windows-friendly browser regressions with safe per-command evidence.
 
@@ -314,8 +334,10 @@ def run_frontend_suite(report: dict) -> None:
     browser_env = dict(os.environ, CI="1")
     execute("chromium_browser", "Chromium smoke, E2E and regression",
             [npm, "run", "test:browser", "--", "--project=chromium"], browser_env)
+    chat_port = choose_chat_test_port()
+    isolated_chat_env = dict(browser_env, PR16_CHAT_DEV_PORT=str(chat_port))
     execute("chat_dev", "Chat dev browser tests",
-            [npm, "run", "test:chat-dev"], browser_env)
+            [npm, "run", "test:chat-dev"], isolated_chat_env)
     public_build_env = dict(os.environ, VITE_ENABLE_PUBLIC_CHAT_UI="true")
     execute("public_chat_build", "Public chat build",
             [npm, "run", "build"], public_build_env)

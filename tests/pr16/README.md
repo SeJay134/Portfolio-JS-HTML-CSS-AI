@@ -74,3 +74,13 @@ so no precise root cause is proven for individual model answers or chat test.
 The next report may include a safe `failed_test_locations` array with
 fixed public Playwright spec line numbers, never test titles or private paths.
 The evaluation keeps the >=90% gate and zero definite safety failures.
+
+
+## Chat-dev port isolation
+
+An owner-local app may already occupy port 5001. The PR16 launcher now chooses
+an available loopback port for its *own* chat-dev Playwright server and mock CORS
+origin, without killing or reusing the owner's site. Other Playwright tests
+and the regular `npm run dev` / GitHub CI retain their unchanged ports.
+The port is not included in reports. This change addresses the reported
+`port_in_use` failure while preserving the chat-dev test gate.
