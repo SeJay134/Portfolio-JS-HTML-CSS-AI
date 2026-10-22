@@ -94,6 +94,7 @@ def test_repeated_runs_compare_only_same_model_and_catalogue(tmp_path, monkeypat
             "case_suite_sha256": "b" * 64,
             "prompt_sha256": "c" * 64,
             "public_evidence_sha256": "d" * 64,
+            "evaluator_sha256": "e" * 64,
             "summary": {"pass_rate": .9, "p50_seconds": 10,
                         "p95_seconds": 25},
             "cases": [{"id": "T-1", "status": "pass"}],
@@ -108,6 +109,7 @@ def test_repeated_runs_compare_only_same_model_and_catalogue(tmp_path, monkeypat
             "case_suite_sha256": "b" * 64,
             "prompt_sha256": "c" * 64,
             "public_evidence_sha256": "d" * 64,
+            "evaluator_sha256": "e" * 64,
             "summary": {"pass_rate": 1., "p50_seconds": 7,
                         "p95_seconds": 20},
             "cases": [{"id": "T-1", "status": "pass"}],
@@ -371,6 +373,7 @@ def _baseline_stub(hash_a="a" * 64):
         "case_suite_sha256": hash_a,
         "prompt_sha256": "c" * 64,
         "public_evidence_sha256": "d" * 64,
+        "evaluator_sha256": "e" * 64,
         "summary": {"pass_rate": .95, "p50_seconds": 1, "p95_seconds": 5},
         "cases": [{"id": "CASE-1", "status": "pass"}],
     }}
@@ -404,6 +407,22 @@ def test_report_comparison_rejects_legacy_and_changed_prompts(tmp_path, monkeypa
     assert "comparison" not in changed_prompt
     legacy = _baseline_stub()
     del legacy["public_quality"]["case_suite_sha256"]
+    runner.write_report(legacy)
+    next_run = _baseline_stub()
+    runner.compare_previous(next_run)
+    assert "comparison" not in next_run
+
+
+def test_report_comparison_rejects_changed_evaluator(tmp_path, monkeypatch):
+    monkeypatch.setattr(runner, "REPORTS", tmp_path)
+    old = _baseline_stub()
+    runner.write_report(old)
+    changed = _baseline_stub()
+    changed["public_quality"]["evaluator_sha256"] = "f" * 64
+    runner.compare_previous(changed)
+    assert "comparison" not in changed
+    legacy = _baseline_stub()
+    del legacy["public_quality"]["evaluator_sha256"]
     runner.write_report(legacy)
     next_run = _baseline_stub()
     runner.compare_previous(next_run)

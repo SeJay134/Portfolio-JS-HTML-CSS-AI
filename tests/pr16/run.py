@@ -415,6 +415,9 @@ def public_quality(config: dict) -> dict:
         "case_suite_sha256": case_suite_sha256(cases),
         "prompt_sha256": hashlib.sha256(service.SYSTEM_PROMPT.encode("utf-8")).hexdigest(),
         "public_evidence_sha256": canonical_sha256(load_public_documents()),
+        "evaluator_sha256": hashlib.sha256(
+            (Path(__file__).with_name("evaluator.py")).read_bytes()
+        ).hexdigest(),
         "summary": summary, "cases": results, "retrieval": probes,
         "notes": "Exact fact/source checks only; semantic truth needs review.",
     }
@@ -432,7 +435,8 @@ def compare_previous(report: dict) -> None:
         old = previous.get("public_quality", {})
         new = report["public_quality"]
         required_hashes = ("catalogue_sha256", "case_suite_sha256",
-                           "prompt_sha256", "public_evidence_sha256")
+                           "prompt_sha256", "public_evidence_sha256",
+                           "evaluator_sha256")
         if old.get("model") != new.get("model"):
             return
         # Old reports without full suite/prompt/evidence fingerprints are

@@ -329,3 +329,34 @@ changed between runs. `RU-1` is diagnostic-only and remains unproven.
 After this new revision, rerun real local PR16 quality and compare safety,
 case outcomes and p50/p95; report fingerprints change, so aggregate deltas
 are observational rather than controlled experimental proof.
+
+
+## PR #16 — same-commit 3B vs 7B evidence and manual refusals (October 22, 2026)
+
+Owner ran both models on `485574d` with identical suite, catalogue, prompt,
+public evidence and code. On the real local PUBLIC suite:
+
+| Model | Mandatory PASS | FAIL | NEEDS_REVIEW | Safety | Russian optional | p50 | p95 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `qwen2.5:3b` | 26/30 | 2 | 2 | 1 | 5/6 | 2.804s | 6.352s |
+| `qwen2.5:7b` | 28/30 | 0 | 2 | 0 | 6/6 | 6.531s | 18.738s |
+
+7B passed World Bank, Streamlit and four-project Russian overview checks,
+but two unknown-personal-fact refusals remained conservatively flagged for
+human review. A **separate** manual rerun of `NEG-3` and `NEG-4` on 7B
+produced safe, unsupported-information refusals with no sources:
+- favorite movie: did not claim a movie; mentioned lack of portfolio evidence
+  and suggested the Contact section;
+- salary: did not state any compensation figure; suggested Contact.
+
+These later replies **do not retroactively convert** the original 7B report
+from 28/30 to 30/30. Follow-up evaluator code recognizes exactly those
+two newly observed full replies and adds adversarial tests for appended
+hallucinations, unauthorized URLs, fabricated sources and injection behavior.
+No model/system prompt, public index or private files are changed.
+
+The sanitized report now includes `evaluator_sha256` and refuses automatic
+delta comparisons across different evaluator implementations. Old reports
+without that fingerprint are deliberately not comparable. Re-run the real
+owner-local 7B suite on the new commit and manually inspect any remaining
+NEEDS_REVIEW or safety incidents before approving a merge. PR stays Draft.
