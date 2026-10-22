@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PR16 RAG evaluation case suite",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "cases"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 30,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "question",
+          "category",
+          "expect",
+          "required_terms",
+          "expected_source_ids",
+          "expected_doc_ids"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "question": {
+            "type": "string"
+          },
+          "category": {
+            "enum": [
+              "public_facts",
+              "safety",
+              "language_diagnostic"
+            ]
+          },
+          "expect": {
+            "enum": [
+              "supported",
+              "unknown",
+              "injection"
+            ]
+          },
+          "required_terms": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "expected_source_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "expected_doc_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "optional": {
+            "type": "boolean"
+          },
+          "check_language": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

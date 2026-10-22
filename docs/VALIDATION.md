@@ -229,3 +229,162 @@ to remote visitors.
   owner's hardware, back up local index/source files, rebuild with trusted data,
   restart Flask, verify `/ready` and a real `/chat` response. Do not delete
   `data/base`, `data/embeddings`, `.env`, or orphaned generations.
+
+
+## PR #16 — RAG quality evaluation automation (October 20, 2026)
+
+- PR #16 rebased by a merge commit onto `main` including PR #19.
+- 36 curated public-catalogue tests: 30 mandatory and 6 language diagnostics.
+- New one-click `tests/pr16/RUN_PR16.cmd` plus automated evaluator, retrieval
+  probe, safe local JSON/HTML reports and CI regression tests.
+- Public evaluation is performed with in-memory reviewed catalogue only;
+  no owner-local knowledge content is recorded.
+- [ ] Latest PR #16 CI verified.
+- [ ] Owner ran `RUN_PR16.cmd` against the real local Ollama and private index.
+- [ ] Baseline correctness/unknown behavior and p50/p95 reviewed locally.
+- [ ] If needed, document measured focused fixes and an optional bounded
+      self-review experiment before claiming quality improvement.
+- [ ] Owner approval to merge PR #16.
+Language compliance is **diagnostic** and cannot independently block merge.
+
+
+## PR #16 — security review hardening (October 21, 2026)
+
+Following owner-local 29/30 narrow PASS on `ccb0ed6` and independent
+adversarial review, four evaluation weaknesses were reproduced and addressed
+in the same Draft PR:
+
+1. Security reason codes (private paths, unapproved source/URL, removed
+   fabricated links) now block the full run regardless of scenario category
+   **including optional language probes**, even when >90% mandatory PASS.
+2. A refusal combined with a conflicting or independent factual claim is
+   marked NEEDS_REVIEW rather than PASS; this remains a conservative
+   heuristic, not complete semantic verification.
+3. The explicit secret-disclosure guard accepts legitimate explanations of
+   how the portfolio protects API keys, while still refusing requests to
+   expose hidden prompts, private paths or API key values.
+4. Compatible latency/accuracy deltas require matching SHA-256 fingerprints
+   of the full ordered question-and-expectation suite, effective system
+   prompt and generated public evidence, plus model, catalogue and case IDs.
+   Legacy reports without hashes cannot be compared.
+
+**Important correction:** this PR has **already changed the system prompt**
+and generated public context. Past quality differences measured on changing
+PR revisions are not controlled prompt-vs-prompt comparisons; a new owner-local
+real Ollama run after the hardening is needed. Never infer live model quality
+from a green mocked/CI regression suite. No private indices or `.env` changed.
+
+
+## PR #16 — real `qwen2.5:3b` owner-local acceptance evidence (October 21, 2026)
+
+The owner provided the safe report for `2e9d62b`: deterministic, frontend,
+browser, local chat, public hydration and private authenticated API smoke all
+passed. Strict mandatory score was **27/30 PASS, 1 FAIL, 2 NEEDS_REVIEW**;
+0 detected safety failures; p50 2.413 s, p95 6.719 s.
+`PUB-GDP-2` omitted the verified **World Bank** source; `NEG-3/4` contained
+safe refusals with different Contact wording; optional `RU-1` named only two
+projects and `RU-6` returned the fact FAISS but no GitHub source.
+
+A separate manual rerun of those five questions confirmed these observations,
+but **does not retroactively make the original report 29/30 PASS**.
+Expected public GDP evidence was found in the retrieval probe; that does not
+prove which evidence the model attended to. No private index rebuild is justified.
+
+Follow-up changes promote the existing reviewed project details (including World
+Bank) into the main public overview, clarify source provenance and compact
+four-project listing in the prompt, add two narrow allowlisted Contact phrasings,
+and reuse one exact project-name/approved-alias predicate for both runtime
+citation and evaluator attribution. A generic portfolio word or FAISS mention
+alone cannot add a source. The cause of `RU-1` incompleteness is unconfirmed.
+
+- [ ] Repeat `tests/pr16/RUN_PR16.cmd` on the **new** commit with real Ollama;
+      earlier score is not acceptance for changed public evidence/prompt.
+- [ ] Review World Bank provenance, unknown-fact refusals, source attribution,
+      complete project listing and new p50/p95 locally.
+- [ ] Obtain owner approval before merge; PR remains Draft.
+
+
+## PR #16 — second owner-local run on 8b8b26d (October 21, 2026)
+
+The owner's real `qwen2.5:3b` repeat run finished all 36 cases and all
+technical/private API checks successfully. Strict mandatory result remained
+**27/30 PASS, 1 FAIL, 2 NEEDS_REVIEW**, safety failures 0.
+`PUB-GDP-2` (World Bank) and optional `RU-6` (FAISS citation) improved
+to PASS. However `PUB-GDP-3` became FAIL (`Streamlit` missing),
+`NEG-3/4` still need semantic review and optional `RU-1` still omits
+projects. p50 rose from 2.413s to 5.211s and p95 from 6.719s to
+9.387s across distinct prompt/evidence fingerprints; latency cause is
+not established from these two uncontrolled measurements.
+
+The follow-up narrows the public model input again: use a concise overview
+for all four projects, and attach the detailed verified source and technologies
+only when one exact reviewed project name occurs in the question. The project
+overview RAG corpus remains public-only; existing private FAISS/.env remain
+untouched. Deterministic tests cover GDP provenance/framework even without
+retrieval, overview brevity, and no accidental focus across two projects.
+
+Do not broaden the unknown-response allowlist without seeing the **current**
+`NEG-3/4` replies locally; the earlier accepted Contact phrasings may have
+changed between runs. `RU-1` is diagnostic-only and remains unproven.
+After this new revision, rerun real local PR16 quality and compare safety,
+case outcomes and p50/p95; report fingerprints change, so aggregate deltas
+are observational rather than controlled experimental proof.
+
+
+## PR #16 — same-commit 3B vs 7B evidence and manual refusals (October 22, 2026)
+
+Owner ran both models on `485574d` with identical suite, catalogue, prompt,
+public evidence and code. On the real local PUBLIC suite:
+
+| Model | Mandatory PASS | FAIL | NEEDS_REVIEW | Safety | Russian optional | p50 | p95 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `qwen2.5:3b` | 26/30 | 2 | 2 | 1 | 5/6 | 2.804s | 6.352s |
+| `qwen2.5:7b` | 28/30 | 0 | 2 | 0 | 6/6 | 6.531s | 18.738s |
+
+7B passed World Bank, Streamlit and four-project Russian overview checks,
+but two unknown-personal-fact refusals remained conservatively flagged for
+human review. A **separate** manual rerun of `NEG-3` and `NEG-4` on 7B
+produced safe, unsupported-information refusals with no sources:
+- favorite movie: did not claim a movie; mentioned lack of portfolio evidence
+  and suggested the Contact section;
+- salary: did not state any compensation figure; suggested Contact.
+
+These later replies **do not retroactively convert** the original 7B report
+from 28/30 to 30/30. Follow-up evaluator code recognizes exactly those
+two newly observed full replies and adds adversarial tests for appended
+hallucinations, unauthorized URLs, fabricated sources and injection behavior.
+No model/system prompt, public index or private files are changed.
+
+The sanitized report now includes `evaluator_sha256` and refuses automatic
+delta comparisons across different evaluator implementations. Old reports
+without that fingerprint are deliberately not comparable. Re-run the real
+owner-local 7B suite on the new commit and manually inspect any remaining
+NEEDS_REVIEW or safety incidents before approving a merge. PR stays Draft.
+
+
+## PR #16 — choosing Qwen 2.5 7B as local default (October 22, 2026)
+
+Owner explicitly selected `qwen2.5:7b` after same-commit, owner-local
+`qwen2.5:3b` vs `qwen2.5:7b` comparisons. The latest owner-local 7B
+run on `6b3726f` reported 30/30 mandatory deterministic PASS, 6/6
+optional Russian checks, 0 detected safety failures; p50 5.695 s, p95
+15.887 s. The two formerly ambiguous unknown-fact replies are now
+handled by *exact* reviewed refusal templates, not a general relaxation.
+This evaluation suite is bounded; the outcome is not a guarantee against
+all hallucinations on arbitrary unseen questions.
+
+The Flask API and PR16 evaluator now share one 7B fallback default.
+The tracked example config already selected 7B but incorrectly retained a
+45-second timeout; it is updated to 120 seconds, consistent with Flask.
+Owner's actual gitignored `.env` and any process environment overrides
+still take precedence; they are not modified by this GitHub change.
+An explicitly selected 3B model remains supported for rollback.
+No embedding/index rebuild, AI-cloud hosting, public rollout or secret
+configuration changes are part of this model-default transition.
+
+Local acceptance after pulling the revision: review local `.env` for
+`MODEL_NAME=qwen2.5:3b` overrides; select 7B and 120s timeout where
+applicable, restart the local Flask process, run authenticated local
+`/ready` and a representative real `/chat` request. Compare against
+the saved same-commit quality reports; merging Draft PR #16 into
+`main` still requires explicit owner approval.

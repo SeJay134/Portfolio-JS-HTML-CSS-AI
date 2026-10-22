@@ -201,6 +201,15 @@ that the local index and named model exist; it does **not** measure inference
 speed or guarantee a fast response. One successful request does not guarantee
 the next request will finish within the same interval.
 
+The local Flask API and PR16 runner now default to `qwen2.5:7b` when
+`MODEL_NAME` is unset. The earlier `qwen2.5:3b` fallback is retained only
+as an explicit opt-in (`MODEL_NAME=qwen2.5:3b`). This change does not edit
+your gitignored local `.env`; if that file still selects 3B, update it manually
+to `MODEL_NAME=qwen2.5:7b`, and remove any stale PowerShell
+`$env:MODEL_NAME` override before starting Flask. Verify the model is already
+installed with `ollama list`, then restart Flask and check `/ready` plus
+a real `/chat` reply. No FAISS/index rebuild or new hosting is necessary.
+
 For the local 7B model, this branch now defaults to
 `MODEL_TIMEOUT=120` seconds (previously 45). A setting already present in
 `.env` or the process environment takes precedence over the default.

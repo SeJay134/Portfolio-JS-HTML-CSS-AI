@@ -29,3 +29,13 @@ Rules: keep one canonical test; add regression coverage for fixed defects when
 practical; keep smoke small; convert future scenarios when implementation begins;
 do not use public internet in unit/integration suites; record manual browser/device
 evidence in docs/VALIDATION.md; never weaken a test merely to make a gate green.
+
+
+## PR #16 RAG quality evaluation
+
+Double-click `tests/pr16/RUN_PR16.cmd` in the PR #16 worktree. This
+single launcher runs deterministic regressions, real local Ollama public
+quality cases, FAISS retrieval probes, browser suites and the separate
+authenticated PR #19 private-index smoke; the safe report is ignored at
+`tests/pr16/reports/latest.html`. Language checks are diagnostic only.
+See `docs/RAG_ANSWER_EVALUATION.md`.

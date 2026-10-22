@@ -117,6 +117,25 @@ def test_missing_knowledge_fails_index_build(tmp_path, monkeypatch):
     assert indexer.main() == 1
 
 
+def test_default_ollama_model_7b_and_explicit_rollback(monkeypatch):
+    """Default is shared with the evaluator; owner 3B overrides stay possible."""
+    from llm.app import DEFAULT_MODEL_NAME
+    monkeypatch.delenv("MODEL_NAME", raising=False)
+    default_app = create_app({"TESTING": True}, FakeService())
+    assert DEFAULT_MODEL_NAME == "qwen2.5:7b"
+    assert default_app.config["MODEL_NAME"] == DEFAULT_MODEL_NAME
+
+    monkeypatch.setenv("MODEL_NAME", "qwen2.5:3b")
+    rollback = create_app({"TESTING": True}, FakeService())
+    assert rollback.config["MODEL_NAME"] == "qwen2.5:3b"
+
+    # Explicit app settings must take priority even over an env override.
+    explicit = create_app(
+        {"TESTING": True, "MODEL_NAME": "qwen2.5:7b"}, FakeService()
+    )
+    assert explicit.config["MODEL_NAME"] == "qwen2.5:7b"
+
+
 def test_model_read_timeout_default_and_owner_override(monkeypatch):
     """Slow local Ollama inference must have a bounded, configurable allowance."""
     monkeypatch.delenv("MODEL_TIMEOUT", raising=False)

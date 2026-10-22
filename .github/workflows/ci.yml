@@ -27,7 +27,7 @@ jobs:
           cache: pip
           cache-dependency-path: requirements-local-api-dev.txt
       - run: pip install -r requirements-local-api-dev.txt
-      - run: python -m pytest -q tests/integration/backend tests/pr19/test_runner.py
+      - run: python -m pytest -q tests/integration/backend tests/pr19/test_runner.py tests/pr16/test_evaluator.py tests/pr16/test_quality_runner.py tests/pr16/test_retrieval_probe.py
   smoke:
     runs-on: ubuntu-latest
     steps:
@@ -39,6 +39,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run test:smoke -- --project=chromium
       - run: npm run test:chat-dev
+      - run: PR16_CHAT_DEV_PORT=5151 npm run test:chat-dev
       - run: VITE_ENABLE_PUBLIC_CHAT_UI=true npm run build
       - run: npm run test:chat-hydration
       - uses: actions/upload-artifact@v4

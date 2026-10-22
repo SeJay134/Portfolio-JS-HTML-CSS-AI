@@ -108,12 +108,86 @@ def unlisted_project_reply(question: str) -> str | None:
     )
 
 
+_DISCLOSURE_VERBS = re.compile(
+    r"\b(?:reveal|disclose|expose|dump|print|show|share|display|"
+    r"покажи|раскрой|выведи|раскрыть|показать)\b", re.IGNORECASE
+)
+_PRIVATE_TARGETS = re.compile(
+    r"(?:internal|hidden|system|developer)\s+(?:prompts?|instructions?|rules?)"
+    r"|(?:prompts?|instructions?)\s+(?:of|from)\s+(?:your|the)\s+system"
+    r"|(?:private|internal|local)\s+(?:file\s+paths?|documents?|secrets?)"
+    r"|(?:api|access)\s+keys?"
+    r"|(?:системн|внутренн|скрыт)\w*\s+(?:промпт|инструкц|правил)\w*"
+    r"|(?:секретн|приватн)\w*\s+(?:путь|пути|документ|файл)\w*",
+    re.IGNORECASE,
+)
+
+
+# Demand a sensitive value immediately after an explicit disclosure verb
+# (allowing only harmless qualifiers such as "me the hidden"). Explanatory
+# questions like "Show how the portfolio protects API keys" do not match.
+_EXPLICIT_PRIVATE_DISCLOSURE = re.compile(
+    _DISCLOSURE_VERBS.pattern
+    + r"\s+(?:(?:me|us|my|our|your|the|all|actual|raw|hidden|internal|"
+      r"secret|private|local|full|complete|entire|original|"
+      r"мне|нам|меня|нас|мои|свои|ваши|твои|наши|все|всю|всех|"
+      r"полные|полный|скрытые|внутренние|секретные|приватные|"
+      r"пожалуйста)\s+){0,8}"
+    + r"(?:" + _PRIVATE_TARGETS.pattern + r")",
+    re.IGNORECASE,
+)
+
+
+def private_disclosure_reply(question: str) -> str | None:
+    """Refuse explicit requests to reveal hidden instructions or private paths.
+
+    This is a narrowly scoped deterministic safety boundary. It does not
+    classify ordinary questions ABOUT prompt design, projects, or file formats,
+    and does not claim that all injection styles are detectable here.
+    """
+    if not isinstance(question, str):
+        return None
+    if not _EXPLICIT_PRIVATE_DISCLOSURE.search(question):
+        return None
+    if response_language(question) == "Russian":
+        return ("Я не могу раскрывать внутренние инструкции, приватные "
+                "файлы или секретные настройки.")
+    return ("I cannot reveal internal instructions, private files or "
+            "secret configuration.")
+
+
 def public_overview() -> str:
     """Stable list of reviewed facts, independent of the question language."""
     lines = ["Published portfolio projects (verified public catalogue):"]
     for project in _public_projects():
-        lines.append(f"- {project['title']}: {project['summary']}")
+        lines.append(
+            f"- {project['title']}: {project['summary']} "
+            f"Verified technologies: {', '.join(project['tags'])}."
+        )
     return "\n".join(lines)
+
+
+def focused_public_evidence(question: str) -> str:
+    """Include full authoritative facts only for one explicitly named project.
+
+    General overview questions keep a compact four-project context. This
+    avoids repeating four long details in every prompt while still supplying
+    GDP's World Bank provenance and Streamlit when GDP is the subject.
+    """
+    if not isinstance(question, str):
+        return ""
+    matches = [
+        project for project in _public_projects()
+        if mentions_verified_project(question, project)
+    ]
+    if len(matches) != 1:
+        return ""
+    project = matches[0]
+    return (
+        f"Focused verified project: {project['title']}. "
+        f"Details: {project['detail']} "
+        f"Technologies: {', '.join(project['tags'])}."
+    )
 
 
 def load_public_documents() -> list[dict]:
@@ -143,21 +217,79 @@ def load_public_documents() -> list[dict]:
     return documents
 
 
-def sources_for_mentioned_projects(reply: str) -> list[dict]:
-    """Return exact approved project references for public titles in a model reply.
+_GENERATED_URL = re.compile(r"https?://[^\s<>'\"]+", re.IGNORECASE)
 
-    The verified overview is supplied to every model call, so citations must not
-    depend on a public chunk winning one of the top-3 FAISS matches. Return
-    sources only when the answer actually names their exact curated title.
-    Untrusted local knowledge cannot add URLs or edit these references.
+
+def filter_unapproved_model_urls(reply: str) -> tuple[str, bool]:
+    """Keep only exact reviewed public URLs in model text.
+
+    Links returned as structured sources are already independently curated.
+    An unexpected generated URL is never trusted, even if hosted on GitHub.
+    The boolean is for strict evaluation; dropping the link cannot turn an
+    ungrounded LLM output into an unreported PASS.
+    """
+    if not isinstance(reply, str):
+        raise ValueError("Invalid model text")
+    allowed = {item["repository"] for item in _public_projects()}
+    allowed.add(CATALOG_URL)
+    removed = False
+
+    def replace(match: re.Match[str]) -> str:
+        nonlocal removed
+        whole = match.group(0)
+        url = whole.rstrip(".,;:!?)\\]}")  # Preserve trailing punctuation
+        trailing = whole[len(url):]
+        if url in allowed:
+            return whole
+        removed = True
+        return "[unverified link removed]" + trailing
+
+    return _GENERATED_URL.sub(replace, reply), removed
+
+
+# Distinctive, reviewed alternative project names; not generic technologies.
+_PROJECT_NAME_ALIASES = {
+    "portfolio": (
+        re.compile(
+            r"\bпортфолио\s+сайта\s+и\s+прототип(?:е|а|ом)?\s+(?:AI|ИИ)\b",
+            re.IGNORECASE,
+        ),
+        re.compile(
+            r"\bсайт(?:е|а)?[-\s]+портфолио\s+и\s+"
+            r"(?:AI|ИИ)[-\s]+прототип(?:е|а|ом)?\b",
+            re.IGNORECASE,
+        ),
+    ),
+}
+
+
+def mentions_verified_project(reply: str, project: dict) -> bool:
+    """Require an explicit project name; a technology alone is not provenance."""
+    if not isinstance(reply, str) or not isinstance(project, dict):
+        return False
+    title = project.get("title")
+    if not isinstance(title, str) or not title:
+        return False
+    if title.casefold() in reply.casefold():
+        return True
+    return any(
+        alias.search(reply)
+        for alias in _PROJECT_NAME_ALIASES.get(project.get("id"), ())
+    )
+
+
+def sources_for_mentioned_projects(reply: str) -> list[dict]:
+    """Return only reviewed title/URL pairs for explicitly named projects.
+
+    The evaluator shares the same recognition predicate. Never attribute a
+    repository solely from a technology such as FAISS or from the question.
     """
     if not isinstance(reply, str):
         return []
-    normalized = reply.casefold()
     return [
         {"title": project["title"], "url": project["repository"]}
         for project in _public_projects()
-        if project["title"].casefold() in normalized
+        if mentions_verified_project(reply, project)
     ]
 
 
