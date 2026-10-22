@@ -24,6 +24,9 @@ from werkzeug.exceptions import HTTPException
 load_dotenv()
 log = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+# One default for the local Flask API and the PR16 quality runner.
+# Explicit MODEL_NAME from the owner's environment/.env still takes precedence.
+DEFAULT_MODEL_NAME = "qwen2.5:7b"
 
 
 def _csv(value: str) -> list[str]:
@@ -185,7 +188,7 @@ def create_app(config: dict | None = None, service=None) -> Flask:
         TRUSTED_HOSTS=_csv(os.getenv("TRUSTED_HOSTS", "127.0.0.1,localhost")),
         RATELIMIT_STORAGE_URI=os.getenv("RATELIMIT_STORAGE_URI", "memory://"),
         CHAT_LIMIT=os.getenv("CHAT_LIMIT", "10/minute"),
-        MODEL_NAME=os.getenv("MODEL_NAME", "qwen2.5:3b"),
+        MODEL_NAME=os.getenv("MODEL_NAME", DEFAULT_MODEL_NAME),
         OLLAMA_HOST=os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434"),
         MODEL_TIMEOUT=float(os.getenv("MODEL_TIMEOUT", "120")),
         MAX_GENERATIONS=max(1, int(os.getenv("MAX_GENERATIONS", "1"))),

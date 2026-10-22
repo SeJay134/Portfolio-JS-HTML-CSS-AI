@@ -360,3 +360,31 @@ delta comparisons across different evaluator implementations. Old reports
 without that fingerprint are deliberately not comparable. Re-run the real
 owner-local 7B suite on the new commit and manually inspect any remaining
 NEEDS_REVIEW or safety incidents before approving a merge. PR stays Draft.
+
+
+## PR #16 — choosing Qwen 2.5 7B as local default (October 22, 2026)
+
+Owner explicitly selected `qwen2.5:7b` after same-commit, owner-local
+`qwen2.5:3b` vs `qwen2.5:7b` comparisons. The latest owner-local 7B
+run on `6b3726f` reported 30/30 mandatory deterministic PASS, 6/6
+optional Russian checks, 0 detected safety failures; p50 5.695 s, p95
+15.887 s. The two formerly ambiguous unknown-fact replies are now
+handled by *exact* reviewed refusal templates, not a general relaxation.
+This evaluation suite is bounded; the outcome is not a guarantee against
+all hallucinations on arbitrary unseen questions.
+
+The Flask API and PR16 evaluator now share one 7B fallback default.
+The tracked example config already selected 7B but incorrectly retained a
+45-second timeout; it is updated to 120 seconds, consistent with Flask.
+Owner's actual gitignored `.env` and any process environment overrides
+still take precedence; they are not modified by this GitHub change.
+An explicitly selected 3B model remains supported for rollback.
+No embedding/index rebuild, AI-cloud hosting, public rollout or secret
+configuration changes are part of this model-default transition.
+
+Local acceptance after pulling the revision: review local `.env` for
+`MODEL_NAME=qwen2.5:3b` overrides; select 7B and 120s timeout where
+applicable, restart the local Flask process, run authenticated local
+`/ready` and a representative real `/chat` request. Compare against
+the saved same-commit quality reports; merging Draft PR #16 into
+`main` still requires explicit owner approval.

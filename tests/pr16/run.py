@@ -364,9 +364,9 @@ def case_suite_sha256(cases: list[dict]) -> str:
 
 
 def public_quality(config: dict) -> dict:
-    from llm.app import LocalPortfolioService
+    from llm.app import DEFAULT_MODEL_NAME, LocalPortfolioService
     from llm.public_knowledge import load_public_documents
-    model_name = config.get("MODEL_NAME", "qwen2.5:3b")
+    model_name = config.get("MODEL_NAME", DEFAULT_MODEL_NAME)
     service = LocalPortfolioService({
         "MODEL_NAME": model_name,
         "OLLAMA_HOST": config.get("OLLAMA_HOST", "http://127.0.0.1:11434"),

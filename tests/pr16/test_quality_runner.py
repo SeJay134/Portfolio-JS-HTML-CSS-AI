@@ -23,6 +23,17 @@ def test_only_pr16_and_merged_main_branches_allowed(monkeypatch):
         runner.check_branch()
 
 
+def test_pr16_quality_default_matches_local_flask_without_owner_override():
+    from llm.app import DEFAULT_MODEL_NAME
+    from pathlib import Path
+    # The runner selects from this same import, so runtime/evaluation cannot
+    # accidentally diverge to the old 3B fallback.
+    import inspect
+    source = inspect.getsource(runner.public_quality)
+    assert DEFAULT_MODEL_NAME == "qwen2.5:7b"
+    assert 'config.get("MODEL_NAME", DEFAULT_MODEL_NAME)' in source
+
+
 def test_safe_config_is_local_and_no_secrets_displayed(monkeypatch):
     from dotenv import load_dotenv
     monkeypatch.setenv("OLLAMA_HOST", "http://external.example:11434")
