@@ -67,6 +67,8 @@ export const projects: readonly Project[] = [
     repository: "https://github.com/SeJay134/Portfolio-JS-HTML-CSS",
     detail:
       "A separate, not-yet-deployed RAG prototype retrieves reviewed portfolio evidence with FAISS and all-MiniLM-L6-v2 and uses qwen2.5:7b for grounded answers. This public portfolio release does not offer an AI chat interface.",
+    image: "/images/portfolio-preview.webp",
+    imageAlt: "React and TypeScript portfolio website with AI assistant interface",
   },
   {
   id: "world-happiness",
@@ -85,6 +87,8 @@ export const projects: readonly Project[] = [
     "https://github.com/SeJay134/World_Happiness_Pipeline",
   detail:
     "Automates multi-year data ingestion, validation, cleaning, transformation, hypothesis testing, correlation analysis, and visualization to explore global happiness trends.",
+  image: "/images/world-happiness.webp",
+  imageAlt: "World Happiness Analytics Pipeline visualization",
   },
 ];
 
