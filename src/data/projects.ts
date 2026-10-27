@@ -67,7 +67,7 @@ export const projects: readonly Project[] = [
     repository: "https://github.com/SeJay134/Portfolio-JS-HTML-CSS",
     detail:
       "A separate, not-yet-deployed RAG prototype retrieves reviewed portfolio evidence with FAISS and all-MiniLM-L6-v2 and uses qwen2.5:7b for grounded answers. This public portfolio release does not offer an AI chat interface.",
-    image: "/images/portfolio-preview.webp",
+    image: "/images/portfolio-artwork.webp",
     imageAlt: "React and TypeScript portfolio website with AI assistant interface",
   },
   {
