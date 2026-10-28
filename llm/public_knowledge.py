@@ -14,7 +14,7 @@ from urllib.parse import urlsplit
 CATALOG_PATH = Path(__file__).resolve().parents[1] / "content" / "public-projects.json"
 CATALOG_URL = "https://sergei-luna.vercel.app/#Projects"
 ALLOWED_HOSTS = {"github.com", "sergei-luna.vercel.app"}
-REQUIRED_IDS = {"chocolate", "gdp", "api", "portfolio"}
+REQUIRED_IDS = {"chocolate", "gdp", "api", "portfolio", "world-happiness"}
 
 
 def _safe_url(value: str) -> bool:
@@ -37,7 +37,7 @@ def _public_projects() -> list[dict]:
     if not isinstance(data, dict) or data.get("schema_version") != 1:
         raise ValueError("Invalid public projects catalogue schema.")
     projects = data.get("projects")
-    if not isinstance(projects, list) or len(projects) != 4:
+    if not isinstance(projects, list) or len(projects) != 5:
         raise ValueError("Unexpected number of public portfolio projects.")
     found = set()
     for item in projects:

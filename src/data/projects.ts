@@ -21,7 +21,7 @@ export const projects: readonly Project[] = [
     summary:
       "Interactive Streamlit dashboard for analyzing chocolate sales by country, product, and salesperson.",
     tags: ["Python", "Streamlit", "Pandas", "Plotly"],
-    image: "/images/chocolate-sales-preview-hires.png",
+    image: "/images/chocolate.webp",
     imageAlt:
       "Chocolate sales dashboard with filters and sales visualizations.",
     demo: "https://sergei-chocolate-sales-dashboard.streamlit.app/",

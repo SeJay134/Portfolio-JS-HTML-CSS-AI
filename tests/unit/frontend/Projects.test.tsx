@@ -24,7 +24,7 @@ it("does not add browser history when the selected category is pressed again", a
 it("filters local project content without requiring a network request", async () => {
   const user = userEvent.setup();
   render(<Projects />);
-  expect(screen.getAllByRole("article")).toHaveLength(4);
+  expect(screen.getAllByRole("article")).toHaveLength(5);
   await user.click(screen.getByRole("button", { name: /^AI/ }));
   expect(screen.getAllByRole("article")).toHaveLength(1);
   expect(
@@ -32,5 +32,5 @@ it("filters local project content without requiring a network request", async ()
   ).toBeVisible();
   expect(location.search).toContain("category=AI");
   await user.click(screen.getByRole("button", { name: /^All/ }));
-  expect(screen.getAllByRole("article")).toHaveLength(4);
+  expect(screen.getAllByRole("article")).toHaveLength(5);
 });
