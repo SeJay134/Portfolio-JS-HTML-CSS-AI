@@ -21,7 +21,7 @@ export const projects: readonly Project[] = [
     summary:
       "Interactive Streamlit dashboard for analyzing chocolate sales by country, product, and salesperson.",
     tags: ["Python", "Streamlit", "Pandas", "Plotly"],
-    image: "/images/chocolate.webp",
+    image: "/images/chocolate-sales-preview-hires.png",
     imageAlt:
       "Chocolate sales dashboard with filters and sales visualizations.",
     demo: "https://sergei-chocolate-sales-dashboard.streamlit.app/",
@@ -55,6 +55,8 @@ export const projects: readonly Project[] = [
     repository: "https://github.com/SeJay134/Open-API-Project-JS",
     detail:
       "Accepts a city, resolves its coordinates through Open-Meteo geocoding, requests current weather, displays Fahrenheit temperature, and maps weather codes to visual conditions.",
+    image: "/images/weather-explorer-preview.webp",
+    imageAlt: "Weather app that uses Open-Meteo geocoding and forecast APIs"
   },
   {
     id: "portfolio",
