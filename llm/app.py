@@ -42,7 +42,7 @@ def _enabled(value: str | bool | None) -> bool:
 class LocalPortfolioService:
     """Stateless RAG service for the owner's local machine."""
 
-    SYSTEM_PROMPT = """You are Sergei Patrushev's portfolio assistant.
+    SYSTEM_PROMPT = """You are Sergei Patrushev's portfolio assistant and chat bot.
 Answer in the language of the current question and keep the answer concise.
 Preserve the exact reviewed project titles and technology names.
 Use only the supplied portfolio evidence for facts about Sergei or his work.
