@@ -11,15 +11,16 @@ from llm.splitter import split_text
 from llm.app import LocalPortfolioService
 
 
-def test_verified_catalogue_lists_four_canonical_projects():
+def test_verified_catalogue_lists_five_canonical_projects():
     docs = load_public_documents()
     overview = public_overview()
-    assert len(docs) == 5
+    assert len(docs) == 6
     for title in (
         "Chocolate sales dashboard",
         "GDP dashboard",
         "Open API weather explorer",
         "Portfolio website & AI prototype",
+        "World Happiness Analytics Pipeline",
     ):
         assert title in overview
 
@@ -140,12 +141,12 @@ def test_generation_links_named_projects_even_when_only_private_notes_retrieved(
 
 
 @pytest.mark.parametrize("question", [
-    "Как называется пятый опубликованный проект Сергея и где его GitHub?",
-    "Какие технологии в пятом проекте?",
-    "Расскажи о 5-м опубликованном проекте.",
-    "What is the fifth published project?",
-    "Tell me about the 5th public project.",
-    "Where is project 5?",
+    "Как называется шестой опубликованный проект Сергея и где его GitHub?",
+    "Какие технологии в шестом проекте?",
+    "Расскажи о 6-м опубликованном проекте.",
+    "What is the sixth published project?",
+    "Tell me about the 6th public project.",
+    "Where is project 6?",
 ])
 def test_unlisted_project_returns_grounded_fallback_without_sources_or_ollama(question):
     class NoGeneration:
@@ -158,7 +159,7 @@ def test_unlisted_project_returns_grounded_fallback_without_sources_or_ollama(qu
     service.model = "test-model"
     result = service.answer(question)
     assert result["sources"] == []
-    assert "4" in result["reply"]
+    assert "5" in result["reply"]
     if response_language(question) == "Russian":
         assert "проект" in result["reply"]
         assert "информации" in result["reply"].casefold()
@@ -239,12 +240,12 @@ def test_counted_items_are_not_treated_as_fifth_project(question):
 
 
 @pytest.mark.parametrize("question", [
-    "Where is project #5?",
-    "Где проект №5?",
-    "Tell me about the 5th public project",
-    "Расскажи о 5-м опубликованном проекте",
+    "Where is project #6?",
+    "Где проект №6?",
+    "Tell me about the 6th public project",
+    "Расскажи о 6-м опубликованном проекте",
 ])
-def test_explicit_fifth_project_remains_out_of_range(question):
+def test_explicit_sixth_project_remains_out_of_range(question):
     assert unlisted_project_reply(question) is not None
 
 

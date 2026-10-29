@@ -92,7 +92,26 @@ def unlisted_project_reply(question: str) -> str | None:
         return None
     ordinal = (match.group("position") or match.group("after") or match.group("marked")).casefold()
     numeric = re.match(r"\d+", ordinal)
-    position = int(numeric.group()) if numeric else 5
+    #position = int(numeric.group()) if numeric else 5
+    if numeric:
+        position = int(numeric.group())
+    elif ordinal.startswith("пят"):
+        position = 5
+    elif ordinal.startswith("шест"):
+        position = 6
+    else:
+        position = {
+            "fifth": 5,
+            "sixth": 6,
+            "seventh": 7,
+            "eighth": 8,
+            "ninth": 9,
+            "tenth": 10,
+        }.get(ordinal)
+
+    if position is None:
+        return None
+
     count = len(_public_projects())
     if position <= count:
         return None

@@ -12,7 +12,7 @@ test("hero links reach projects and contact with the AI API unavailable", async 
   await page.goto("/");
   await page.getByRole("link", { name: "Explore my work", exact: true }).click();
   await expect(page).toHaveURL(/#Projects$/);
-  await expect(page.locator(".project-card")).toHaveCount(4);
+  await expect(page.locator(".project-card")).toHaveCount(5);
   await expect(page.locator("#Projects h2")).toBeInViewport();
   await page.getByRole("link", { name: "Get in touch", exact: true }).click();
   await expect(page).toHaveURL(/#Connect$/);
@@ -36,7 +36,7 @@ test("keyboard filters preserve the URL and support reload, back, and forward", 
   const all = filters.getByRole("button", { name: /^All/ });
   await all.click();
   await expect(page).toHaveURL(/\?ref=portfolio#Projects$/);
-  await expect(page.locator(".project-card")).toHaveCount(4);
+  await expect(page.locator(".project-card")).toHaveCount(5);
 
   await page.goBack();
   await expect(page).toHaveURL(/\?ref=portfolio&category=AI#Projects$/);
@@ -46,12 +46,12 @@ test("keyboard filters preserve the URL and support reload, back, and forward", 
   await expect(page).toHaveURL(/\?ref=portfolio#Projects$/);
   await expect(all).toHaveAttribute("aria-pressed", "true");
   await filters.getByRole("button", { name: /^Data/ }).click();
-  await expect(page.locator(".project-card")).toHaveCount(2);
+  await expect(page.locator(".project-card")).toHaveCount(3);
   await filters.getByRole("button", { name: /^Web/ }).click();
   await expect(page.locator(".project-card")).toHaveCount(1);
   await filters.getByRole("button", { name: /^All/ }).click();
   await expect(page).toHaveURL(/\?ref=portfolio#Projects$/);
-  await expect(page.locator(".project-card")).toHaveCount(4);
+  await expect(page.locator(".project-card")).toHaveCount(5);
 });
 
 test("unknown categories and failed preview images keep cards and details usable", async ({ page }) => {
@@ -64,7 +64,7 @@ test("unknown categories and failed preview images keep cards and details usable
   );
   await page.goto("/?category=unknown#Projects");
   await expect(page.getByRole("button", { name: /^All/ })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator(".project-card")).toHaveCount(4);
+  await expect(page.locator(".project-card")).toHaveCount(5);
   const card = page.locator(".project-card").first();
   await card.scrollIntoViewIfNeeded();
   await expect(card.locator(".image-fallback")).toBeVisible();
@@ -126,5 +126,5 @@ test("skills link to filtered case studies while experience and contact stay con
   await expect(
     page.getByRole("button", { name: /^Data/ }),
   ).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator(".project-card")).toHaveCount(2);
+  await expect(page.locator(".project-card")).toHaveCount(3);
 });
