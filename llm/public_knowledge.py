@@ -14,7 +14,7 @@ from urllib.parse import urlsplit
 CATALOG_PATH = Path(__file__).resolve().parents[1] / "content" / "public-projects.json"
 CATALOG_URL = "https://sergei-luna.vercel.app/#Projects"
 ALLOWED_HOSTS = {"github.com", "sergei-luna.vercel.app"}
-REQUIRED_IDS = {"chocolate", "gdp", "api", "portfolio"}
+REQUIRED_IDS = {"chocolate", "gdp", "api", "portfolio", "world-happiness"}
 
 
 def _safe_url(value: str) -> bool:
@@ -37,7 +37,7 @@ def _public_projects() -> list[dict]:
     if not isinstance(data, dict) or data.get("schema_version") != 1:
         raise ValueError("Invalid public projects catalogue schema.")
     projects = data.get("projects")
-    if not isinstance(projects, list) or len(projects) != 4:
+    if not isinstance(projects, list) or len(projects) != 5:
         raise ValueError("Unexpected number of public portfolio projects.")
     found = set()
     for item in projects:
@@ -92,7 +92,26 @@ def unlisted_project_reply(question: str) -> str | None:
         return None
     ordinal = (match.group("position") or match.group("after") or match.group("marked")).casefold()
     numeric = re.match(r"\d+", ordinal)
-    position = int(numeric.group()) if numeric else 5
+    #position = int(numeric.group()) if numeric else 5
+    if numeric:
+        position = int(numeric.group())
+    elif ordinal.startswith("пят"):
+        position = 5
+    elif ordinal.startswith("шест"):
+        position = 6
+    else:
+        position = {
+            "fifth": 5,
+            "sixth": 6,
+            "seventh": 7,
+            "eighth": 8,
+            "ninth": 9,
+            "tenth": 10,
+        }.get(ordinal)
+
+    if position is None:
+        return None
+
     count = len(_public_projects())
     if position <= count:
         return None

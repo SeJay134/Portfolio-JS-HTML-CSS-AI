@@ -44,7 +44,7 @@ for (const theme of ["light", "dark"] as const) {
       for (const summary of await page.locator(".project-card summary").all()) {
         await summary.click();
       }
-      await expect(page.locator(".project-card details[open]")).toHaveCount(4);
+      await expect(page.locator(".project-card details[open]")).toHaveCount(5);
       const problems = await page.evaluate(() => {
         const problems: string[] = [];
         if (document.documentElement.scrollWidth > innerWidth)

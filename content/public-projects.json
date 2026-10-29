@@ -56,6 +56,21 @@
       ],
       "repository": "https://github.com/SeJay134/Portfolio-JS-HTML-CSS",
       "detail": "A separate, not-yet-deployed RAG prototype retrieves reviewed portfolio evidence with FAISS and all-MiniLM-L6-v2 and uses qwen2.5:7b for grounded answers. This public portfolio release does not offer an AI chat interface."
+    },
+    {
+      "id": "world-happiness",
+      "category": "Data",
+      "title": "World Happiness Analytics Pipeline",
+      "summary": "An end-to-end analytics pipeline using Prefect to automate World Happiness Report data processing and statistical analysis.",
+      "tags": [
+      "Python",
+      "Prefect",
+      "ETL",
+      "Data Analytics",
+      "Statistics"
+      ],
+      "repository": "https://github.com/SeJay134/World_Happiness_Pipeline",
+      "detail": "Automates multi-year data ingestion, validation, cleaning, transformation, hypothesis testing, correlation analysis, and visualization to explore global happiness trends."
     }
   ]
 }

@@ -6,12 +6,13 @@ const expectedRepositories = {
   gdp: "https://github.com/SeJay134/GDP-Dashboard-Python",
   api: "https://github.com/SeJay134/Open-API-Project-JS",
   portfolio: "https://github.com/SeJay134/Portfolio-JS-HTML-CSS",
+  "world-happiness": "https://github.com/SeJay134/World_Happiness_Pipeline",
 } as const;
 
 describe("standalone public project data contract", () => {
   it("contains four curated local project records with unique IDs", () => {
     expect(projects.map((project) => project.id)).toEqual([
-      "chocolate", "gdp", "api", "portfolio",
+      "chocolate", "gdp", "api", "portfolio", "world-happiness",
     ]);
     expect(new Set(projects.map((project) => project.id)).size).toBe(projects.length);
   });
@@ -34,7 +35,7 @@ describe("standalone public project data contract", () => {
 
   it("filters local project data and supports an explicit empty state", () => {
     expect(filterProjects(projects, "AI").map((project) => project.id)).toEqual(["portfolio"]);
-    expect(filterProjects(projects, "All")).toHaveLength(4);
+    expect(filterProjects(projects, "All")).toHaveLength(5);
     expect(filterProjects([], "Data")).toEqual([]);
   });
 

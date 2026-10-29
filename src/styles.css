@@ -481,7 +481,7 @@ svg {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 32px;
+  padding: 3px;
   overflow: hidden;
   background: #e7edf2;
 }

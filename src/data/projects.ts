@@ -1,7 +1,7 @@
 export type Category = "All" | "Web" | "Data" | "AI";
 
 export type Project = {
-  id: "chocolate" | "gdp" | "api" | "portfolio";
+  id: "chocolate" | "gdp" | "api" | "portfolio" | "world-happiness";
   category: Exclude<Category, "All">;
   title: string;
   summary: string;
@@ -55,6 +55,8 @@ export const projects: readonly Project[] = [
     repository: "https://github.com/SeJay134/Open-API-Project-JS",
     detail:
       "Accepts a city, resolves its coordinates through Open-Meteo geocoding, requests current weather, displays Fahrenheit temperature, and maps weather codes to visual conditions.",
+    image: "/images/weather-explorer-preview.webp",
+    imageAlt: "Weather app that uses Open-Meteo geocoding and forecast APIs"
   },
   {
     id: "portfolio",
@@ -67,6 +69,28 @@ export const projects: readonly Project[] = [
     repository: "https://github.com/SeJay134/Portfolio-JS-HTML-CSS",
     detail:
       "A separate, not-yet-deployed RAG prototype retrieves reviewed portfolio evidence with FAISS and all-MiniLM-L6-v2 and uses qwen2.5:7b for grounded answers. This public portfolio release does not offer an AI chat interface.",
+    image: "/images/portfolio-artwork.webp",
+    imageAlt: "React and TypeScript portfolio website with AI assistant interface",
+  },
+  {
+  id: "world-happiness",
+  category: "Data",
+  title: "World Happiness Analytics Pipeline",
+  summary:
+    "An end-to-end analytics pipeline using Prefect to automate World Happiness Report data processing and statistical analysis.",
+  tags: [
+    "Python",
+    "Prefect",
+    "ETL",
+    "Data Analytics",
+    "Statistics"
+  ],
+  repository:
+    "https://github.com/SeJay134/World_Happiness_Pipeline",
+  detail:
+    "Automates multi-year data ingestion, validation, cleaning, transformation, hypothesis testing, correlation analysis, and visualization to explore global happiness trends.",
+  image: "/images/world-happiness.webp",
+  imageAlt: "World Happiness Analytics Pipeline visualization",
   },
 ];
 
