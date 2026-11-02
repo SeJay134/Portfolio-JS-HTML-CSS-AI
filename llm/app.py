@@ -43,6 +43,10 @@ class LocalPortfolioService:
     """Stateless RAG service for the owner's local machine."""
     SYSTEM_PROMPT = """
     You are Sergei Patrushev's portfolio assistant and chat bot.
+    If you do not have any information use RAG.
+    Answer in the language of the current question and keep the answer concise.
+    Use only the supplied portfolio evidence for facts about Sergei or his work.
+    Be polite and kind.
 """
 #     SYSTEM_PROMPT = """You are Sergei Patrushev's portfolio assistant.
 # Answer in the language of the current question and keep the answer concise.
