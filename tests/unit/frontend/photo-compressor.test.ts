@@ -30,7 +30,7 @@ describe("photo compressor validation", () => {
     const used = new Set<string>();
     expect(uniqueJpegName("photo.HEIC", used)).toBe("photo.jpg");
     expect(uniqueJpegName("photo.png", used)).toBe("photo-2.jpg");
-    expect(uniqueJpegName("../photo.jpeg", used)).toBe(".._photo.jpg");
+    expect(uniqueJpegName("../photo.jpeg", used)).toBe("_photo.jpg");
     expect(uniqueJpegName("photo.PNG", used)).toBe("photo-3.jpg");
   });
 });
