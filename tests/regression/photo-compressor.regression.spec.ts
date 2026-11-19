@@ -22,7 +22,7 @@ test("corrupt files do not block good photos, stale downloads are cleared, and t
   await page.getByLabel("Max size per photo (KB)").fill("280");
   await expect(downloadLink).toHaveCount(0);
   await page.getByLabel("Color theme").selectOption("dark");
-  await page.getByRole("link", { name: /Back to portfolio/ }).last().click();
+  await page.getByRole("link", { name: /Back to portfolio/ }).first().click();
   await expect(page).toHaveURL(/\/#Projects$/);
   await expect(page.getByLabel("Color theme")).toHaveValue("dark");
 });
