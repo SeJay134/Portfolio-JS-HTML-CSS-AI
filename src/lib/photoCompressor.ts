@@ -32,7 +32,10 @@ export function formatBytes(bytes: number): string {
 
 export function uniqueJpegName(original: string, used: Set<string>): string {
   const safe = original
-    .replace(/[\\/\u0000-\u001f\u007f]/g, "_")
+    .replace(/[\\/]/g, "_")
+    .split("")
+    .map((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127 ? "_" : char)
+    .join("")
     .replace(/\.[^.]+$/, "")
     .replace(/^\.+|\.+$/g, "")
     .slice(0, 100) || "image";
