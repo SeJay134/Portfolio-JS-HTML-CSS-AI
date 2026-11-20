@@ -64,9 +64,12 @@ test("mobile chat switches to the main drawer without competing dialogs", async 
     }),
   );
   await page.goto("/");
-  const launcher = page.getByRole("button", {name:"Open portfolio assistant"});
-  await expect(launcher).toHaveCSS("position", "fixed");
+  const mobileNav = page.getByRole("navigation", {name:"Mobile navigation"});
+  await expect(mobileNav).toHaveCSS("position", "fixed");
+  const launcher = mobileNav.getByRole("button", {name:"Ask AI"});
   await launcher.click();
+  await expect(launcher).toHaveAttribute("aria-expanded", "true");
+  await expect(mobileNav).toBeVisible();
   const chat = page.getByRole("dialog", {name:"Ask about Sergei"});
   await expect(chat).toBeVisible();
   await expect(chat).toHaveJSProperty("open", true);
@@ -81,7 +84,8 @@ test("mobile chat switches to the main drawer without competing dialogs", async 
 test("mobile chat releases body scroll lock when resized to desktop", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await page.getByRole("button", { name: "Open portfolio assistant" }).click();
+  await page.getByRole("navigation", { name: "Mobile navigation" })
+    .getByRole("button", { name: "Ask AI" }).click();
   await expect(page.getByRole("dialog", { name: "Ask about Sergei" })).toBeVisible();
 
   const overflow = () => page.evaluate(() => document.body.style.overflow);
