@@ -1171,3 +1171,267 @@ details p {
     bottom: max(16px, env(safe-area-inset-bottom));
   }
 }
+
+/* Photo Compressor: reuse the portfolio's type, theme tokens and spacing. */
+.compressor-page {
+  min-height: calc(100dvh - var(--header) - 120px);
+}
+.compressor-intro {
+  padding-bottom: 48px;
+}
+.compressor-intro .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.compressor-intro h1 {
+  font-size: clamp(2.8rem, 6vw, 5.4rem);
+  line-height: 1.06;
+  letter-spacing: -0.065em;
+  max-width: 1000px;
+}
+.compressor-intro .serif-accent {
+  color: var(--accent);
+}
+.compressor-lead {
+  color: var(--muted);
+  max-width: 640px;
+  font-size: 1rem;
+  margin-top: 24px;
+}
+.compressor-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 28px;
+}
+.compressor-pills span {
+  color: var(--muted);
+  background: var(--soft);
+  border-radius: 5px;
+  padding: 8px 12px;
+  font-size: 0.71rem;
+}
+.compressor-workspace {
+  padding-top: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.85fr);
+  gap: 24px;
+  align-items: start;
+}
+.compressor-panel,
+.compressor-summary {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 12px;
+  padding: clamp(24px, 3.5vw, 40px);
+  min-width: 0;
+}
+.compressor-workspace .eyebrow {
+  margin-bottom: 20px;
+}
+.compressor-picker {
+  background: var(--bg);
+  border: 2px dashed var(--control-border);
+  min-height: 190px;
+  padding: 28px 16px;
+  border-radius: 9px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  cursor: pointer;
+}
+.compressor-picker:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.compressor-picker:has(+ .compressor-file-input:focus-visible) {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
+.compressor-picker-symbol {
+  color: var(--accent);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  line-height: 38px;
+  font-size: 1.7rem;
+}
+.compressor-picker strong {
+  font-size: 1.12rem;
+  font-weight: 600;
+}
+.compressor-picker > span:last-child {
+  font-size: 0.72rem;
+  max-width: 330px;
+  color: var(--muted);
+}
+.compressor-note {
+  color: var(--muted);
+  font-size: 0.72rem;
+  margin-top: 16px;
+}
+.compressor-selection {
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.78rem;
+}
+.compressor-selection strong {
+  font-weight: 600;
+}
+.compressor-selection span {
+  color: var(--muted);
+}
+.compressor-warning {
+  color: var(--muted);
+  font-size: 0.72rem;
+  padding-top: 10px;
+}
+.compressor-rule {
+  height: 1px;
+  background: var(--line);
+  margin: 32px 0;
+}
+.compressor-size-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.compressor-size-row label {
+  display: block;
+  font-size: 0.83rem;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+.compressor-size-row p {
+  font-size: 0.73rem;
+  color: var(--muted);
+}
+.compressor-size-row input {
+  flex: 0 0 112px;
+  width: 112px;
+  min-height: 48px;
+  border: 1px solid var(--control-border);
+  border-radius: 7px;
+  padding: 9px 12px;
+  color: var(--text);
+  background: var(--bg);
+  font-size: 1rem;
+}
+.compressor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 28px;
+}
+.compressor-summary h2 {
+  font-size: clamp(2rem, 3.5vw, 2.9rem);
+}
+.compressor-summary > p:not(.eyebrow):not(.compressor-result-status):not(.compressor-empty) {
+  font-size: 0.81rem;
+  color: var(--muted);
+  margin-top: 16px;
+}
+.compressor-progress {
+  margin-top: 25px;
+  font-size: 0.79rem;
+}
+.compressor-progress progress {
+  width: 100%;
+  height: 10px;
+  display: block;
+  margin: 12px 0;
+  accent-color: var(--accent);
+}
+.compressor-progress small {
+  display: block;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+}
+.compressor-result-status {
+  font-size: 0.81rem;
+  margin-top: 24px;
+}
+.compressor-result {
+  border-top: 1px solid var(--line);
+  margin-top: 22px;
+  padding-top: 16px;
+}
+.compressor-result > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  margin: 12px 0;
+  font-size: 0.77rem;
+}
+.compressor-result > div span {
+  color: var(--muted);
+}
+.compressor-result > div strong {
+  font-weight: 600;
+}
+.compressor-result .button {
+  width: 100%;
+  margin-top: 16px;
+}
+.compressor-errors {
+  font-size: 0.73rem;
+}
+.compressor-errors ul {
+  margin: 0;
+  padding: 8px 0 8px 20px;
+  max-height: 200px;
+  overflow: auto;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.compressor-errors li + li {
+  margin-top: 5px;
+}
+.compressor-empty {
+  border-top: 1px solid var(--line);
+  padding-top: 24px;
+  margin-top: 28px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.compressor-return {
+  max-width: 1184px;
+  margin: 0 auto 64px;
+  padding: 0 32px;
+}
+@media (max-width: 850px) {
+  .compressor-workspace {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .compressor-intro {
+    padding-bottom: 36px;
+  }
+  .compressor-workspace {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .compressor-panel,
+  .compressor-summary {
+    padding: 24px 20px;
+  }
+  .compressor-size-row input {
+    flex-basis: 100px;
+    width: 100px;
+    font-size: 16px;
+  }
+  .compressor-return {
+    padding: 0 22px;
+  }
+}

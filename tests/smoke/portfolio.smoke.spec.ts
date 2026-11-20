@@ -16,3 +16,10 @@ test("navigation and contact work without an API connection", async ({ page }) =
   await expect(page).toHaveURL(/#Connect$/);
   await expect(page.getByRole("button", { name: "Prepare email" })).toBeVisible();
 });
+
+test("photo compressor route is served directly and retains the portfolio shell", async ({ page }) => {
+  await page.goto("/tools/photo-compressor/");
+  await expect(page.getByRole("heading", { level: 1, name: /Make your photos/ })).toBeVisible();
+  await expect(page.getByLabel("Max size per photo (KB)")).toHaveValue("300");
+  await expect(page.getByRole("link", { name: "Sergei Patrushev, home" })).toHaveAttribute("href", "/");
+});

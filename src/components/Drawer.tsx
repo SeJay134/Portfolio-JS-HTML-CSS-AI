@@ -19,11 +19,13 @@ export function Drawer({
   onClose,
   onNavigate,
   active,
+  sectionHrefPrefix = "",
 }: {
   open: boolean;
   onClose: (reason: "dismiss" | "navigate") => void;
-  onNavigate: (id: SectionId) => void;
-  active: SectionId;
+  onNavigate?: (id: SectionId) => void;
+  active?: SectionId;
+  sectionHrefPrefix?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -37,6 +39,7 @@ export function Drawer({
     id: SectionId,
     event: React.MouseEvent<HTMLAnchorElement>,
   ) {
+    if (!onNavigate) return;
     event.preventDefault();
     onNavigate(id);
     onClose("navigate");
@@ -58,7 +61,7 @@ export function Drawer({
     >
       <div className="drawer-panel">
         <div className="drawer-top">
-        <a href="#Home" className="wordmark" onClick={(event) => navigate("Home", event)}>
+        <a href={sectionHrefPrefix + "#Home"} className="wordmark" onClick={(event) => navigate("Home", event)}>
           SP<span>.</span>
         </a>
         <button
@@ -77,7 +80,7 @@ export function Drawer({
           {sections.map(([id, label], i) => (
             <li key={id}>
               <a
-                href={`#${id}`}
+                href={sectionHrefPrefix + "#" + id}
                 aria-current={active === id ? "location" : undefined}
                 onClick={(event) => navigate(id, event)}
               >
@@ -87,6 +90,13 @@ export function Drawer({
               </a>
             </li>
           ))}
+          <li>
+            <a href="/tools/photo-compressor/" aria-current={sectionHrefPrefix ? "page" : undefined}>
+              <span className="nav-number">07</span>
+              Photo Compressor
+              <Icon name="arrow" />
+            </a>
+          </li>
         </ol>
       </nav>
         <div className="drawer-bottom">
