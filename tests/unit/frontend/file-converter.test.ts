@@ -18,7 +18,7 @@ describe("file converter format policy", () => {
     }
     expect(isSupportedPair("png", "pdf")).toBe(true);
     expect(isSupportedPair("xlsx", "csv")).toBe(true);
-    expect(isSupportedPair("pdf", "docx")).toBe(false);
+    expect(isSupportedPair("pdf", "docx")).toBe(true);
     expect(isSupportedPair("pdf", "png")).toBe(false);
     expect(MAX_BATCH_FILES).toBe(120);
     expect(INVALID_FILE_MESSAGE).toBe("Invalid file format. Choose another file.");
