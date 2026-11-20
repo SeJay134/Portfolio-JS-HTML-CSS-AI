@@ -4,6 +4,8 @@ import { Drawer, sections, type SectionId } from "./components/Drawer";
 import { Projects } from "./components/Projects";
 import { Contact } from "./components/Contact";
 import { Icon } from "./components/Icon";
+import { MobileBottomNav } from "./components/MobileBottomNav";
+import { MobileChatPreview } from "./components/MobileChatPreview";
 import { useTheme } from "./hooks/useTheme";
 import { WidgetBoundary } from "./components/WidgetBoundary";
 
@@ -104,6 +106,7 @@ export default function App() {
   const menuOpenRef = useRef(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const chatButton = useRef<HTMLButtonElement>(null);
+  const mobileChatButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     let frame = 0;
     const syncActiveSection = () => {
@@ -171,8 +174,19 @@ export default function App() {
   }, []);
   const closeChat = useCallback(() => {
     setChat(false);
-    requestAnimationFrame(() => chatButton.current?.focus({ preventScroll: true }));
+    requestAnimationFrame(() => {
+      const mobile = window.matchMedia("(max-width: 600px)").matches;
+      (mobile ? mobileChatButton.current : chatButton.current)?.focus({ preventScroll: true });
+    });
   }, []);
+  const toggleMobileChat = useCallback(() => {
+    if (chat) {
+      setChat(false);
+    } else {
+      setChatLoaded(true);
+      setChat(true);
+    }
+  }, [chat]);
   const openMenuFromChat = useCallback(() => {
     setChat(false);
     requestAnimationFrame(() => {
@@ -281,14 +295,18 @@ export default function App() {
         <section id="Home" tabIndex={-1} className="hero section">
           <div className="hero-copy">
             <p className="eyebrow">
-              <span className="status-dot" /> Curiosity meets code
+              <span className="desktop-eyebrow"><span className="status-dot" /> Curiosity meets code</span>
+              <span className="mobile-eyebrow">Software / Data / AI</span>
             </p>
             <h1>
               Hi, I'm Sergei.
-              <br />I build <span className="serif-accent">useful</span>
-              <br />
-              digital things<span className="accent">.</span>
+              <span className="desktop-hero-headline">
+                <br />I build <span className="serif-accent">useful</span>
+                <br />
+                digital things<span className="accent">.</span>
+              </span>
             </h1>
+            <p className="mobile-hero-tagline">I build useful digital things.</p>
             <p className="hero-description">
               Software developer exploring the space between
               <br className="desktop-break" /> web applications, data, and
@@ -457,6 +475,15 @@ export default function App() {
         <p>© {new Date().getFullYear()} Sergei Patrushev</p>
         <a href="#Home">Back to top ↑</a>
       </footer>
+      <MobileBottomNav
+        active={active}
+        chatOpen={chat}
+        onToggleChat={toggleMobileChat}
+        onNavigate={() => setChat(false)}
+        chatButtonRef={mobileChatButton}
+      />
+      {chat && <div className="mobile-chat-scrim" aria-hidden="true" onClick={closeChat} />}
+      {!CHAT_UI_ENABLED && chat && <MobileChatPreview onClose={closeChat} />}
       {CHAT_UI_ENABLED && chatHydrated && (
         <>
           <button
