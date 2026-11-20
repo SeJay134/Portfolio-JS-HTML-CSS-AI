@@ -166,6 +166,25 @@ export default function App() {
       document.body.style.overflow = previous;
     };
   }, [menu, chat]);
+  // The non-modal mobile sheet keeps the bottom tabs usable, but the obscured
+  // page itself must not remain reachable with a keyboard or screen reader.
+  useEffect(() => {
+    const mobileViewport = window.matchMedia("(max-width: 600px)");
+    const background = document.querySelectorAll<HTMLElement>(
+      ".site-header, #main, .site-footer",
+    );
+    const sync = () => {
+      background.forEach((element) => {
+        element.inert = chat && mobileViewport.matches;
+      });
+    };
+    sync();
+    mobileViewport.addEventListener("change", sync);
+    return () => {
+      mobileViewport.removeEventListener("change", sync);
+      background.forEach((element) => { element.inert = false; });
+    };
+  }, [chat]);
   const prepareMenuOpen = useCallback(() => {
     const focused = document.activeElement;
     const focusedSection = sections.find(([id]) => focused?.id === id)?.[0];
