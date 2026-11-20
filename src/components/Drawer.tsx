@@ -20,12 +20,14 @@ export function Drawer({
   onNavigate,
   active,
   sectionHrefPrefix = "",
+  activeTool,
 }: {
   open: boolean;
   onClose: (reason: "dismiss" | "navigate") => void;
   onNavigate?: (id: SectionId) => void;
   active?: SectionId;
   sectionHrefPrefix?: string;
+  activeTool?: "photo" | "converter";
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -91,9 +93,16 @@ export function Drawer({
             </li>
           ))}
           <li>
-            <a href="/tools/photo-compressor/" aria-current={sectionHrefPrefix ? "page" : undefined}>
+            <a href="/tools/photo-compressor/" aria-current={activeTool === "photo" ? "page" : undefined}>
               <span className="nav-number">07</span>
               Photo Compressor
+              <Icon name="arrow" />
+            </a>
+          </li>
+          <li>
+            <a href="/tools/file-converter/" aria-current={activeTool === "converter" ? "page" : undefined}>
+              <span className="nav-number">08</span>
+              File Converter
               <Icon name="arrow" />
             </a>
           </li>

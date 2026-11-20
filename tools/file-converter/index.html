@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f8f9fb" />
+  <title>File Converter — Sergei Patrushev</title>
+  <meta name="description" content="Convert PNG, JPEG, WebP, PDF, Word DOCX, Excel XLSX, CSV and TXT in your browser. Private local file conversion with drag and drop." />
+  <link rel="canonical" href="https://sergei-luna.vercel.app/tools/file-converter/" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <script>
+    (() => {
+      let saved = "system";
+      try { saved = localStorage.getItem("portfolio-theme") || "system"; } catch {}
+      const theme = saved === "light" || saved === "dark" ? saved :
+        matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      document.documentElement.dataset.theme = theme;
+      document.querySelector('meta[name="theme-color"]').content =
+        theme === "dark" ? "#0c141d" : "#f8f9fb";
+    })();
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+  <noscript>The file converter needs JavaScript. <a href="/">Return to the portfolio</a>.</noscript>
+  <script type="module" src="/src/fileConverterMain.tsx"></script>
+</body>
+</html>

@@ -170,6 +170,7 @@ export function PhotoCompressorPage() {
         open={menu}
         active={undefined}
         sectionHrefPrefix="/"
+        activeTool="photo"
         onClose={(reason) => {
           setMenu(false);
           if (reason === "dismiss") requestAnimationFrame(() => menuButton.current?.focus());
