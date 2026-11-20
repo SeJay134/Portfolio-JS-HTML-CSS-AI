@@ -3,7 +3,7 @@ export function Icon({
   name,
   size = 20,
 }: {
-  name: "menu" | "close" | "arrow" | "chat" | "send" | "github" | "spark";
+  name: "menu" | "close" | "arrow" | "chat" | "send" | "github" | "spark" | "work" | "experience" | "user" | "mail";
   size?: number;
 }) {
   const paths = {
@@ -22,6 +22,10 @@ export function Icon({
       </>
     ),
     spark: <path d="m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3Z" />,
+    work: <><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></>,
+    experience: <><rect x="3" y="7" width="18" height="14" rx="2" /><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18M10 12v2h4v-2" /></>,
+    user: <><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" /></>,
+    mail: <><rect x="2.5" y="4.5" width="19" height="15" rx="2" /><path d="m3.5 6 8.5 7 8.5-7" /></>,
   };
   return (
     <svg
