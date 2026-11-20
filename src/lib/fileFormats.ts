@@ -158,8 +158,28 @@ export async function readZipMember(file: Blob, wanted: string): Promise<Uint8Ar
         throw new Error("This browser cannot read compressed Word/Excel files.");
       }
       try {
-        const stream = new Blob([member as BlobPart]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
-        output = new Uint8Array(await new Response(stream).arrayBuffer());
+        const stream = new Blob([member as BlobPart]).stream()
+          .pipeThrough(new DecompressionStream("deflate-raw"));
+        const reader = stream.getReader();
+        const chunks: Uint8Array[] = [];
+        let used = 0;
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            used += value.byteLength;
+            if (used > 8_000_000 || used > expanded) {
+              await reader.cancel();
+              throw new Error(INVALID_FILE_MESSAGE);
+            }
+            chunks.push(value);
+          }
+        } finally {
+          reader.releaseLock();
+        }
+        output = new Uint8Array(used);
+        let cursor = 0;
+        for (const chunk of chunks) { output.set(chunk, cursor); cursor += chunk.length; }
       } catch {
         throw new Error(INVALID_FILE_MESSAGE);
       }
