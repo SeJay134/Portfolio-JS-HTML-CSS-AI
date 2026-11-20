@@ -1435,3 +1435,58 @@ details p {
     padding: 0 22px;
   }
 }
+
+/* File Converter: use the established compressor panel and portfolio theme. */
+.converter-format-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.converter-format-grid label {
+  display: block;
+  margin-bottom: 9px;
+  font-weight: 600;
+  font-size: 0.83rem;
+}
+.converter-format-grid select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 50px;
+  border: 1px solid var(--control-border);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.84rem;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+.converter-format-grid select:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.converter-support-note {
+  min-height: 35px;
+  line-height: 1.55;
+}
+.converter-dropzone {
+  transition: background 150ms ease, border-color 150ms ease;
+}
+.converter-dragging {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.converter-error {
+  color: var(--accent);
+  border-left: 3px solid var(--accent);
+  padding: 10px 12px;
+  margin-top: 15px;
+  background: var(--accent-soft);
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .converter-format-grid { grid-template-columns: 1fr; }
+  .converter-format-grid select { font-size: 16px; }
+}
