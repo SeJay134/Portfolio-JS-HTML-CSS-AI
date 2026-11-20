@@ -11,6 +11,7 @@ export default defineConfig({
       input: {
         main: resolve(import.meta.dirname, "index.html"),
         photoCompressor: resolve(import.meta.dirname, "tools/photo-compressor/index.html"),
+        fileConverter: resolve(import.meta.dirname, "tools/file-converter/index.html"),
       },
     },
   },
