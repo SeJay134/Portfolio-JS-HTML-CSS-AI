@@ -20,7 +20,7 @@ const notes: Record<FileFormat, string> = {
   png: "PNG images can be converted to JPEG, WebP or a single-page PDF.",
   jpg: "JPEG images can be converted to PNG, WebP or a single-page PDF.",
   webp: "WebP images can be converted to PNG, JPEG or a single-page PDF.",
-  pdf: "PDF to TXT extracts basic text operators only. Scans, complex encodings and encrypted PDFs need dedicated software or OCR.",
+  pdf: "PDF to TXT/Word extracts basic text only. Scans, complex encodings and encrypted PDFs need dedicated software or OCR; original formatting is not preserved.",
   docx: "Word conversion extracts paragraphs, not the original layout, images or page styling.",
   xlsx: "Excel conversion exports the first worksheet's displayed/cached values; formulas, formatting and charts are not preserved.",
   csv: "CSV uses UTF-8 and comma separators. Formulas are kept as text when creating Excel files.",
