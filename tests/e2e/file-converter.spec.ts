@@ -37,7 +37,7 @@ test("portfolio navigation and two dynamic dropdowns serve the dedicated tool an
   await expect(page.getByLabel("Convert to")).toHaveValue("jpg");
   await page.getByLabel("From format").selectOption("pdf");
   await expect(page.getByLabel("Convert to")).toHaveValue("txt");
-  await expect(page.getByLabel("Convert to").locator("option")).toHaveCount(1);
+  await expect(page.getByLabel("Convert to").locator("option")).toHaveCount(2);
   await page.getByLabel("From format").selectOption("xlsx");
   await expect(page.getByLabel("Convert to").locator("option")).toHaveCount(3);
   await page.getByRole("link", { name: "Use Photo Compressor" }).click();
@@ -149,6 +149,12 @@ test("PDF text extraction works for valid text-based PDFs and does not pretend t
   const out = await downloadBytes(page, "Download TXT");
   expect(out.name).toBe("text.txt");
   expect(out.bytes.toString()).toContain("Hello PDF fixture");
+  await page.getByLabel("Convert to").selectOption("docx");
+  await page.getByRole("button", { name: "Convert files" }).click();
+  const word = await downloadBytes(page, "Download DOCX");
+  expect(word.name).toBe("text.docx");
+  expect(word.bytes.readUInt32LE(0)).toBe(0x04034b50);
+  expect(word.bytes.toString()).toContain("Hello PDF fixture");
 });
 
 test("changing formats/files invalidates downloads, theme is accessible and mobile fits", async ({ page }) => {
