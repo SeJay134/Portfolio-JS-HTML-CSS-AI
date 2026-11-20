@@ -188,7 +188,7 @@ export function FileConverterPage() {
           </div>
         </div>
       </header>
-      <Drawer open={menu} sectionHrefPrefix="/" onClose={(reason) => {
+      <Drawer open={menu} sectionHrefPrefix="/" activeTool="converter" onClose={(reason) => {
         setMenu(false);
         if (reason === "dismiss") requestAnimationFrame(() => menuButton.current?.focus());
       }} />
