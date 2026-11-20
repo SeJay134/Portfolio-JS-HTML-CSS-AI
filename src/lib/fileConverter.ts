@@ -187,7 +187,11 @@ function pdfLiteral(content: string): string {
 /** Best-effort only for PDFs containing standard text operators; no OCR or fonts decoding. */
 export async function readPdfText(file: File): Promise<string> {
   const bytes = new Uint8Array(await file.arrayBuffer());
-  const source = new TextDecoder("latin1").decode(bytes);
+  // Preserve every PDF byte exactly: TextDecoder("latin1") maps 0x80..0x9F to Windows-1252 glyphs.
+  let source = "";
+  for (let offset = 0; offset < bytes.length; offset += 8192) {
+    source += String.fromCharCode(...bytes.subarray(offset, offset + 8192));
+  }
   if (!source.startsWith("%PDF-") || !source.includes("%%EOF")) throw new Error(INVALID_FILE_MESSAGE);
   const output: string[] = [];
   const streams = source.matchAll(/stream\r?\n([\s\S]*?)\r?\nendstream/g);
@@ -226,7 +230,8 @@ export async function convertFile(
     return transformImage(file, to, signal);
   }
   if (from === "pdf") {
-    return asBlob(await readPdfText(file));
+    const text = await readPdfText(file);
+    return to === "docx" ? writeWord(text) : asBlob(text);
   }
   if (from === "docx") {
     const text = await readWordText(file);
