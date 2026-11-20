@@ -9,7 +9,7 @@ Dedicated portfolio tool: /tools/file-converter/. Original Photo Compressor rema
 | PNG | JPEG, WebP, PDF |
 | JPEG | PNG, WebP, PDF |
 | WebP | PNG, JPEG, PDF |
-| PDF | TXT (basic text extraction only; no OCR) |
+| PDF | TXT, DOCX (basic text extraction only; no OCR) |
 | Word DOCX | TXT, PDF (paragraph text only) |
 | Excel XLSX | CSV, TXT, PDF (first sheet, cached values) |
 | CSV (UTF-8) | XLSX, TXT, PDF |
