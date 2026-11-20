@@ -193,3 +193,80 @@
   }
   .chat-heading { padding: 12px 16px; }
 }
+
+
+/* On mobile the real chat is non-modal and sits ABOVE the persistent five-tab bar. */
+@media (max-width: 600px) {
+  .chat-panel {
+    z-index: 40;
+    inset: clamp(56px, 9dvh, 92px) 0
+      calc(var(--mobile-nav-height, 76px) + max(8px, env(safe-area-inset-bottom))) 0;
+    width: 100%;
+    height: auto;
+    max-height: none;
+    margin: 0;
+    padding-top: 10px;
+    padding-bottom: 9px;
+    border: 0;
+    border-radius: 25px 25px 0 0;
+    box-shadow: 0 -6px 30px #00000012;
+  }
+  .chat-heading {
+    padding: 14px 16px 15px;
+  }
+  .chat-heading h2 {
+    font-size: 1.45rem;
+  }
+  .chat-heading p {
+    font-size: .67rem;
+  }
+  .assistant-mark {
+    width: 42px;
+    height: 42px;
+    background: transparent;
+  }
+  .assistant-mark .ai-network-mark {
+    width: 42px;
+    height: 42px;
+  }
+  .chat-heading .icon-button {
+    width: 40px;
+    height: 40px;
+  }
+  .chat-history {
+    padding: 20px 18px;
+  }
+  .chat-welcome {
+    text-align: center;
+  }
+  .chat-welcome h3 {
+    font-size: 1.45rem;
+    margin-bottom: 10px;
+  }
+  .chat-welcome .eyebrow {
+    margin-bottom: 12px;
+  }
+  .chat-welcome > p:not(.eyebrow) {
+    font-size: .82rem;
+    line-height: 1.55;
+  }
+  .suggestions button {
+    min-height: 48px;
+    padding: 12px 15px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-size: .79rem;
+    text-align: left;
+  }
+  .chat-composer {
+    margin: 8px 14px 0;
+    border-radius: 17px;
+    background: var(--bg);
+  }
+  .chat-footnote {
+    padding: 6px 15px 4px;
+  }
+  .chat-launcher {
+    display: none;
+  }
+}
