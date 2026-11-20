@@ -56,6 +56,9 @@ describe("CSV data safety", () => {
 
 describe("Office ZIP fixture integrity", () => {
   it("reads DEFLATE OOXML and rejects a CRC-corrupted archive", async () => {
+    const originalBlob = globalThis.Blob;
+    globalThis.Blob = NodeBlob as unknown as typeof Blob;
+    try {
     const good = new NodeBlob([Uint8Array.from(sampleDocx())]) as unknown as Blob;
     const bad = new NodeBlob([Uint8Array.from(corruptedDocx())]) as unknown as Blob;
     const word = await readZipMember(good, "word/document.xml");
@@ -64,5 +67,8 @@ describe("Office ZIP fixture integrity", () => {
     expect(new TextDecoder().decode(word)).toContain("Hello Word fixture");
     await expect(readZipMember(bad, "word/document.xml")).rejects.toThrow(INVALID_FILE_MESSAGE);
     await expect(readZipMember(good, "not-found.xml")).resolves.toBeNull();
+    } finally {
+      globalThis.Blob = originalBlob;
+    }
   });
 });
