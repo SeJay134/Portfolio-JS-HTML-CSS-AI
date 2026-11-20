@@ -195,7 +195,7 @@ export function FileConverterPage() {
       <main id="main" className="compressor-page" tabIndex={-1}>
         <section className="section compressor-intro">
           <p className="eyebrow"><span className="status-dot" /> Web tools / 02</p>
-          <h1>Make files <span className="serif-accent">fit.</span><span className="accent">.</span></h1>
+          <h1>Make files <span className="serif-accent">fit</span><span className="accent">.</span></h1>
           <p className="compressor-lead">Convert images, Word documents, Excel sheets, PDF text and more,
             directly in your browser. Select formats, add files and download the results.</p>
           <div className="compressor-pills" aria-label="Key features">
