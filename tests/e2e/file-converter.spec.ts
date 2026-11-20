@@ -100,6 +100,10 @@ test("image to PDF produces a real PDF, not a renamed image", async ({ page }) =
   expect(bytes.subarray(0, 8).toString()).toBe("%PDF-1.4");
   expect(bytes.toString("latin1")).toContain("/Subtype /Image");
   expect(bytes.subarray(-6).toString().trim()).toBe("%%EOF");
+  const pdf = bytes.toString("latin1");
+  const xref = pdf.match(/startxref\n(\d+)\n%%EOF/);
+  expect(xref).not.toBeNull();
+  expect(pdf.slice(Number(xref![1]), Number(xref![1]) + 4)).toBe("xref");
 });
 
 test("Word DOCX to text preserves paragraphs, including UTF-8, and TXT to DOCX is valid OOXML", async ({ page }) => {
@@ -120,6 +124,14 @@ test("Word DOCX to text preserves paragraphs, including UTF-8, and TXT to DOCX i
   expect(next.bytes.readUInt32LE(0)).toBe(0x04034b50);
   expect(next.bytes.toString()).toContain("word/document.xml");
   expect(next.bytes.toString()).toContain("Привет, мир!");
+  // Parse the generated Word archive independently through the DOCX import path.
+  await page.getByLabel("From format").selectOption("docx");
+  await page.locator("#converter-files").setInputFiles(
+    payload("roundtrip.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", next.bytes),
+  );
+  await page.getByRole("button", { name: "Convert files" }).click();
+  const back = await downloadBytes(page, "Download TXT");
+  expect(back.bytes.toString()).toContain("Привет, мир!");
 });
 
 test("Excel to CSV handles shared strings and neutralizes formula injection; CSV to XLSX stays text", async ({ page }) => {
@@ -139,6 +151,15 @@ test("Excel to CSV handles shared strings and neutralizes formula injection; CSV
   expect(workbook.bytes.toString()).toContain("xl/worksheets/sheet1.xml");
   expect(workbook.bytes.toString()).toContain("Apple, green");
   expect(workbook.bytes.toString()).not.toContain("<f>");
+  // Re-import the downloaded XLSX and verify that comma and quote cells survive.
+  await page.getByLabel("From format").selectOption("xlsx");
+  await page.locator("#converter-files").setInputFiles(
+    payload("roundtrip.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", workbook.bytes),
+  );
+  await page.getByRole("button", { name: "Convert files" }).click();
+  const back = await downloadBytes(page, "Download CSV");
+  expect(back.bytes.toString()).toContain('"Apple, green",25');
+  expect(back.bytes.toString()).toContain('"Quote ""text""",10');
 });
 
 test("PDF text extraction works for valid text-based PDFs and does not pretend to do OCR", async ({ page }) => {
