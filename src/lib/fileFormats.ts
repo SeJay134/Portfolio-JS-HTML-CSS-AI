@@ -15,7 +15,7 @@ export const OUTPUT_FORMATS: Record<FileFormat, FileFormat[]> = {
   png: ["jpg", "webp", "pdf"],
   jpg: ["png", "webp", "pdf"],
   webp: ["png", "jpg", "pdf"],
-  pdf: ["txt"],
+  pdf: ["txt", "docx"],
   docx: ["txt", "pdf"],
   xlsx: ["csv", "txt", "pdf"],
   csv: ["xlsx", "txt", "pdf"],
