@@ -73,7 +73,10 @@ export function parseCsv(text: string): string[][] {
 
 function safeSpreadsheetText(value: string): string {
   // Exported CSV might be reopened in Excel/Sheets; never create formula cells.
-  return /^[\s]*[=+@-]/.test(value) ? "'" + value : value;
+  const trimmed = value.trimStart();
+  const negativeNumber = /^-\d+(?:\.\d+)?(?:e[+-]?\d+)?$/i.test(trimmed);
+  return /^[=+@]/.test(trimmed) || (trimmed.startsWith("-") && !negativeNumber)
+    ? "'" + value : value;
 }
 export function rowsToCsv(rows: string[][]): string {
   return rows.map((row) => row.map((cell) => {
