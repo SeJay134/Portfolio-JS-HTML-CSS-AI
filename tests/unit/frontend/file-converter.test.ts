@@ -50,7 +50,7 @@ describe("CSV data safety", () => {
   });
   it("neutralizes spreadsheet formulas when exported as CSV", () => {
     expect(rowsToCsv([["=1+2", " +cmd", "safe", "-3", "@bad"]]))
-      .toBe("'=1+2,' +cmd,safe,'-3,'@bad\r\n");
+      .toBe("'=1+2,' +cmd,safe,-3,'@bad\r\n");
   });
 });
 
