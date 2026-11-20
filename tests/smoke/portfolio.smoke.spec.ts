@@ -23,3 +23,11 @@ test("photo compressor route is served directly and retains the portfolio shell"
   await expect(page.getByLabel("Max size per photo (KB)")).toHaveValue("300");
   await expect(page.getByRole("link", { name: "Sergei Patrushev, home" })).toHaveAttribute("href", "/");
 });
+
+test("file converter route opens directly and exposes from/to format selectors", async ({ page }) => {
+  await page.goto("/tools/file-converter/");
+  await expect(page.getByRole("heading", { level: 1, name: /Make files fit/ })).toBeVisible();
+  await expect(page.getByLabel("From format")).toHaveValue("png");
+  await expect(page.getByLabel("Convert to")).toHaveValue("jpg");
+  await expect(page.getByRole("link", { name: "Sergei Patrushev, home" })).toHaveAttribute("href", "/");
+});
