@@ -1502,6 +1502,12 @@ details p {
   display: none;
 }
 
+.desktop-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
 /* Adapted from the original p5 connected-nodes chatbot icon, without a JS dependency. */
 .ai-network-mark {
   display: inline-grid;
