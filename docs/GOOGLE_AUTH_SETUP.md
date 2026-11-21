@@ -11,14 +11,15 @@ This repository is a Vite multi-page app: the portfolio plus separate Photo Comp
 5. Put the Supabase project URL and **publishable** key in Vercel environment settings and in a local, ignored `.env.local`:
    - `VITE_SUPABASE_URL=https://<project-ref>.supabase.co`
    - `VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`
+   - `VITE_ENABLE_GOOGLE_AUTH=true` (only after Google OAuth and redirects are configured)
 6. Never expose Google Client Secret, Supabase secret/service_role keys, or another server secret using `VITE_*`.
 7. Make the Google OAuth app available in production when ready. Configure consent screen/authorized domains, and complete any verification Google requires.
 
 ## Delivery sequence
 
 - [x] Phase 1: allowlisted OAuth return paths, configuration instructions and tests.
-- [ ] Phase 2: browser Supabase client, authentication context, Google Login, PKCE callback.
-- [ ] Phase 3: guard both tool UIs; shared account menu and sign-out.
+- [x] Phase 2: browser Supabase client, authentication context, Google Login, PKCE callback.
+- [x] Phase 3: guard both tool UIs; shared account menu and sign-out (feature-flagged).
 - [ ] Phase 4: profile migration + row-level security, API authorization and end-to-end tests.
 - [ ] Phase 5: review + production activation.
 

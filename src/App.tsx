@@ -4,6 +4,7 @@ import { Drawer, sections, type SectionId } from "./components/Drawer";
 import { Projects } from "./components/Projects";
 import { Contact } from "./components/Contact";
 import { Icon } from "./components/Icon";
+import { AccountMenu } from "./auth/AccountMenu";
 import { MobileBottomNav } from "./components/MobileBottomNav";
 import { MobileChatPreview } from "./components/MobileChatPreview";
 import { useTheme } from "./hooks/useTheme";
@@ -298,6 +299,7 @@ export default function App() {
               <option value="light">Light</option>
               <option value="dark">Dark</option>
             </select>
+            <AccountMenu />
             <a href="#Connect" className="header-contact">
               Let's talk <Icon name="arrow" size={16} />
             </a>

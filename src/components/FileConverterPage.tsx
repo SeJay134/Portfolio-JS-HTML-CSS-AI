@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Drawer } from "./Drawer";
 import { Icon } from "./Icon";
+import { AccountMenu } from "../auth/AccountMenu";
 import { useTheme } from "../hooks/useTheme";
 import { loadSafetyModel, screenImage } from "../lib/contentSafety";
 import { createZip, formatBytes, type ZipEntry } from "../lib/photoCompressor";
@@ -206,6 +207,7 @@ export function FileConverterPage() {
               <option value="light">Light</option>
               <option value="dark">Dark</option>
             </select>
+            <AccountMenu />
             <a className="header-contact" href="/#Connect">Let's talk <Icon name="arrow" size={16} /></a>
           </div>
         </div>
