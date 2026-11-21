@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Drawer } from "./Drawer";
 import { Icon } from "./Icon";
 import { useTheme } from "../hooks/useTheme";
+import { loadSafetyModel, screenImage } from "../lib/contentSafety";
 import { createZip, formatBytes, type ZipEntry } from "../lib/photoCompressor";
 import { convertFile } from "../lib/fileConverter";
 import {
@@ -46,6 +47,7 @@ export function FileConverterPage() {
   const [current, setCurrent] = useState("");
   const [message, setMessage] = useState("");
   const [failures, setFailures] = useState<Failure[]>([]);
+  const [blocked, setBlocked] = useState(0);
   const [download, setDownload] = useState<Download | null>(null);
   useEffect(() => () => {
     selectionGeneration.current++;
@@ -64,6 +66,7 @@ export function FileConverterPage() {
     setDownload(null);
     setMessage("");
     setFailures([]);
+    setBlocked(0);
     setProcessed(0);
   }
 
@@ -116,20 +119,35 @@ export function FileConverterPage() {
     const entries: ZipEntry[] = [];
     const names = new Set<string>();
     const errors: Failure[] = [];
-    let sourceBytes = 0, outputBytes = 0;
+    let sourceBytes = 0, outputBytes = 0, blockedCount = 0;
     try {
+      // Documents are not photographs. Only image inputs require the image classifier.
+      const needsImageScreen = from === "png" || from === "jpg" || from === "webp";
+      setCurrent(needsImageScreen ? "Loading the on-device safety filter…" : "Preparing conversion…");
+      const model = needsImageScreen ? await loadSafetyModel() : null;
+      if (controller.signal.aborted) {
+        setMessage("Cancelled. Your original files are unchanged.");
+        return;
+      }
       for (let i = 0; i < files.length; i++) {
         if (controller.signal.aborted) break;
         const file = files[i];
-        setCurrent(file.name);
+        setCurrent("Checking " + file.name);
         try {
           // Revalidate on conversion so stale or manipulated selections cannot bypass checks.
           if (await detectFileFormat(file) !== from) throw new Error(INVALID_FILE_MESSAGE);
-          const result = await convertFile(file, from, to, controller.signal);
+          const adultContent = model ? await screenImage(file, model, controller.signal) : false;
           if (controller.signal.aborted) break;
-          entries.push({ name: uniqueOutputName(file.name, to, names), blob: result });
-          sourceBytes += file.size;
-          outputBytes += result.size;
+          if (adultContent) {
+            blockedCount++;
+          } else {
+            setCurrent("Converting " + file.name);
+            const result = await convertFile(file, from, to, controller.signal);
+            if (controller.signal.aborted) break;
+            entries.push({ name: uniqueOutputName(file.name, to, names), blob: result });
+            sourceBytes += file.size;
+            outputBytes += result.size;
+          }
         } catch (error) {
           if (controller.signal.aborted) break;
           errors.push({ name: file.name, reason: error instanceof Error ? error.message : INVALID_FILE_MESSAGE });
@@ -137,6 +155,7 @@ export function FileConverterPage() {
         setProcessed(i + 1);
       }
       setFailures(errors);
+      setBlocked(blockedCount);
       if (controller.signal.aborted) {
         setMessage("Cancelled. Your original files are unchanged.");
       } else if (entries.length) {
@@ -148,10 +167,13 @@ export function FileConverterPage() {
             url, name: entries.length === 1 ? entries[0].name : "converted-files.zip",
             count: entries.length, sourceBytes, outputBytes,
           });
-          setMessage(errors.length ? "Completed with " + errors.length + " skipped file(s)." : "Your converted files are ready.");
+          setMessage(errors.length || blockedCount
+            ? "Completed: " + blockedCount + " adult-content image(s) blocked, " + errors.length + " other skipped file(s)."
+            : "Your converted files are ready.");
         }
       } else {
-        setMessage("No files could be converted. " + INVALID_FILE_MESSAGE);
+        setMessage(blockedCount ? "No images passed the adult-content check. Nothing to download."
+          : "No files could be converted. " + INVALID_FILE_MESSAGE);
       }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Conversion failed.");
@@ -245,7 +267,9 @@ export function FileConverterPage() {
                 event.currentTarget.value = "";
               }} />
             <p className="compressor-note">Up to 120 files, 20 MB per file, 80 MB per batch.
-              Files never leave this device. Unsupported formats and mismatched file contents are rejected.</p>
+              Files never leave this device. Unsupported formats and mismatched file contents are rejected.
+              {(from === "png" || from === "jpg" || from === "webp") &&
+                " Adult/sexual images are prohibited and locally screened before conversion. Detection is not perfect."}</p>
             <div className="compressor-selection" aria-live="polite">
               <strong>{validationBusy ? "Checking files…" : files.length + " selected"}</strong>
               <span>{formatBytes(originalBytes)} total</span>
@@ -286,6 +310,9 @@ export function FileConverterPage() {
                 Download {download.count === 1 ? to.toUpperCase() : "ZIP"} <Icon name="arrow" size={18} />
               </a>
             </div>}
+            {blocked > 0 && <p className="compressor-warning" role="status">
+              {blocked} adult-content image(s) blocked and excluded from the download.
+            </p>}
             {!!failures.length && <details className="compressor-errors">
               <summary>{failures.length} skipped file(s)</summary>
               <ul>{failures.map((item, index) =>
