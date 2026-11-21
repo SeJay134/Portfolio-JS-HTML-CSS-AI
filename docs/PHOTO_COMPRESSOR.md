@@ -15,8 +15,8 @@
 ## Behavior and limits
 
 1. Select multiple browser-readable photos; HEIC/HEIF availability depends on Safari/browser version. Unsupported/active formats such as SVG are rejected. At most 300 files are accepted in one batch.
-4. Before compression each photo must pass a local model screen. The full 5-category NSFWJS output is validated, and flags for Porn, Hentai, Sexy or their combined score block that photo. A flagged image is never added to the ZIP. If the model is unavailable, the whole batch fails closed; if an image cannot be decoded or screened, that file is skipped.
-5. A single input must be 25 MiB or smaller and at most 40 megapixels to reduce malicious/corrupt file and browser-memory risks.
+2. Before compression each photo must pass a local model screen. The full 5-category NSFWJS output is validated, and flags for Porn, Hentai, Sexy or their combined score block that photo. A flagged image is never added to the ZIP. If the model is unavailable, the whole batch fails closed; if an image cannot be decoded or screened, that file is skipped.
+3. A single input must be 25 MiB or smaller and at most 40 megapixels to reduce malicious/corrupt file and browser-memory risks.
 4. Set a whole-number target from 20 to 5000 KB (decimal kilobytes; 1 KB = 1000 bytes).
 5. Each image is decoded, oriented per browser support, resized, re-encoded as JPEG and compressed below the requested per-file byte limit.
 6. An unsuccessful file is skipped without losing the rest of the batch. Duplicate basenames get unique `.jpg` filenames.
