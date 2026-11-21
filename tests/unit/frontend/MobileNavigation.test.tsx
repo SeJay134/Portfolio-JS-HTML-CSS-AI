@@ -2,6 +2,7 @@ import React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MobileBottomNav } from "../../../src/components/MobileBottomNav";
+import { AiNetworkMark } from "../../../src/components/AiNetworkMark";
 import { MobileChatPreview } from "../../../src/components/MobileChatPreview";
 import { AiNetworkMark } from "../../../src/components/AiNetworkMark";
 
@@ -69,5 +70,16 @@ describe("unconnected mobile AI preview", () => {
     expect(screen.getByText("UI preview only.", { exact: false })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Close chat" }));
     expect(close).toHaveBeenCalledOnce();
+  });
+});
+
+
+describe("original-style AI particle badge", () => {
+  it("renders eight independently moving nodes and 28 possible proximity connections", () => {
+    const { container } = render(<AiNetworkMark />);
+    expect(container.querySelectorAll(".ai-network-dots circle")).toHaveLength(8);
+    expect(container.querySelectorAll(".ai-network-halos circle")).toHaveLength(8);
+    expect(container.querySelectorAll(".ai-network-links line")).toHaveLength(28);
+    expect(container.querySelector(".ai-network-mark")).toHaveAttribute("aria-hidden", "true");
   });
 });
