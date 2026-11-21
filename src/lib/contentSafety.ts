@@ -66,8 +66,12 @@ export function loadSafetyModel(): Promise<SafetyModel> {
     safetyModelPromise = (async () => {
       const tf = await import("@tensorflow/tfjs");
       await tf.ready();
-      const nsfwjs = await import("nsfwjs");
-      return await nsfwjs.load("MobileNetV2");
+      // Import only the small MobileNetV2 registry rather than all bundled models.
+      const [{ load }, { MobileNetV2Model }] = await Promise.all([
+        import("nsfwjs/core"),
+        import("nsfwjs/models/mobilenet_v2"),
+      ]);
+      return await load("MobileNetV2", { modelDefinitions: [MobileNetV2Model] });
     })().catch(() => {
       safetyModelPromise = undefined; // allow retry when the user tries again
       throw new SafetyCheckError(
