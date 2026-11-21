@@ -86,3 +86,25 @@ jobs:
           path: |
             playwright-report/
             test-results/
+
+  auth-gate:
+    runs-on: ubuntu-24.04
+    env:
+      VITE_ENABLE_GOOGLE_AUTH: "true"
+      VITE_SUPABASE_URL: https://mock.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_test_only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm }
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --config playwright.auth.config.ts --project=chromium
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: auth-gate-test-report
+          path: |
+            playwright-report/
+            test-results/
