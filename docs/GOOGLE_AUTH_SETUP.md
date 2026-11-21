@@ -12,6 +12,7 @@ This repository is a Vite multi-page app: the portfolio plus separate Photo Comp
    - `VITE_SUPABASE_URL=https://<project-ref>.supabase.co`
    - `VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`
    - `VITE_ENABLE_GOOGLE_AUTH=true` (only after Google OAuth and redirects are configured)
+   - Also set `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` for server-side functions (same project URL and public key); set `REQUIRE_GOOGLE_AUTH=true` when enabling the protected AI API.
 6. Never expose Google Client Secret, Supabase secret/service_role keys, or another server secret using `VITE_*`.
 7. Make the Google OAuth app available in production when ready. Configure consent screen/authorized domains, and complete any verification Google requires.
 
@@ -20,7 +21,7 @@ This repository is a Vite multi-page app: the portfolio plus separate Photo Comp
 - [x] Phase 1: allowlisted OAuth return paths, configuration instructions and tests.
 - [x] Phase 2: browser Supabase client, authentication context, Google Login, PKCE callback.
 - [x] Phase 3: guard both tool UIs; shared account menu and sign-out (feature-flagged).
-- [ ] Phase 4: profile migration + row-level security, API authorization and end-to-end tests.
+- [x] Phase 4: profile migration + row-level security and API authorization tests (database must still be provisioned manually).
 - [ ] Phase 5: review + production activation.
 
 The local photo/file processing must remain browser-only. A React UI guard does not protect downloadable frontend code or enforce billable usage; paid/API features need server-side authorization.
