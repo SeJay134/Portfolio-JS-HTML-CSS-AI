@@ -1726,7 +1726,7 @@ details p {
     color: var(--accent);
     background: var(--accent-soft);
   }
-  .mobile-ai-tab .ai-network-mark { width: 32px; height: 32px; }
+  .mobile-ai-tab .ai-network-mark { width: 36px; height: 36px; }
   .mobile-ai-tab { gap: 0; }
   .mobile-tab:focus-visible { outline-offset: -2px; }
 
