@@ -36,6 +36,40 @@ describe("photo compressor validation", () => {
 });
 
 describe("client-side ZIP archive", () => {
+  it("writes 105 independently named JPGs into a valid local ZIP", async () => {
+    const oldBlob = globalThis.Blob;
+    globalThis.Blob = NodeBlob as unknown as typeof Blob;
+    try {
+      const jpeg = new NodeBlob([Uint8Array.from([0xff, 0xd8, 0xff, 0xd9])], {
+        type: "image/jpeg",
+      }) as unknown as Blob;
+      const entries = Array.from({ length: 105 }, (_, index) => ({
+        name: `photo-${index}.jpg`,
+        blob: jpeg,
+      }));
+      const archive = await createZip(entries);
+      const bytes = new Uint8Array(await archive.arrayBuffer());
+      const view = new DataView(bytes.buffer);
+      const end = bytes.byteLength - 22;
+      expect(view.getUint32(end, true)).toBe(0x06054b50);
+      expect(view.getUint16(end + 10, true)).toBe(105);
+      let offset = 0;
+      for (let index = 0; index < 105; index++) {
+        expect(view.getUint32(offset, true)).toBe(0x04034b50);
+        const size = view.getUint32(offset + 18, true);
+        const nameLength = view.getUint16(offset + 26, true);
+        const extraLength = view.getUint16(offset + 28, true);
+        expect(size).toBeLessThanOrEqual(25000);
+        const start = offset + 30 + nameLength + extraLength;
+        expect([...bytes.subarray(start, start + 3)]).toEqual([0xff, 0xd8, 0xff]);
+        offset = start + size;
+      }
+      expect(view.getUint32(offset, true)).toBe(0x02014b50);
+    } finally {
+      globalThis.Blob = oldBlob;
+    }
+  });
+
   it("matches a known CRC32 value", () => {
     expect(crc32(new TextEncoder().encode("123456789"))).toBe(0xcbf43926);
   });
