@@ -1660,11 +1660,8 @@ details p {
   #Projects .section-heading > p,
   #Projects .section-heading .eyebrow,
   .desktop-project-heading { display: none; }
-  .mobile-project-heading {
-    display: block;
-    font-size: 1.5rem;
-    letter-spacing: -.05em;
-  }
+  #Projects .section-heading h2 { font-size: 1.5rem; letter-spacing: -.05em; }
+  .mobile-project-heading { display: block; }
   #Projects .filters {
     margin-bottom: 16px;
     flex-wrap: nowrap;
@@ -1685,7 +1682,8 @@ details p {
   .project-card { border-radius: 18px; }
   .project-card:hover { transform: none; }
   .project-art {
-    aspect-ratio: 16 / 9;
+    /* Match intrinsic preview ratio for stable layout and image loading. */
+    aspect-ratio: 16 / 10;
     min-height: 0;
     padding: 3px;
   }
