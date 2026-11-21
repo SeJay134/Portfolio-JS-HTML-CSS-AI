@@ -2,7 +2,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 /** Auth is opt-in until Google OAuth and Supabase settings are ready. */
 export function isGoogleAuthEnabled(): boolean {
-  return import.meta.env.VITE_ENABLE_GOOGLE_AUTH === "true";
+  return import.meta.env?.VITE_ENABLE_GOOGLE_AUTH === "true";
 }
 
 let instance: SupabaseClient | null = null;
