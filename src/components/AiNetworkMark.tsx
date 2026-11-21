@@ -1,114 +1,134 @@
 import React, { useEffect, useRef } from "react";
 
-type Point = { x: number; y: number; vx: number; vy: number; phase: number };
+type Node = {
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+  phase: number;
+};
 
-const initialPositions = [
-  [19, 20], [31, 15], [44, 24], [47, 40],
-  [34, 48], [20, 43], [13, 32], [33, 31],
+// The original p5.js chatbot used eight independently drifting nodes.
+// Connections appear only when two nodes pass close enough to each other.
+const INITIAL_POINTS = [
+  [18, 22], [31, 15], [45, 25], [24, 35],
+  [44, 43], [17, 47], [35, 30], [51, 35],
 ] as const;
+const CONNECTION_DISTANCE = 30;
+const EDGES: [number, number][] = INITIAL_POINTS.flatMap((_, i) =>
+  INITIAL_POINTS.slice(i + 1).map((__, offset) => [i, i + offset + 1]),
+);
 
-const links: [number, number][] = [];
-for (let first = 0; first < initialPositions.length; first++) {
-  for (let second = first + 1; second < initialPositions.length; second++) {
-    links.push([first, second]);
-  }
+function connectionOpacity(distance: number) {
+  return distance < CONNECTION_DISTANCE
+    ? (0.72 * (1 - distance / CONNECTION_DISTANCE)).toFixed(3)
+    : "0";
 }
 
-const MAX_LINK_DISTANCE = 30;
-const MIN_COORD = 12;
-const MAX_COORD = 52;
-
-/**
- * The original chatbot's p5.js behavior, recreated with a small SVG.
- * Eight independent dots drift and bounce; nearby pairs connect dynamically.
- * SVG attributes update directly so animation never triggers React rerenders.
- */
+/** Animated, proximity-linked dots adapted from Sergei's original p5.js mark. */
 export function AiNetworkMark({ large = false }: { large?: boolean }) {
   const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
     const svg = svgRef.current;
     if (!svg) return;
-    const nodes = Array.from(svg.querySelectorAll<SVGCircleElement>(".ai-network-node"));
-    const segments = Array.from(svg.querySelectorAll<SVGLineElement>(".ai-network-link"));
-    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)");
-    const points: Point[] = initialPositions.map(([x, y], index) => {
+
+    const lines = svg.querySelectorAll<SVGLineElement>(".ai-network-links line");
+    const halos = svg.querySelectorAll<SVGCircleElement>(".ai-network-halos circle");
+    const dots = svg.querySelectorAll<SVGCircleElement>(".ai-network-dots circle");
+
+    const nodes: Node[] = INITIAL_POINTS.map(() => {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 7 + Math.random() * 6;
+      // Move subtly, as in the original, but enough to change links over time.
+      const speed = 0.05 + Math.random() * 0.06;
       return {
-        x: x + (Math.random() - 0.5) * 5,
-        y: y + (Math.random() - 0.5) * 5,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        phase: index * 1.13,
+        x: 16 + Math.random() * 32,
+        y: 16 + Math.random() * 32,
+        dx: Math.cos(angle) * speed,
+        dy: Math.sin(angle) * speed,
+        phase: Math.random() * Math.PI * 2,
       };
     });
 
+    const draw = (time: number, pulsing: boolean) => {
+      EDGES.forEach(([a, b], index) => {
+        const first = nodes[a];
+        const second = nodes[b];
+        const line = lines[index];
+        if (!line) return;
+        const distance = Math.hypot(first.x - second.x, first.y - second.y);
+        line.setAttribute("x1", first.x.toFixed(2));
+        line.setAttribute("y1", first.y.toFixed(2));
+        line.setAttribute("x2", second.x.toFixed(2));
+        line.setAttribute("y2", second.y.toFixed(2));
+        line.setAttribute("stroke-opacity", connectionOpacity(distance));
+      });
+
+      nodes.forEach((node, index) => {
+        const pulse = pulsing
+          ? Math.sin(time * 0.0025 + node.phase) * 0.55
+          : 0;
+        const halo = halos[index];
+        const dot = dots[index];
+        for (const circle of [halo, dot]) {
+          circle?.setAttribute("cx", node.x.toFixed(2));
+          circle?.setAttribute("cy", node.y.toFixed(2));
+        }
+        halo?.setAttribute("r", (3.5 + pulse).toFixed(2));
+        dot?.setAttribute("r", (2.2 + pulse * 0.6).toFixed(2));
+      });
+    };
+
+    const motion = typeof window.matchMedia === "function"
+      ? window.matchMedia("(prefers-reduced-motion: reduce)")
+      : null;
     let frame = 0;
     let previousTime = 0;
-    let elapsed = 0;
 
-    const draw = () => {
-      segments.forEach((line, index) => {
-        const [first, second] = links[index];
-        const a = points[first];
-        const b = points[second];
-        const distance = Math.hypot(a.x - b.x, a.y - b.y);
-        const visibility = Math.max(0, 1 - distance / MAX_LINK_DISTANCE);
-        line.setAttribute("x1", String(a.x));
-        line.setAttribute("y1", String(a.y));
-        line.setAttribute("x2", String(b.x));
-        line.setAttribute("y2", String(b.y));
-        line.setAttribute("stroke-opacity", String(visibility * 0.95));
-      });
-      nodes.forEach((dot, index) => {
-        const point = points[index];
-        dot.setAttribute("cx", String(point.x));
-        dot.setAttribute("cy", String(point.y));
-        dot.setAttribute("r", String(2.35 + Math.sin(elapsed * 3 + point.phase) * 0.65));
-      });
-    };
-
-    const tick = (timestamp: number) => {
-      if (document.hidden || reducedMotion?.matches) return;
-      if (!previousTime) previousTime = timestamp;
-      const seconds = Math.min((timestamp - previousTime) / 1000, 0.05);
-      previousTime = timestamp;
-      elapsed += seconds;
-      for (const point of points) {
-        point.x += point.vx * seconds;
-        point.y += point.vy * seconds;
-        if (point.x < MIN_COORD || point.x > MAX_COORD) {
-          point.x = Math.max(MIN_COORD, Math.min(MAX_COORD, point.x));
-          point.vx *= -1;
+    const step = (time: number) => {
+      if (!previousTime || time - previousTime >= 32) {
+        const delta = previousTime
+          ? Math.min((time - previousTime) / 16.67, 3)
+          : 1;
+        previousTime = time;
+        for (const node of nodes) {
+          node.x += node.dx * delta;
+          node.y += node.dy * delta;
+          if (node.x < 12 || node.x > 52) {
+            node.x = Math.max(12, Math.min(52, node.x));
+            node.dx *= -1;
+          }
+          if (node.y < 12 || node.y > 52) {
+            node.y = Math.max(12, Math.min(52, node.y));
+            node.dy *= -1;
+          }
         }
-        if (point.y < MIN_COORD || point.y > MAX_COORD) {
-          point.y = Math.max(MIN_COORD, Math.min(MAX_COORD, point.y));
-          point.vy *= -1;
-        }
+        draw(time, true);
       }
-      draw();
-      frame = requestAnimationFrame(tick);
+      frame = window.requestAnimationFrame(step);
     };
 
-    const resume = () => {
-      cancelAnimationFrame(frame);
+    const syncAnimation = () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      frame = 0;
       previousTime = 0;
-      draw();
-      if (!document.hidden && !reducedMotion?.matches) {
-        frame = requestAnimationFrame(tick);
+      if (!document.hidden && !motion?.matches &&
+          typeof window.requestAnimationFrame === "function") {
+        frame = window.requestAnimationFrame(step);
+      } else {
+        draw(0, false);
       }
     };
 
-    // Always show a static network if motion is reduced, even on first paint.
-    draw();
-    resume();
-    document.addEventListener("visibilitychange", resume);
-    reducedMotion?.addEventListener("change", resume);
+    // Draw once immediately; the icon also has a meaningful static appearance.
+    draw(0, false);
+    syncAnimation();
+    document.addEventListener("visibilitychange", syncAnimation);
+    motion?.addEventListener?.("change", syncAnimation);
     return () => {
-      cancelAnimationFrame(frame);
-      document.removeEventListener("visibilitychange", resume);
-      reducedMotion?.removeEventListener("change", resume);
+      if (frame) window.cancelAnimationFrame(frame);
+      document.removeEventListener("visibilitychange", syncAnimation);
+      motion?.removeEventListener?.("change", syncAnimation);
     };
   }, []);
 
@@ -118,29 +138,27 @@ export function AiNetworkMark({ large = false }: { large?: boolean }) {
       aria-hidden="true"
     >
       <svg ref={svgRef} viewBox="0 0 64 64" focusable="false">
-        <g className="ai-network-lines" fill="none" stroke="currentColor" strokeWidth="1.25">
-          {links.map(([first, second]) => (
-            <line
-              key={`${first}-${second}`}
-              className="ai-network-link"
-              x1={initialPositions[first][0]}
-              y1={initialPositions[first][1]}
-              x2={initialPositions[second][0]}
-              y2={initialPositions[second][1]}
-              strokeOpacity=".6"
-            />
-          ))}
+        <g className="ai-network-links" fill="none" stroke="currentColor" strokeWidth="1">
+          {EDGES.map(([a, b]) => {
+            const [x1, y1] = INITIAL_POINTS[a];
+            const [x2, y2] = INITIAL_POINTS[b];
+            return (
+              <line
+                key={`${a}-${b}`}
+                x1={x1}
+                y1={y1}
+                x2={x2}
+                y2={y2}
+                strokeOpacity={connectionOpacity(Math.hypot(x2 - x1, y2 - y1))}
+              />
+            );
+          })}
         </g>
-        <g className="ai-network-nodes" fill="currentColor">
-          {initialPositions.map(([x, y], index) => (
-            <circle
-              key={index}
-              className="ai-network-node"
-              cx={x}
-              cy={y}
-              r="2.6"
-            />
-          ))}
+        <g className="ai-network-halos" fill="#00dcff" opacity=".8">
+          {INITIAL_POINTS.map(([x, y], i) => <circle key={i} cx={x} cy={y} r="3.5" />)}
+        </g>
+        <g className="ai-network-dots" fill="#008bff">
+          {INITIAL_POINTS.map(([x, y], i) => <circle key={i} cx={x} cy={y} r="2.2" />)}
         </g>
       </svg>
     </span>
