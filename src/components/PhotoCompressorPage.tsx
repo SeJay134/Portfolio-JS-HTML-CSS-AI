@@ -3,6 +3,9 @@ import { Drawer } from "./Drawer";
 import { Icon } from "./Icon";
 import { useTheme } from "../hooks/useTheme";
 import {
+  loadSafetyModel, MAX_BATCH_FILES, screenImage,
+} from "../lib/contentSafety";
+import {
   compressImage,
   createZip,
   DEFAULT_TARGET_KB,
@@ -29,6 +32,7 @@ export function PhotoCompressorPage() {
   const downloadUrl = useRef<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [rejected, setRejected] = useState(0);
+  const [blocked, setBlocked] = useState(0);
   const [limit, setLimit] = useState(String(DEFAULT_TARGET_KB));
   const [busy, setBusy] = useState(false);
   const [processed, setProcessed] = useState(0);
@@ -55,6 +59,7 @@ export function PhotoCompressorPage() {
     setDownload(null);
     setMessage("");
     setFailures([]);
+    setBlocked(0);
     setProcessed(0);
   }
 
@@ -62,8 +67,8 @@ export function PhotoCompressorPage() {
     clearDownload();
     const collection = Array.from(selected ?? []);
     const valid = collection.filter(isImageFile);
-    setRejected(collection.length - valid.length);
-    setFiles(valid);
+    setRejected(collection.length - Math.min(valid.length, MAX_BATCH_FILES));
+    setFiles(valid.slice(0, MAX_BATCH_FILES));
   }
 
   async function processBatch() {
@@ -84,17 +89,31 @@ export function PhotoCompressorPage() {
     const failed: Failure[] = [];
     let sourceBytes = 0;
     let outputBytes = 0;
+    let blockedCount = 0;
     try {
+      setCurrent("Loading the on-device safety filter…");
+      const model = await loadSafetyModel();
+      if (controller.signal.aborted) {
+        setMessage("Cancelled. The original photos were not modified.");
+        return;
+      }
       for (let index = 0; index < files.length; index++) {
         if (controller.signal.aborted) break;
         const file = files[index];
-        setCurrent(file.name);
+        setCurrent("Checking " + file.name);
         try {
-          const result = await compressImage(file, maxBytes, controller.signal);
+          const adultContent = await screenImage(file, model, controller.signal);
           if (controller.signal.aborted) break;
-          entries.push({ name: uniqueJpegName(file.name, used), blob: result.blob });
-          sourceBytes += result.sourceBytes;
-          outputBytes += result.blob.size;
+          if (adultContent) {
+            blockedCount++;
+          } else {
+            setCurrent("Compressing " + file.name);
+            const result = await compressImage(file, maxBytes, controller.signal);
+            if (controller.signal.aborted) break;
+            entries.push({ name: uniqueJpegName(file.name, used), blob: result.blob });
+            sourceBytes += result.sourceBytes;
+            outputBytes += result.blob.size;
+          }
         } catch (error) {
           if (controller.signal.aborted) break;
           failed.push({
@@ -105,6 +124,7 @@ export function PhotoCompressorPage() {
         setProcessed(index + 1);
       }
       setFailures(failed);
+      setBlocked(blockedCount);
       if (controller.signal.aborted) {
         setMessage("Cancelled. The original photos were not modified.");
       } else if (entries.length) {
@@ -115,13 +135,15 @@ export function PhotoCompressorPage() {
           downloadUrl.current = url;
           setDownload({ url, count: entries.length, sourceBytes, outputBytes });
           setMessage(
-            failed.length
-              ? "Completed with " + failed.length + " skipped file(s)."
+            failed.length || blockedCount
+              ? "Completed: " + blockedCount + " blocked, " + failed.length + " other skipped file(s)."
               : "Your photos are ready to download.",
           );
         }
       } else {
-        setMessage("None of the selected images could be compressed.");
+        setMessage(blockedCount
+          ? "No photos passed the adult-content check. Nothing to download."
+          : "None of the selected images could be safely processed.");
       }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Compression failed.");
@@ -188,6 +210,7 @@ export function PhotoCompressorPage() {
             <span>Private, in your browser</span>
             <span>iPhone-friendly</span>
             <span>100+ photos</span>
+            <span>Adult content blocked</span>
           </div>
         </section>
         <section className="section compressor-workspace" aria-label="Photo compressor">
@@ -196,13 +219,13 @@ export function PhotoCompressorPage() {
             <label className="compressor-picker" htmlFor="photo-files">
               <span className="compressor-picker-symbol" aria-hidden="true">+</span>
               <strong>Choose photos</strong>
-              <span>JPG, PNG, HEIC, WebP and other browser-supported images</span>
+              <span>JPG, PNG, HEIC, WebP and other supported photos</span>
             </label>
             <input
               id="photo-files"
               className="sr-only compressor-file-input"
               type="file"
-              accept="image/*,.heic,.heif"
+              accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/avif,image/gif,image/bmp,image/tiff,.heic,.heif"
               multiple
               disabled={busy}
               onChange={(event) => {
@@ -211,15 +234,17 @@ export function PhotoCompressorPage() {
               }}
             />
             <p className="compressor-note">
-              Photos are processed on your device. They are not uploaded to the portfolio server.
-              Animated images are exported as a single still frame. HEIC support depends on the browser.
+              Adult/sexual images are prohibited. Each photo is checked by an on-device AI filter
+              before compression; flagged photos are excluded. Detection is not perfect.
+              Your photos are not uploaded to the portfolio server.
+              Animated images become still frames. HEIC support depends on the browser.
             </p>
             <div className="compressor-selection" aria-live="polite">
               <strong>{files.length} selected</strong>
               <span>{formatBytes(originalBytes)} total</span>
             </div>
             {rejected > 0 && <p className="compressor-warning" role="status">
-              {rejected} unsupported file(s) were excluded.
+              {rejected} unsupported or over-limit file(s) were excluded (maximum {MAX_BATCH_FILES} photos).
             </p>}
             <div className="compressor-rule" />
             <p className="eyebrow">02 / Set a target</p>
@@ -265,8 +290,8 @@ export function PhotoCompressorPage() {
           <aside className="compressor-summary">
             <p className="eyebrow">03 / Your results</p>
             <h2>Ready when <span className="serif-accent">you are.</span></h2>
-            <p>Each file is individually optimized. Photos that cannot be decoded are skipped,
-              so the rest of the batch can finish.</p>
+            <p>Only photos that pass local adult-content screening are compressed.
+              Unverifiable or blocked images are skipped. Originals stay unchanged.</p>
             {busy && (
               <div className="compressor-progress" role="status" aria-live="polite">
                 <span>Processing {processed} of {files.length}</span>
@@ -286,6 +311,9 @@ export function PhotoCompressorPage() {
                 <p className="compressor-note">On iPhone, look in Files → Downloads to unzip.</p>
               </div>
             )}
+            {blocked > 0 && <p className="compressor-warning" role="status">
+              {blocked} adult-content photo(s) blocked and excluded from the ZIP.
+            </p>}
             {!!failures.length && (
               <details className="compressor-errors">
                 <summary>{failures.length} skipped file(s)</summary>
