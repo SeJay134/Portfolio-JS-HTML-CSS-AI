@@ -61,12 +61,14 @@ export function Projects() {
       <div className="section-heading">
         <div>
           <p className="eyebrow">01 / Selected work</p>
-          <h2 className="desktop-project-heading">
-            Built to explore.
-            <br />
-            Made to work.
+          <h2>
+            <span className="desktop-project-heading">
+              Built to explore.
+              <br />
+              Made to work.
+            </span>
+            <span className="mobile-project-heading">Selected projects</span>
           </h2>
-          <h2 className="mobile-project-heading">Selected projects</h2>
         </div>
         <p>
           A selection of web applications, data tools,
