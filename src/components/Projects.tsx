@@ -62,9 +62,12 @@ export function Projects() {
         <div>
           <p className="eyebrow">01 / Selected work</p>
           <h2>
-            Built to explore.
-            <br />
-            Made to work.
+            <span className="desktop-project-heading">
+              Built to explore.
+              <br />
+              Made to work.
+            </span>
+            <span className="mobile-project-heading">Selected projects</span>
           </h2>
         </div>
         <p>

@@ -4,6 +4,7 @@ import { containModalFocus } from "../lib/dialog";
 import { useEffect, useReducer, useRef, useState } from "react";
 import { ApiError, readiness, requestAnswer, type Source } from "../lib/api";
 import { Icon } from "./Icon";
+import { AiNetworkMark } from "./AiNetworkMark";
 import {
   ASSISTANT_STATUS_LABELS,
   assistantStatus,
@@ -46,8 +47,8 @@ export default function Chat({
     function sync() {
       if (dialog.open) dialog.close();
       if (open) {
-        if (media.matches) dialog.showModal();
-        else dialog.show();
+        // Non-modal on mobile so the persistent Ask AI tab stays usable.
+        dialog.show();
       }
     }
     sync();
@@ -154,7 +155,8 @@ export default function Chat({
       ref={panel}
       className="chat-panel"
       onKeyDown={containModalFocus}
-      aria-labelledby="chat-title"
+      id="mobile-ai-panel"
+      aria-label="Ask about Sergei"
       onCancel={(e) => {
         e.preventDefault();
         onClose();
@@ -162,10 +164,10 @@ export default function Chat({
     >
       <header className="chat-heading">
         <div className="assistant-mark">
-          <Icon name="spark" />
+          <AiNetworkMark />
         </div>
         <div>
-          <h2 id="chat-title">Ask about Sergei</h2>
+          <h2 id="chat-title">Ask AI</h2>
           <p aria-live="polite">{ASSISTANT_STATUS_LABELS[assistantStatus(statusState)]}</p>
         </div>
         <button
