@@ -16,7 +16,7 @@ const INITIAL_POINTS = [
 ] as const;
 const CONNECTION_DISTANCE = 30;
 const EDGES: [number, number][] = INITIAL_POINTS.flatMap((_, i) =>
-  INITIAL_POINTS.slice(i + 1).map((__, offset) => [i, i + offset + 1]),
+  INITIAL_POINTS.slice(i + 1).map((__, offset): [number, number] => [i, i + offset + 1]),
 );
 
 function connectionOpacity(distance: number) {
