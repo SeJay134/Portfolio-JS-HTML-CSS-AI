@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("corrupt files do not block good photos, stale downloads are cleared, and theme persists", async ({ page }) => {
+  test.setTimeout(120000); // Includes first-use local TensorFlow model initialization.
   await page.goto("/tools/photo-compressor/");
   const dataUrl = await page.evaluate(() => {
     const canvas = document.createElement("canvas");
@@ -15,10 +16,10 @@ test("corrupt files do not block good photos, stale downloads are cleared, and t
   ]);
   await page.getByRole("button", { name: "Compress photos" }).click();
   const downloadLink = page.getByRole("link", { name: "Download ZIP" });
-  await expect(downloadLink).toBeVisible();
-  await expect(page.getByText("Completed with 1 skipped file(s).")).toBeVisible();
+  await expect(downloadLink).toBeVisible({ timeout: 90000 });
+  await expect(page.getByText("Completed: 0 blocked, 1 other skipped file(s).")).toBeVisible();
   await page.getByText("1 skipped file(s)", { exact: true }).click();
-  await expect(page.getByText(/corrupt.jpg: This browser cannot decode the image/)).toBeVisible();
+  await expect(page.getByText(/corrupt.jpg: Could not verify image safety/)).toBeVisible();
   await page.getByLabel("Max size per photo (KB)").fill("280");
   await expect(downloadLink).toHaveCount(0);
   await page.getByLabel("Color theme").selectOption("dark");

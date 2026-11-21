@@ -19,9 +19,21 @@ export function targetBytes(value: string): number {
   return kb * 1000;
 }
 
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/jpeg", "image/png", "image/webp", "image/heic", "image/heif",
+  "image/avif", "image/gif", "image/bmp", "image/tiff",
+]);
+
 export function isImageFile(file: Pick<File, "name" | "type">): boolean {
-  return file.type.startsWith("image/") ||
-    /\.(jpe?g|png|webp|heic|heif|avif|gif|bmp|tiff?)$/i.test(file.name);
+  // SVG and other active/complex image formats are deliberately not supported.
+  if (/\.svgz?$/i.test(file.name)) return false;
+  const type = file.type.toLowerCase();
+  if (ALLOWED_IMAGE_TYPES.has(type)) return true;
+  // Some iPhones provide HEIC/HEIF files with no MIME type.
+  if (!type || type === "application/octet-stream") {
+    return /\.(jpe?g|png|webp|heic|heif|avif|gif|bmp|tiff?)$/i.test(file.name);
+  }
+  return false;
 }
 
 export function formatBytes(bytes: number): string {

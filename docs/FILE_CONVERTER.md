@@ -20,6 +20,9 @@ The dropdown dynamically exposes **only** working routes. It never advertises un
 ## Safety, integrity and privacy
 
 - No file uploads. Browser-only Canvas, ZIP (using the existing tested ZIP writer), File and DecompressionStream APIs.
+- All PNG/JPEG/WebP source images are screened with the same bundled, on-device NSFWJS model as Photo Compressor before any image conversion. Flagged images are excluded from single-file and ZIP output; image conversions fail closed if the model is unavailable.
+- The policy check does not inspect embedded pictures in PDF, Word, or Excel documents; it is not an exhaustive content filter for documents or public uploads.
+- Detection is approximate (false positives and false negatives are possible), checks the decoded still frame only, and can be bypassed by a technically sophisticated user. No image data is uploaded to third parties.
 - Input selected format must match the real extension **and the file signature**. Office documents must be valid ZIPs with expected OOXML members and CRC32. Invalid files are rejected with `Invalid file format. Choose another file.`
 - Maximum: 20 MB per source, 80 MB combined and 120 files per batch. The ZIP reader checks central directory bounds, encrypted flags, supported compression methods, CRC32, expanded payload caps and compression-ratio bounds to reduce zip-bomb risk.
 - HTML and scripts in document cells are never interpreted: XML is parsed with DOMParser and values are written as text; CSV-to-XLSX stores `inlineStr` instead of formulas. XLSX-to-CSV escapes potentially dangerous formula-like cells.
@@ -32,7 +35,7 @@ The dropdown dynamically exposes **only** working routes. It never advertises un
 - `npm run test:smoke -- --project=chromium`
 - `npm run test:e2e` and `npm run test:regression` across Chromium, Firefox, WebKit, iPhone 13 emulation and Pixel 7 emulation.
 - Test fixtures are generated deterministically at runtime in `tests/fixtures/converterFiles.ts`: valid and corrupt PDF, DOCX, XLSX, CSV, TXT, PNG and fake extensions; tests inspect actual download bytes and archive contents, not just the UI.
-- Legacy Photo Compressor E2E and regression remain unchanged.
+- New image-safety unit tests cover blocked files, unavailable model, and unaffected document conversions. E2E tests must also verify real model loading on target browsers.
 
 ## Release policy
 
