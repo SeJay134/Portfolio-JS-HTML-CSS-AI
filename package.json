@@ -20,6 +20,8 @@
     "test:chat-hydration": "playwright test --config playwright.public-chat.config.ts"
   },
   "dependencies": {
+    "@tensorflow/tfjs": "4.22.0",
+    "nsfwjs": "4.4.0",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
