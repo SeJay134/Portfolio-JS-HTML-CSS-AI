@@ -1508,7 +1508,7 @@ details p {
   gap: 10px;
 }
 
-/* Adapted from the original p5 connected-nodes chatbot icon, without a JS dependency. */
+/* Original eight drifting nodes: live SVG links replace the former rotating mesh. */
 .ai-network-mark {
   display: inline-grid;
   place-items: center;
@@ -1516,49 +1516,19 @@ details p {
   height: 34px;
   flex: none;
   color: #31d5ff;
-  background: radial-gradient(circle at 38% 30%, #103d62, #071525 68%, #030b16);
-  border: 1px solid #183f60;
+  background: radial-gradient(circle at 38% 30%, #10324a, #0f1017 75%);
+  border: 1px solid #17628a;
   border-radius: 50%;
   box-shadow: inset 0 0 10px #00aaff22;
+  overflow: hidden;
 }
 .ai-network-mark svg {
   width: 100%;
   height: 100%;
+  pointer-events: none;
   filter: drop-shadow(0 0 2px #00bcffb3);
 }
 .ai-network-mark-large { width: 52px; height: 52px; }
-.ai-network-orbit {
-  transform-origin: 32px 32px;
-  animation: ai-network-thinking 5s ease-in-out infinite;
-}
-.ai-network-links path {
-  animation: ai-network-links 3s ease-in-out infinite alternate;
-}
-.ai-network-links path:nth-child(2) { animation-delay: -1.4s; }
-.ai-network-nodes circle {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: ai-network-pulse 2.6s ease-in-out infinite alternate;
-}
-.ai-network-nodes circle:nth-child(2n) { animation-delay: -1.2s; }
-.ai-network-nodes circle:nth-child(3n) { animation-delay: -.5s; }
-@keyframes ai-network-thinking {
-  0%, 100% { transform: rotate(-9deg) scale(.94); }
-  50% { transform: rotate(14deg) scale(1.04); }
-}
-@keyframes ai-network-links {
-  from { opacity: .3; }
-  to { opacity: .85; }
-}
-@keyframes ai-network-pulse {
-  from { transform: scale(.7); opacity: .65; }
-  to { transform: scale(1.25); opacity: 1; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ai-network-orbit,
-  .ai-network-links path,
-  .ai-network-nodes circle { animation: none !important; }
-}
 
 @media (max-width: 600px) {
   :root { --header: 58px; --mobile-nav-height: 76px; }
