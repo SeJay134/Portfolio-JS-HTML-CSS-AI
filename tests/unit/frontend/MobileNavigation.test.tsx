@@ -4,16 +4,6 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { MobileBottomNav } from "../../../src/components/MobileBottomNav";
 import { AiNetworkMark } from "../../../src/components/AiNetworkMark";
 import { MobileChatPreview } from "../../../src/components/MobileChatPreview";
-import { AiNetworkMark } from "../../../src/components/AiNetworkMark";
-
-describe("original connected-dot AI mark", () => {
-  it("renders eight independently movable dots and every candidate proximity link", () => {
-    const { container } = render(<AiNetworkMark />);
-    expect(container.querySelectorAll(".ai-network-node")).toHaveLength(8);
-    expect(container.querySelectorAll(".ai-network-link")).toHaveLength(28);
-    expect(container.querySelector(".ai-network-mark")).toHaveAttribute("aria-hidden", "true");
-  });
-});
 
 describe("mobile portfolio navigation", () => {
   it("keeps five destinations, with Ask AI as the fifth tab", () => {
