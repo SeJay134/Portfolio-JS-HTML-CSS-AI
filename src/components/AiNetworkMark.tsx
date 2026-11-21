@@ -15,9 +15,12 @@ const INITIAL_POINTS = [
   [44, 43], [17, 47], [35, 30], [51, 35],
 ] as const;
 const CONNECTION_DISTANCE = 30;
-const EDGES: [number, number][] = INITIAL_POINTS.flatMap((_, i) =>
-  INITIAL_POINTS.slice(i + 1).map((__, offset): [number, number] => [i, i + offset + 1]),
-);
+const EDGES: [number, number][] = [];
+for (let i = 0; i < INITIAL_POINTS.length; i++) {
+  for (let j = i + 1; j < INITIAL_POINTS.length; j++) {
+    EDGES.push([i, j]);
+  }
+}
 
 function connectionOpacity(distance: number) {
   return distance < CONNECTION_DISTANCE
@@ -145,6 +148,7 @@ export function AiNetworkMark({ large = false }: { large?: boolean }) {
             return (
               <line
                 key={`${a}-${b}`}
+                className="ai-network-link"
                 x1={x1}
                 y1={y1}
                 x2={x2}
@@ -158,7 +162,7 @@ export function AiNetworkMark({ large = false }: { large?: boolean }) {
           {INITIAL_POINTS.map(([x, y], i) => <circle key={i} cx={x} cy={y} r="3.5" />)}
         </g>
         <g className="ai-network-dots" fill="#008bff">
-          {INITIAL_POINTS.map(([x, y], i) => <circle key={i} cx={x} cy={y} r="2.2" />)}
+          {INITIAL_POINTS.map(([x, y], i) => <circle key={i} className="ai-network-node" cx={x} cy={y} r="2.2" />)}
         </g>
       </svg>
     </span>
