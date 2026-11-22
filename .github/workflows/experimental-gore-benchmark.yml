@@ -1,0 +1,39 @@
+name: Experimental local gore ONNX benchmark
+
+on:
+  pull_request:
+    paths:
+      - "scripts/prepare-gore-assets.mjs"
+      - "scripts/benchmark-moderation-candidates.mjs"
+      - "src/lib/moderation/detectors/**"
+      - "tests/experimental/**"
+      - "playwright.gore.config.ts"
+      - ".github/workflows/experimental-gore-benchmark.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-gore-model-probe:
+    name: on-device ONNX WASM research probe (Chromium, non-release)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install reproducible app dependencies
+        run: npm ci
+      - name: Model candidate download-size research
+        run: node scripts/benchmark-moderation-candidates.mjs
+      - name: Download and verify pinned model and local WASM runtime
+        run: node scripts/prepare-gore-assets.mjs
+      - name: Install browser
+        run: npx playwright install --with-deps chromium
+      - name: Benchmark actual local inference on synthetic canvas
+        env:
+          RUN_GORE_BENCHMARK: "1"
+        run: npx playwright test --config playwright.gore.config.ts
