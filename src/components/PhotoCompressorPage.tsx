@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Drawer } from "./Drawer";
 import { Icon } from "./Icon";
+import { AccountMenu } from "../auth/AccountMenu";
 import { useTheme } from "../hooks/useTheme";
 import {
   loadSafetyModel, MAX_BATCH_FILES, screenImage,
@@ -176,6 +177,7 @@ export function PhotoCompressorPage() {
           </div>
           <span className="header-caption">Software developer / Data & AI</span>
           <div className="header-actions">
+            <AccountMenu />
             <label htmlFor="compressor-theme" className="sr-only">Color theme</label>
             <select id="compressor-theme" value={theme} onChange={(event) => selectTheme(event.target.value)}>
               <option value="system">System</option>

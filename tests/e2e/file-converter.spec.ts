@@ -191,6 +191,11 @@ test("changing formats/files invalidates downloads, theme is accessible and mobi
   for (const theme of ["light", "dark"]) {
     await page.getByLabel("Color theme").selectOption(theme);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    // Wait for the background transition before checking contrast, otherwise
+    // axe may inspect a dark foreground over an intermediate light surface.
+    await page.locator(".compressor-picker").evaluate(async (element) => {
+      await Promise.all(element.getAnimations().map((animation) => animation.finished.catch(() => {})));
+    });
     expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
   }
   await page.setViewportSize({ width: 390, height: 640 });
