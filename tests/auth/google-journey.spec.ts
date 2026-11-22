@@ -94,7 +94,13 @@ for (const [tool, name] of [
 test("mocked OAuth callback saves session and returns to the selected tool", async ({ page }) => {
   const callback = appOrigin + "/auth/callback/?code=fake-oauth-code";
   await page.route(`${supabaseOrigin}/auth/v1/authorize**`, async (route) => {
-    await route.fulfill({ status: 302, headers: { location: callback }, body: "" });
+    // Playwright WebKit cannot route.fulfill() a synthetic 302.
+    // An HTML redirect exercises the same browser callback without live Google.
+    await route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: `<!doctype html><script>location.replace(${JSON.stringify(callback)})</script>`,
+    });
   });
   let exchanged = false;
   await page.route(`${supabaseOrigin}/auth/v1/token**`, async (route) => {
