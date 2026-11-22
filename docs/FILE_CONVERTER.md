@@ -19,6 +19,10 @@ The dropdown dynamically exposes **only** working routes. It never advertises un
 
 ## Safety, integrity and privacy
 
+- The UI requires affirmative acceptance of the [prohibited-content rules](/terms/#prohibited-content) before processing each newly selected batch. The checkbox is reset on new selections. This is **policy acknowledgment, not content detection**; see [moderation scope and future requirements](CONTENT_MODERATION.md).
+- Categories beyond adult imagery (e.g. gore, threats, hate, child exploitation, consent/copyright, unlawful material) are **not currently automatically detected**. No universal jurisdiction-aware or server-enforced image moderation exists.
+
+
 - No file uploads. Browser-only Canvas, ZIP (using the existing tested ZIP writer), File and DecompressionStream APIs.
 - All PNG/JPEG/WebP source images are screened with the same bundled, on-device NSFWJS model as Photo Compressor before any image conversion. Flagged images are excluded from single-file and ZIP output; image conversions fail closed if the model is unavailable.
 - The policy check does not inspect embedded pictures in PDF, Word, or Excel documents; it is not an exhaustive content filter for documents or public uploads.
