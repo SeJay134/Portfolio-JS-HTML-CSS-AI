@@ -61,6 +61,7 @@ test("invalid file signature, misleading extension, legacy Office and bad archiv
   await page.locator("#converter-files").setInputFiles(payload("damaged.pdf", "application/pdf", badPdf()));
   // Basic PDF signature is accepted first, but malformed contents are rejected at conversion.
   await expect(page.getByText("1 selected")).toBeVisible();
+  await page.getByRole("checkbox", { name: /I confirm I have the right/ }).check();
   await page.getByRole("button", { name: "Convert files" }).click();
   await expect(page.getByText(/No files could be converted/)).toBeVisible();
 });
@@ -80,6 +81,7 @@ test("drag and drop adds multiple real PNG files and produces actual JPG ZIP wit
     dropzone.dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: transfer }));
   }, png.toString("base64"));
   await expect(page.getByText("2 selected")).toBeVisible();
+  await page.getByRole("checkbox", { name: /I confirm I have the right/ }).check();
   await page.getByRole("button", { name: "Convert files" }).click();
   const { bytes, name } = await downloadBytes(page, "Download ZIP");
   expect(name).toBe("converted-files.zip");
@@ -94,6 +96,7 @@ test("image to PDF produces a real PDF, not a renamed image", async ({ page }) =
   await page.goto(route);
   await page.getByLabel("Convert to").selectOption("pdf");
   await page.locator("#converter-files").setInputFiles(payload("photo.png", "image/png", await pngBytes(page)));
+  await page.getByRole("checkbox", { name: /I confirm I have the right/ }).check();
   await page.getByRole("button", { name: "Convert files" }).click();
   const { bytes, name } = await downloadBytes(page, "Download PDF");
   expect(name).toBe("photo.pdf");
@@ -111,6 +114,7 @@ test("Word DOCX to text preserves paragraphs, including UTF-8, and TXT to DOCX i
   await page.getByLabel("From format").selectOption("docx");
   await page.locator("#converter-files").setInputFiles(payload("notes.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", sampleDocx()));
   await expect(page.getByText("1 selected")).toBeVisible();
+  await page.getByRole("checkbox", { name: /I confirm I have the right/ }).check();
   await page.getByRole("button", { name: "Convert files" }).click();
   const first = await downloadBytes(page, "Download TXT");
   expect(first.name).toBe("notes.txt");
@@ -118,6 +122,7 @@ test("Word DOCX to text preserves paragraphs, including UTF-8, and TXT to DOCX i
   expect(first.bytes.toString()).toContain("Привет!");
   await page.getByLabel("From format").selectOption("txt");
   await page.locator("#converter-files").setInputFiles(payload("message.txt", "text/plain", sampleTxt()));
+  await page.getByRole("checkbox", { name: /I confirm I have the right/ }).check();
   await page.getByRole("button", { name: "Convert files" }).click();
   const next = await downloadBytes(page, "Download DOCX");
   expect(next.name).toBe("message.docx");
@@ -129,6 +134,7 @@ test("Word DOCX to text preserves paragraphs, including UTF-8, and TXT to DOCX i
   await page.locator("#converter-files").setInputFiles(
     payload("roundtrip.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", next.bytes),
   );
+  await page.getByRole("checkbox", { name: /I confirm I have the right/ }).check();
   await page.getByRole("button", { name: "Convert files" }).click();
   const back = await downloadBytes(page, "Download TXT");
   expect(back.bytes.toString()).toContain("Привет, мир!");
@@ -138,6 +144,7 @@ test("Excel to CSV handles shared strings and neutralizes formula injection; CSV
   await page.goto(route);
   await page.getByLabel("From format").selectOption("xlsx");
   await page.locator("#converter-files").setInputFiles(payload("sheet.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", sampleXlsx()));
+  await page.getByRole("checkbox", { name: /I confirm I have the right/ }).check();
   await page.getByRole("button", { name: "Convert files" }).click();
   const out = await downloadBytes(page, "Download CSV");
   expect(out.bytes.toString()).toContain("Name,Value");
@@ -145,6 +152,7 @@ test("Excel to CSV handles shared strings and neutralizes formula injection; CSV
   expect(out.bytes.toString()).toContain("'=HYPERLINK");
   await page.getByLabel("From format").selectOption("csv");
   await page.locator("#converter-files").setInputFiles(payload("numbers.csv", "text/csv", sampleCsv()));
+  await page.getByRole("checkbox", { name: /I confirm I have the right/ }).check();
   await page.getByRole("button", { name: "Convert files" }).click();
   const workbook = await downloadBytes(page, "Download XLSX");
   expect(workbook.bytes.readUInt32LE(0)).toBe(0x04034b50);
@@ -156,6 +164,7 @@ test("Excel to CSV handles shared strings and neutralizes formula injection; CSV
   await page.locator("#converter-files").setInputFiles(
     payload("roundtrip.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", workbook.bytes),
   );
+  await page.getByRole("checkbox", { name: /I confirm I have the right/ }).check();
   await page.getByRole("button", { name: "Convert files" }).click();
   const back = await downloadBytes(page, "Download CSV");
   expect(back.bytes.toString()).toContain('"Apple, green",25');
@@ -166,11 +175,13 @@ test("PDF text extraction works for valid text-based PDFs and does not pretend t
   await page.goto(route);
   await page.getByLabel("From format").selectOption("pdf");
   await page.locator("#converter-files").setInputFiles(payload("text.pdf", "application/pdf", samplePdf()));
+  await page.getByRole("checkbox", { name: /I confirm I have the right/ }).check();
   await page.getByRole("button", { name: "Convert files" }).click();
   const out = await downloadBytes(page, "Download TXT");
   expect(out.name).toBe("text.txt");
   expect(out.bytes.toString()).toContain("Hello PDF fixture");
   await page.getByLabel("Convert to").selectOption("docx");
+  await page.getByRole("checkbox", { name: /I confirm I have the right/ }).check();
   await page.getByRole("button", { name: "Convert files" }).click();
   const word = await downloadBytes(page, "Download DOCX");
   expect(word.name).toBe("text.docx");
@@ -181,6 +192,7 @@ test("PDF text extraction works for valid text-based PDFs and does not pretend t
 test("changing formats/files invalidates downloads, theme is accessible and mobile fits", async ({ page }) => {
   await page.goto(route);
   await page.locator("#converter-files").setInputFiles(payload("picture.png", "image/png", await pngBytes(page)));
+  await page.getByRole("checkbox", { name: /I confirm I have the right/ }).check();
   await page.getByRole("button", { name: "Convert files" }).click();
   const old = page.getByRole("link", { name: "Download JPG" });
   await expect(old).toBeVisible();
