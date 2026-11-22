@@ -14,7 +14,19 @@ from urllib.parse import urlsplit
 CATALOG_PATH = Path(__file__).resolve().parents[1] / "content" / "public-projects.json"
 CATALOG_URL = "https://sergei-luna.vercel.app/#Projects"
 ALLOWED_HOSTS = {"github.com", "sergei-luna.vercel.app"}
-REQUIRED_IDS = {"chocolate", "gdp", "api", "portfolio", "world-happiness"}
+# Only reviewed, published project IDs may become authoritative sources.
+REQUIRED_IDS = {
+    "chocolate",
+    "gdp",
+    "api",
+    "portfolio",
+    "world-happiness",
+    "life-expectancy",
+    "mlb-history",
+    "student-math",
+    "spam-classifier",
+    "image-classification",
+}
 
 
 def _safe_url(value: str) -> bool:
@@ -37,7 +49,7 @@ def _public_projects() -> list[dict]:
     if not isinstance(data, dict) or data.get("schema_version") != 1:
         raise ValueError("Invalid public projects catalogue schema.")
     projects = data.get("projects")
-    if not isinstance(projects, list) or len(projects) != 5:
+    if not isinstance(projects, list) or len(projects) != len(REQUIRED_IDS):
         raise ValueError("Unexpected number of public portfolio projects.")
     found = set()
     for item in projects:
@@ -62,17 +74,18 @@ def _public_projects() -> list[dict]:
 
 
 # Detect only explicit numbered catalogue-project questions (not arbitrary missing facts).
-# The checked public catalogue currently contains four entries; this guard does
-# not make any claim about projects that might exist outside that catalogue.
+# This guard checks the reviewed catalogue size, not arbitrary private
+# projects or unverified public repositories.
 # A number before "projects" can be a quantity ("name 5 technologies in
 # projects"), not an ordinal. Require an ordinal suffix/word in that position.
 # Bare digits are accepted only after singular "project/проект" or an explicit
 # project-number marker (# or №).
 _OUT_OF_RANGE_ORDINAL = re.compile(
     r"\b(?P<position>\d+(?:-?(?:й|го|ый|м|му|st|nd|rd|th))"
-    r"|fifth|sixth|seventh|eighth|ninth|tenth"
+    r"|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth"
     r"|пят(?:ый|ого|ом|ому|ым|ая|ое|ой|ую|ые|ых)"
-    r"|шест(?:ой|ого|ом|ому|ым|ая|ое|ую|ые|ых))\b"
+    r"|шест(?:ой|ого|ом|ому|ым|ая|ое|ую|ые|ых)"
+    r"|одиннадцат(?:ый|ого|ом|ому|ым|ая|ое|ой|ую|ые|ых))\b"
     r"(?:\s+[\w-]+){0,3}\s+(?:projects?|проект\w*)\b"
     r"|\b(?:project|проект)\s+(?P<after>\d+)\b"
     r"|\b(?:projects?|проект\w*)\s*[#№]\s*(?P<marked>\d+)\b",
@@ -92,13 +105,14 @@ def unlisted_project_reply(question: str) -> str | None:
         return None
     ordinal = (match.group("position") or match.group("after") or match.group("marked")).casefold()
     numeric = re.match(r"\d+", ordinal)
-    #position = int(numeric.group()) if numeric else 5
     if numeric:
         position = int(numeric.group())
     elif ordinal.startswith("пят"):
         position = 5
     elif ordinal.startswith("шест"):
         position = 6
+    elif ordinal.startswith("одиннадцат"):
+        position = 11
     else:
         position = {
             "fifth": 5,
@@ -107,6 +121,8 @@ def unlisted_project_reply(question: str) -> str | None:
             "eighth": 8,
             "ninth": 9,
             "tenth": 10,
+            "eleventh": 11,
+            "twelfth": 12,
         }.get(ordinal)
 
     if position is None:
@@ -117,7 +133,7 @@ def unlisted_project_reply(question: str) -> str | None:
         return None
     if response_language(question) == "Russian":
         return (
-            f"В проверенном публичном каталоге портфолио указаны только {count} проекта. "
+            f"В проверенном публичном каталоге портфолио указано {count} проектов. "
             "Информации о проекте с запрошенным номером и его GitHub-репозитории нет."
         )
     return (
@@ -189,8 +205,8 @@ def public_overview() -> str:
 def focused_public_evidence(question: str) -> str:
     """Include full authoritative facts only for one explicitly named project.
 
-    General overview questions keep a compact four-project context. This
-    avoids repeating four long details in every prompt while still supplying
+    General overview questions keep a compact published-project context. This
+    avoids repeating all long details in every prompt while still supplying
     GDP's World Bank provenance and Streamlit when GDP is the subject.
     """
     if not isinstance(question, str):

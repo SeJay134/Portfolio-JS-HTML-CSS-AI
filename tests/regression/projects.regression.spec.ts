@@ -1,4 +1,8 @@
 import { test, expect } from "@playwright/test";
+import { projects } from "../../src/data/projects";
+
+const countByCategory = (category?: "Data" | "Web" | "AI") =>
+  category ? projects.filter((project) => project.category === category).length : projects.length;
 
 test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -12,7 +16,7 @@ test("hero links reach projects and contact with the AI API unavailable", async 
   await page.goto("/");
   await page.getByRole("link", { name: "Explore my work", exact: true }).click();
   await expect(page).toHaveURL(/#Projects$/);
-  await expect(page.locator(".project-card")).toHaveCount(5);
+  await expect(page.locator(".project-card")).toHaveCount(countByCategory());
   await expect(page.locator("#Projects h2")).toBeInViewport();
   await page.getByRole("link", { name: "Get in touch", exact: true }).click();
   await expect(page).toHaveURL(/#Connect$/);
@@ -26,8 +30,8 @@ test("keyboard filters preserve the URL and support reload, back, and forward", 
   await ai.focus();
   await page.keyboard.press("Enter");
   await expect(ai).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator("#Projects [role=status]")).toHaveText("1 projects shown");
-  await expect(page.locator(".project-card")).toHaveCount(1);
+  await expect(page.locator("#Projects [role=status]")).toHaveText(`${countByCategory("AI")} projects shown`);
+  await expect(page.locator(".project-card")).toHaveCount(countByCategory("AI"));
   await expect(page).toHaveURL(/\?ref=portfolio&category=AI#Projects$/);
   await page.reload();
   await expect(ai).toHaveAttribute("aria-pressed", "true");
@@ -36,7 +40,7 @@ test("keyboard filters preserve the URL and support reload, back, and forward", 
   const all = filters.getByRole("button", { name: /^All/ });
   await all.click();
   await expect(page).toHaveURL(/\?ref=portfolio#Projects$/);
-  await expect(page.locator(".project-card")).toHaveCount(5);
+  await expect(page.locator(".project-card")).toHaveCount(countByCategory());
 
   await page.goBack();
   await expect(page).toHaveURL(/\?ref=portfolio&category=AI#Projects$/);
@@ -46,12 +50,12 @@ test("keyboard filters preserve the URL and support reload, back, and forward", 
   await expect(page).toHaveURL(/\?ref=portfolio#Projects$/);
   await expect(all).toHaveAttribute("aria-pressed", "true");
   await filters.getByRole("button", { name: /^Data/ }).click();
-  await expect(page.locator(".project-card")).toHaveCount(3);
+  await expect(page.locator(".project-card")).toHaveCount(countByCategory("Data"));
   await filters.getByRole("button", { name: /^Web/ }).click();
-  await expect(page.locator(".project-card")).toHaveCount(1);
+  await expect(page.locator(".project-card")).toHaveCount(countByCategory("Web"));
   await filters.getByRole("button", { name: /^All/ }).click();
   await expect(page).toHaveURL(/\?ref=portfolio#Projects$/);
-  await expect(page.locator(".project-card")).toHaveCount(5);
+  await expect(page.locator(".project-card")).toHaveCount(countByCategory());
 });
 
 test("unknown categories and failed preview images keep cards and details usable", async ({ page }) => {
@@ -64,7 +68,7 @@ test("unknown categories and failed preview images keep cards and details usable
   );
   await page.goto("/?category=unknown#Projects");
   await expect(page.getByRole("button", { name: /^All/ })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator(".project-card")).toHaveCount(5);
+  await expect(page.locator(".project-card")).toHaveCount(countByCategory());
   const card = page.locator(".project-card").first();
   await card.scrollIntoViewIfNeeded();
   await expect(card.locator(".image-fallback")).toBeVisible();
@@ -126,5 +130,5 @@ test("skills link to filtered case studies while experience and contact stay con
   await expect(
     page.getByRole("button", { name: /^Data/ }),
   ).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator(".project-card")).toHaveCount(3);
+  await expect(page.locator(".project-card")).toHaveCount(countByCategory("Data"));
 });

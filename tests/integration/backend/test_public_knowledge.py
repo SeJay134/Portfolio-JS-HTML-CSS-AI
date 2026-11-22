@@ -11,16 +11,21 @@ from llm.splitter import split_text
 from llm.app import LocalPortfolioService
 
 
-def test_verified_catalogue_lists_five_canonical_projects():
+def test_verified_catalogue_lists_ten_canonical_projects():
     docs = load_public_documents()
     overview = public_overview()
-    assert len(docs) == 6
+    assert len(docs) == 11  # overview + ten reviewed projects
     for title in (
         "Chocolate sales dashboard",
         "GDP dashboard",
         "Open API weather explorer",
         "Portfolio website & AI prototype",
         "World Happiness Analytics Pipeline",
+        "WHO life expectancy analysis",
+        "MLB history scraping & dashboard",
+        "Student grade prediction",
+        "Spam classifier comparison",
+        "Image classification with PyTorch",
     ):
         assert title in overview
 
@@ -89,14 +94,9 @@ def test_generation_receives_public_catalogue_and_exposes_only_trusted_sources()
 
 def test_bad_public_catalogue_source_rejected(tmp_path, monkeypatch):
     import llm.public_knowledge as public
-    invalid = {"schema_version": 1, "projects": [
-        {
-            "id": "chocolate",
-            "title": "Chocolate sales dashboard", "summary": "text",
-            "detail": "text", "category": "Data",
-            "tags": ["Python"], "repository": "https://github.com.evil.example/x"
-        }
-    ] * 4}
+    # A valid-size catalogue isolates the malicious-URL validation.
+    invalid = __import__("json").loads(public.CATALOG_PATH.read_text(encoding="utf-8"))
+    invalid["projects"][0]["repository"] = "https://github.com.evil.example/x"
     dest = tmp_path / "catalog.json"
     dest.write_text(__import__("json").dumps(invalid))
     monkeypatch.setattr(public, "CATALOG_PATH", dest)
@@ -141,12 +141,12 @@ def test_generation_links_named_projects_even_when_only_private_notes_retrieved(
 
 
 @pytest.mark.parametrize("question", [
-    "Как называется шестой опубликованный проект Сергея и где его GitHub?",
-    "Какие технологии в шестом проекте?",
-    "Расскажи о 6-м опубликованном проекте.",
-    "What is the sixth published project?",
-    "Tell me about the 6th public project.",
-    "Where is project 6?",
+    "Как называется одиннадцатый опубликованный проект Сергея и где его GitHub?",
+    "Какие технологии в одиннадцатом проекте?",
+    "Расскажи о 11-м опубликованном проекте.",
+    "What is the eleventh published project?",
+    "Tell me about the 11th public project.",
+    "Where is project 11?",
 ])
 def test_unlisted_project_returns_grounded_fallback_without_sources_or_ollama(question):
     class NoGeneration:
@@ -159,7 +159,7 @@ def test_unlisted_project_returns_grounded_fallback_without_sources_or_ollama(qu
     service.model = "test-model"
     result = service.answer(question)
     assert result["sources"] == []
-    assert "5" in result["reply"]
+    assert "10" in result["reply"]
     if response_language(question) == "Russian":
         assert "проект" in result["reply"]
         assert "информации" in result["reply"].casefold()
@@ -170,6 +170,9 @@ def test_unlisted_project_returns_grounded_fallback_without_sources_or_ollama(qu
 def test_ordinal_guard_is_scoped_and_does_not_override_known_projects():
     assert unlisted_project_reply("Расскажи о четвёртом проекте") is None
     assert unlisted_project_reply("What is the 4th project?") is None
+    assert unlisted_project_reply("What is the sixth published project?") is None
+    assert unlisted_project_reply("Where is project #10?") is None
+    assert unlisted_project_reply("Где проект №6?") is None
     assert unlisted_project_reply("What is Sergei's fifth favorite movie?") is None
     assert unlisted_project_reply("What are 5 technologies used by this project?") is None
 
@@ -240,12 +243,12 @@ def test_counted_items_are_not_treated_as_fifth_project(question):
 
 
 @pytest.mark.parametrize("question", [
-    "Where is project #6?",
-    "Где проект №6?",
-    "Tell me about the 6th public project",
-    "Расскажи о 6-м опубликованном проекте",
+    "Where is project #11?",
+    "Где проект №11?",
+    "Tell me about the 11th public project",
+    "Расскажи об 11-м опубликованном проекте",
 ])
-def test_explicit_sixth_project_remains_out_of_range(question):
+def test_explicit_eleventh_project_is_out_of_range(question):
     assert unlisted_project_reply(question) is not None
 
 
