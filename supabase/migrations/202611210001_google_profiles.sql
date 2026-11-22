@@ -39,7 +39,7 @@ begin
   on conflict (id) do nothing;
   return new;
 end;
-$;
+$$;
 revoke all on function private.handle_new_google_profile() from public, anon, authenticated;
 
 drop trigger if exists on_google_account_created on auth.users;
