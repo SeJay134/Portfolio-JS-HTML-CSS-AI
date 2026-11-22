@@ -20,7 +20,7 @@ The dropdown dynamically exposes **only** working routes. It never advertises un
 ## Safety, integrity and privacy
 
 - The UI requires affirmative acceptance of the [prohibited-content rules](/terms/#prohibited-content) before processing each newly selected batch. The checkbox is reset on new selections. This is **policy acknowledgment, not content detection**; see [moderation scope and future requirements](CONTENT_MODERATION.md).
-- Categories beyond adult imagery (e.g. gore, threats, hate, child exploitation, consent/copyright, unlawful material) are **not currently automatically detected**. No universal jurisdiction-aware or server-enforced image moderation exists.
+- Gore and general-violence ONNX prototypes are **research-only, disabled in the production policy**. No category beyond adult imagery is actively screened. Threats, hate, child exploitation, consent/copyright, and jurisdiction-specific illegality are not automatically determined. See [ONNX research](VIOLENCE_GORE_RESEARCH.md) and [active-policy design](MODERATION_ENGINE.md).
 
 
 - No file uploads. Browser-only Canvas, ZIP (using the existing tested ZIP writer), File and DecompressionStream APIs.

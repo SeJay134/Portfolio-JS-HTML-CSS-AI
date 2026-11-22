@@ -32,9 +32,10 @@ export function ContentPolicyGate({ id, checked, disabled = false, onChange }: P
         <span>I confirm I have the right to process these files and that they do not contain prohibited material.</span>
       </label>
       <p className="compressor-note">
-        Current automated screening detects some adult imagery only. It does not reliably
-        detect violence, child exploitation, threats, hate, copyright infringement, or
-        whether a file is legal. This confirmation is not verification or a legal clearance.
+        Active on-device screening checks some adult imagery in supported image inputs.
+        Experimental violence and gore models are not enabled. Document contents,
+        later animation frames, exploitation, threats, hate, consent, copyright, and
+        legality are not reliably verified. This checkbox is acknowledgment, not clearance.
       </p>
     </div>
   );

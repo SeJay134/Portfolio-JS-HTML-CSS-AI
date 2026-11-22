@@ -20,14 +20,15 @@ Policy restrictions are not assertions that every depiction of violence, histori
 
 | Control | Current status | Scope and limitation |
 | --- | --- | --- |
-| Adult imagery | **Automated, best effort** | On-device NSFWJS checks decoded still-frame classifications. No guarantees; false positives/negatives and bypass are possible. |
+| Adult imagery | **Active, automated, best effort** | Shared local moderation engine (`adult-only-v1`) runs NSFWJS on decoded still images in supported image paths. Unverified results fail closed. No guarantees; false positives/negatives and client bypass remain possible. |
 | Unsupported/oversized inputs | **Enforced locally** | Rejected by existing MIME, size and dimension checks. |
 | Content acknowledgment | **Required by UI** | A checkbox gates batch processing but cannot detect content and can be bypassed by modified client code. |
-| Gore, hate symbols, terrorist propaganda, threats, nonconsensual content, copyright, location-specific illegality | **Not automatically detected** | Detection needs separately evaluated models, provenance/consent evidence, contextual review and potentially jurisdiction-specific policy. |
+| Gore and general violence | **Experimental only; not active** | Local ONNX research candidates and synthetic browser inference benchmarks exist (PR B). They are not loaded by the production tools or required by `adult-only-v1`; detection accuracy, model license/provenance, iPhone performance, and thresholds are not validated for enforcement. See [research results](VIOLENCE_GORE_RESEARCH.md). |
+| Hate symbols, terrorist propaganda, threats, child exploitation, nonconsensual content, copyright, location-specific illegality | **Not automatically detected** | Requires specialized safeguards or evidence of context, consent, rights and applicable jurisdiction. Ordinary image classification cannot establish these facts. |
 | File converter document contents | **Not scanned for harmful images** | PDFs and Office documents can contain images; no claim of content screening for embedded pictures. |
 | Server-side anti-abuse/CSAM reporting | **Not implemented** | No user image hosting, upload endpoint, or server-side content store exists in these tools. |
 
-Do not present the content-policy checkbox as a classifier or as proof of compliance.
+Do not present the content-policy checkbox as a classifier or as proof of compliance. `screenImage` continues to use the adult-only decision path. Do not describe the research gore/violence ONNX candidates as active controls: benchmark execution on a synthetic image is not validated detection accuracy. Image files and conversion results remain on-device; only ordinary website/model asset requests reach the hosting server.
 
 ## If uploads, publication, or sharing are added later
 

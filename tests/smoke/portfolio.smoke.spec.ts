@@ -61,7 +61,10 @@ test("portfolio and tool footers link to both public legal pages", async ({ page
 test("public prohibited-content rules are accessible without login", async ({ page }) => {
   await page.goto("/terms/#prohibited-content");
   await expect(page.getByRole("heading", { level: 2, name: "Prohibited content and misuse" })).toBeVisible();
-  await expect(page.locator("#prohibited-content")).toContainText("Automated image screening currently checks some sexual imagery only");
+  await expect(page.locator("#prohibited-content")).toContainText("The active automated check uses an on-device NSFWJS model");
+  await expect(page.locator("#prohibited-content")).toContainText("not enabled");
+  await page.goto("/privacy/");
+  await expect(page.locator("#files")).toContainText("experimental violence and gore models are not enabled");
   await page.goto("/tools/photo-compressor/");
   await expect(page.getByRole("link", { name: "content rules" })).toHaveAttribute("href", "/terms/#prohibited-content");
   await page.goto("/tools/file-converter/");
