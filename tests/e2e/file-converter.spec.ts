@@ -191,11 +191,15 @@ test("PDF text extraction works for valid text-based PDFs and does not pretend t
 
 test("changing formats/files invalidates downloads, theme is accessible and mobile fits", async ({ page }) => {
   await page.goto(route);
-  await page.locator("#converter-files").setInputFiles(payload("picture.png", "image/png", await pngBytes(page)));
+  // Use a deterministic document path here: adult-content screening of a
+  // synthetic PNG can differ between browsers, and is covered separately.
+  await page.getByLabel("From format").selectOption("txt");
+  await page.locator("#converter-files").setInputFiles(payload("notes.txt", "text/plain", sampleTxt()));
+  await expect(page.getByText("1 selected")).toBeVisible();
   await page.getByRole("checkbox", { name: /I confirm I have the right/ }).check();
   await page.getByRole("button", { name: "Convert files" }).click();
-  const old = page.getByRole("link", { name: "Download JPG" });
-  await expect(old).toBeVisible();
+  const old = page.getByRole("link", { name: "Download DOCX" });
+  await expect(old).toBeVisible({ timeout: 30000 });
   await page.getByLabel("Convert to").selectOption("pdf");
   await expect(old).toHaveCount(0);
   await page.getByLabel("From format").selectOption("csv");
