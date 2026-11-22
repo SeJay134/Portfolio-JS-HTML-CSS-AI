@@ -63,8 +63,12 @@ test("public prohibited-content rules are accessible without login", async ({ pa
   await expect(page.getByRole("heading", { level: 2, name: "Prohibited content and misuse" })).toBeVisible();
   await expect(page.locator("#prohibited-content")).toContainText("The active automated check uses an on-device NSFWJS model");
   await expect(page.locator("#prohibited-content")).toContainText("not enabled");
+  await expect(page.locator("#eligibility")).toContainText("not directed to children under 13");
+  await expect(page.locator("#prohibited-content")).toContainText("accept these Terms");
   await page.goto("/privacy/");
   await expect(page.locator("#files")).toContainText("experimental violence and gore models are not enabled");
+  await expect(page.locator("#assistant")).toContainText("self-hosted Flask and Ollama");
+  await expect(page.locator("#retention")).toContainText("no automatic inactivity-based deletion schedule");
   await page.goto("/tools/photo-compressor/");
   await expect(page.getByRole("link", { name: "content rules" })).toHaveAttribute("href", "/terms/#prohibited-content");
   await page.goto("/tools/file-converter/");
