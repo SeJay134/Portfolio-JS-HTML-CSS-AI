@@ -45,6 +45,8 @@ test("100+ photos are selected locally without uploading before safety screening
   await page.locator("#photo-files").setInputFiles(inputs);
   await expect(page.getByText("105 selected")).toBeVisible();
   await page.getByLabel("Max size per photo (KB)").fill("25");
+  await expect(page.getByRole("button", { name: "Compress photos" })).toBeDisabled();
+  await page.getByRole("checkbox", { name: /I confirm I have the right/ }).check();
   await expect(page.getByRole("button", { name: "Compress photos" })).toBeEnabled();
   await expect(page.getByText(/Each photo is checked by an on-device AI filter/)).toBeVisible();
   // Browser E2E must not presume the safety model approves a generated image.
@@ -64,6 +66,7 @@ test("invalid target, unsupported images, and theme changes work without breakin
     { name: "valid.png", mimeType: "image/png", buffer },
   ]);
   await page.getByLabel("Max size per photo (KB)").fill("0");
+  await page.getByRole("checkbox", { name: /I confirm I have the right/ }).check();
   await page.getByRole("button", { name: "Compress photos" }).click();
   await expect(page.getByText("Enter a whole number between 20 and 5000 KB.")).toBeVisible();
   for (const theme of ["light", "dark"]) {
