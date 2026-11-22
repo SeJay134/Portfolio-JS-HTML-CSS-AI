@@ -1,6 +1,9 @@
 name: Experimental local gore ONNX benchmark
 
 on:
+  push:
+    branches:
+      - "feature/local-violence-gore-pr-b"
   pull_request:
     paths:
       - "scripts/prepare-gore-assets.mjs"
