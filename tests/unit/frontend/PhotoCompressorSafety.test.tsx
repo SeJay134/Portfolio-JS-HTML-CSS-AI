@@ -51,6 +51,22 @@ function selectPhotos(names: string[]) {
 }
 
 describe("photo compressor adult-content gating", () => {
+  it("screens every photo in a 105-file batch before making the ZIP", async () => {
+    render(<PhotoCompressorPage />);
+    selectPhotos(Array.from({ length: 105 }, (_, index) => `photo-${index}.png`));
+    await userEvent.setup().click(screen.getByRole("button", { name: /Compress photos/ }));
+    await waitFor(() => expect(screen.getByRole("link", { name: /Download ZIP/ })).toBeInTheDocument());
+    expect(mocks.loadSafetyModel).toHaveBeenCalledTimes(1);
+    expect(mocks.screenImage).toHaveBeenCalledTimes(105);
+    expect(mocks.compressImage).toHaveBeenCalledTimes(105);
+    expect(mocks.createZip).toHaveBeenCalledTimes(1);
+    const entries = mocks.createZip.mock.calls[0][0] as { name: string; blob: Blob }[];
+    expect(entries).toHaveLength(105);
+    expect(new Set(entries.map((entry) => entry.name)).size).toBe(105);
+    expect(entries.every((entry) => entry.name.endsWith(".jpg"))).toBe(true);
+    expect(screen.getByText("105")).toBeInTheDocument();
+  });
+
   it("excludes blocked photos before compression, with no ZIP when all are blocked", async () => {
     mocks.screenImage.mockResolvedValue(true);
     render(<PhotoCompressorPage />);
