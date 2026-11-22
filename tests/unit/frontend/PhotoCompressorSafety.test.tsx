@@ -50,10 +50,30 @@ function selectPhotos(names: string[]) {
   });
 }
 
+async function confirmContentRules() {
+  await userEvent.setup().click(screen.getByRole("checkbox", { name: /I confirm I have the right/ }));
+}
+
 describe("photo compressor adult-content gating", () => {
+  it("requires acknowledgment for each newly selected batch", async () => {
+    render(<PhotoCompressorPage />);
+    selectPhotos(["first.png"]);
+    const button = screen.getByRole("button", { name: /Compress photos/ });
+    expect(button).toBeDisabled();
+    expect(mocks.compressImage).not.toHaveBeenCalled();
+    await confirmContentRules();
+    expect(button).toBeEnabled();
+    selectPhotos(["second.png"]);
+    expect(button).toBeDisabled();
+    expect(screen.getByRole("checkbox", { name: /I confirm I have the right/ })).not.toBeChecked();
+  });
+
+
   it("screens every photo in a 105-file batch before making the ZIP", async () => {
     render(<PhotoCompressorPage />);
     selectPhotos(Array.from({ length: 105 }, (_, index) => `photo-${index}.png`));
+    expect(screen.getByRole("button", { name: /Compress photos/ })).toBeDisabled();
+    await confirmContentRules();
     await userEvent.setup().click(screen.getByRole("button", { name: /Compress photos/ }));
     await waitFor(() => expect(screen.getByRole("link", { name: /Download ZIP/ })).toBeInTheDocument());
     expect(mocks.loadSafetyModel).toHaveBeenCalledTimes(1);
@@ -71,6 +91,7 @@ describe("photo compressor adult-content gating", () => {
     mocks.screenImage.mockResolvedValue(true);
     render(<PhotoCompressorPage />);
     selectPhotos(["blocked.png"]);
+    await confirmContentRules();
     await userEvent.setup().click(screen.getByRole("button", { name: /Compress photos/ }));
     await waitFor(() => expect(screen.getByText(/No photos passed the adult-content check/)).toBeInTheDocument());
     expect(mocks.screenImage).toHaveBeenCalledTimes(1);
@@ -83,6 +104,7 @@ describe("photo compressor adult-content gating", () => {
     mocks.loadSafetyModel.mockRejectedValue(new Error("Safety filter is unavailable"));
     render(<PhotoCompressorPage />);
     selectPhotos(["safe.png"]);
+    await confirmContentRules();
     await userEvent.setup().click(screen.getByRole("button", { name: /Compress photos/ }));
     await waitFor(() => expect(screen.getByText("Safety filter is unavailable")).toBeInTheDocument());
     expect(mocks.screenImage).not.toHaveBeenCalled();
@@ -94,6 +116,7 @@ describe("photo compressor adult-content gating", () => {
     mocks.screenImage.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
     render(<PhotoCompressorPage />);
     selectPhotos(["adult.png", "safe.png"]);
+    await confirmContentRules();
     await userEvent.setup().click(screen.getByRole("button", { name: /Compress photos/ }));
     await waitFor(() => expect(screen.getByText(/Completed: 1 blocked/)).toBeInTheDocument());
     expect(mocks.screenImage).toHaveBeenCalledTimes(2);
