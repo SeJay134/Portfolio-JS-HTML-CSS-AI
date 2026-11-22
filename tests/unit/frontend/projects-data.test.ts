@@ -33,7 +33,6 @@ describe("standalone public project data contract", () => {
 
   it("keeps preview assets local, optimized and meaningfully described", () => {
     for (const project of projects) {
-      if (!project.image) continue;
       expect(project.image).toMatch(/^\/images\/[^/]+\.webp$/);
       expect(project.imageAlt?.trim().length).toBeGreaterThan(20);
     }

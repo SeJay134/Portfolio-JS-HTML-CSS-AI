@@ -99,6 +99,8 @@ export const projects: readonly Project[] = [
     summary:
       "Streamlit-based exploration of WHO life expectancy data, health indicators, and country-level trends.",
     tags: ["Python", "Streamlit", "Pandas", "Plotly", "Data Cleaning"],
+    image: "/images/life-expectancy.webp",
+    imageAlt: "Conceptual illustration of life expectancy data with a world map and trend charts.",
     repository: "https://github.com/SeJay134/Life-Expectancy-WHO-Python",
     detail:
       "Cleans missing values with mean and median imputation, engineers health and economic features, and uses exploratory plots to examine factors related to life expectancy.",
@@ -110,6 +112,8 @@ export const projects: readonly Project[] = [
     summary:
       "Python data pipeline that collects historical baseball statistics and presents them in an interactive Streamlit dashboard.",
     tags: ["Python", "Selenium", "SQLite", "Streamlit", "Plotly"],
+    image: "/images/mlb-history.webp",
+    imageAlt: "Conceptual illustration of a baseball analytics dashboard with season charts and a ballpark.",
     repository: "https://github.com/SeJay134/WebScraping-and-Dashboard-Proj-Python",
     detail:
       "Extracts historical player and league statistics from Baseball Almanac, imports structured records into SQLite, and offers filters and charts for MLB seasons and players.",
@@ -121,6 +125,8 @@ export const projects: readonly Project[] = [
     summary:
       "Exploratory analysis and regression models to understand and predict final student math grades.",
     tags: ["Python", "Pandas", "scikit-learn", "Regression"],
+    image: "/images/student-math.webp",
+    imageAlt: "Conceptual illustration of student grade prediction with regression and distribution charts.",
     repository: "https://github.com/SeJay134/student_math_performance_analysis_and_grade_prediction",
     detail:
       "Analyzes academic and demographic factors, handles students who did not take the final exam, and compares baseline and feature-rich linear regression models using RMSE and R².",
@@ -132,6 +138,8 @@ export const projects: readonly Project[] = [
     summary:
       "Machine learning study comparing several classifiers on the UCI Spambase email dataset.",
     tags: ["Python", "scikit-learn", "PCA", "Classification"],
+    image: "/images/spam-classifier.webp",
+    imageAlt: "Conceptual illustration of spam classification with email icons, scatter plots and model metrics.",
     repository: "https://github.com/SeJay134/Spam_Classification_with_Machine_Learning-_A_Classifier_Shootout",
     detail:
       "Benchmarks KNN, decision trees, random forests, and logistic regression with scaling, PCA, five-fold cross-validation, and precision, recall, and F1 evaluation.",
@@ -143,6 +151,8 @@ export const projects: readonly Project[] = [
     summary:
       "Comparison of pretrained CNNs on six outdoor scene categories, including inference speed and transfer learning.",
     tags: ["Python", "PyTorch", "TorchVision", "CNN", "Transfer Learning"],
+    image: "/images/image-classification.webp",
+    imageAlt: "Conceptual illustration of computer vision with landscape thumbnails and neural network analysis.",
     repository: "https://github.com/SeJay134/Image_Classification_with_Pretrained_CNNs_-PyTorch-",
     detail:
       "Evaluates ResNet18, MobileNetV3-Small, and EfficientNet-B0 using confidence and latency analysis, PCA feature visualization, and a fine-tuned classification head.",
