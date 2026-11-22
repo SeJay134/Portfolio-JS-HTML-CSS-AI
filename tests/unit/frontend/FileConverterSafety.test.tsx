@@ -50,12 +50,33 @@ function chooseFile(file: File) {
   fireEvent.change(input, { target: { files: [file] } });
 }
 
+async function confirmContentRules() {
+  await userEvent.setup().click(screen.getByRole("checkbox", { name: /I confirm I have the right/ }));
+}
+
 describe("file converter image content policy", () => {
+  it("does not convert a selected file before acknowledgment and resets it on new files", async () => {
+    render(<FileConverterPage />);
+    chooseFile(new File(["data"], "first.png", { type: "image/png" }));
+    await screen.findByText("1 selected");
+    const button = screen.getByRole("button", { name: /Convert files/ });
+    expect(button).toBeDisabled();
+    expect(mocks.convertFile).not.toHaveBeenCalled();
+    await confirmContentRules();
+    expect(button).toBeEnabled();
+    chooseFile(new File(["data"], "second.png", { type: "image/png" }));
+    await screen.findByText("1 selected");
+    expect(button).toBeDisabled();
+    expect(screen.getByRole("checkbox", { name: /I confirm I have the right/ })).not.toBeChecked();
+  });
+
+
   it("blocks adult images before conversion", async () => {
     mocks.screenImage.mockResolvedValue(true);
     render(<FileConverterPage />);
     chooseFile(new File(["data"], "adult.png", { type: "image/png" }));
     await screen.findByText("1 selected");
+    await confirmContentRules();
     await userEvent.setup().click(screen.getByRole("button", { name: /Convert files/ }));
     await waitFor(() => expect(screen.getByText(/No images passed the adult-content check/)).toBeInTheDocument());
     expect(mocks.screenImage).toHaveBeenCalledTimes(1);
@@ -68,6 +89,7 @@ describe("file converter image content policy", () => {
     render(<FileConverterPage />);
     chooseFile(new File(["data"], "photo.png", { type: "image/png" }));
     await screen.findByText("1 selected");
+    await confirmContentRules();
     await userEvent.setup().click(screen.getByRole("button", { name: /Convert files/ }));
     await waitFor(() => expect(screen.getByText("Safety model unavailable")).toBeInTheDocument());
     expect(mocks.convertFile).not.toHaveBeenCalled();
@@ -78,6 +100,7 @@ describe("file converter image content policy", () => {
     await userEvent.setup().selectOptions(screen.getByLabelText("From format"), "txt");
     chooseFile(new File(["notes"], "notes.txt", { type: "text/plain" }));
     await screen.findByText("1 selected");
+    await confirmContentRules();
     await userEvent.setup().click(screen.getByRole("button", { name: /Convert files/ }));
     await waitFor(() => expect(screen.getByText("Your converted files are ready.")).toBeInTheDocument());
     expect(mocks.loadSafetyModel).not.toHaveBeenCalled();

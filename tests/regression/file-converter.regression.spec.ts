@@ -10,6 +10,7 @@ test("converter: mismatched content does not leak downloads, resets state, prese
   ]);
   await expect(page.getByText("1 selected")).toBeVisible();
   await expect(page.getByRole("alert")).toContainText("Invalid file format. Choose another file.");
+  await page.getByRole("checkbox", { name: /I confirm I have the right/ }).check();
   await page.getByRole("button", { name: "Convert files" }).click();
   await expect(page.getByRole("link", { name: "Download TXT" })).toBeVisible();
   await page.getByLabel("From format").selectOption("txt");
@@ -17,6 +18,7 @@ test("converter: mismatched content does not leak downloads, resets state, prese
   await page.locator("#converter-files").setInputFiles([
     { name: "note.txt", mimeType: "text/plain", buffer: sampleTxt() },
   ]);
+  await page.getByRole("checkbox", { name: /I confirm I have the right/ }).check();
   await page.getByRole("button", { name: "Convert files" }).click();
   await expect(page.getByRole("link", { name: "Download DOCX" })).toBeVisible();
   await page.getByLabel("Color theme").selectOption("dark");

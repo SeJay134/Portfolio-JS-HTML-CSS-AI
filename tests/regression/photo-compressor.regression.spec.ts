@@ -14,6 +14,7 @@ test("corrupt files do not block good photos, stale downloads are cleared, and t
     { name: "corrupt.jpg", mimeType: "image/jpeg", buffer: Buffer.from("not a JPEG") },
     { name: "valid.png", mimeType: "image/png", buffer: Buffer.from(dataUrl.split(",")[1], "base64") },
   ]);
+  await page.getByRole("checkbox", { name: /I confirm I have the right/ }).check();
   await page.getByRole("button", { name: "Compress photos" }).click();
   const downloadLink = page.getByRole("link", { name: "Download ZIP" });
   await expect(downloadLink).toBeVisible({ timeout: 90000 });

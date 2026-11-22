@@ -28,6 +28,10 @@
 
 ## Abuse prevention and limitations
 
+- The UI requires affirmative acceptance of the [prohibited-content rules](/terms/#prohibited-content) before processing each newly selected batch. The checkbox is reset on new selections. This is **policy acknowledgment, not content detection**; see [moderation scope and future requirements](CONTENT_MODERATION.md).
+- Gore and general-violence ONNX prototypes are **research-only, disabled in the production policy**. No category beyond adult imagery is actively screened. Threats, hate, child exploitation, consent/copyright, and jurisdiction-specific illegality are not automatically determined. See [ONNX research](VIOLENCE_GORE_RESEARCH.md) and [active-policy design](MODERATION_ENGINE.md).
+
+
 - All checking and compression happens in the browser; there are no image uploads or saved user photos.
 - The selected image is checked as a decoded still frame. Animated formats are exported as stills; later frames are not reviewed.
 - Classifier thresholds are a policy heuristic, not a certified content safety standard. False positives and false negatives remain possible. Cropped, obscured or manipulated content can evade classification.

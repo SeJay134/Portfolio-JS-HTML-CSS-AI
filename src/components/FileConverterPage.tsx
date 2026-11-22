@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Drawer } from "./Drawer";
 import { Icon } from "./Icon";
 import { AccountMenu } from "../auth/AccountMenu";
+import { ContentPolicyGate } from "./ContentPolicyGate";
 import { useTheme } from "../hooks/useTheme";
 import { loadSafetyModel, screenImage } from "../lib/contentSafety";
 import { createZip, formatBytes, type ZipEntry } from "../lib/photoCompressor";
@@ -49,6 +50,7 @@ export function FileConverterPage() {
   const [message, setMessage] = useState("");
   const [failures, setFailures] = useState<Failure[]>([]);
   const [blocked, setBlocked] = useState(0);
+  const [policyConfirmed, setPolicyConfirmed] = useState(false);
   const [download, setDownload] = useState<Download | null>(null);
   useEffect(() => () => {
     selectionGeneration.current++;
@@ -77,6 +79,7 @@ export function FileConverterPage() {
     setFrom(value);
     setTo(OUTPUT_FORMATS[value][0]);
     setFiles([]); setRejected([]); setValidationBusy(false);
+    setPolicyConfirmed(false);
     if (fileInput.current) fileInput.current.value = "";
     clearResults();
   }
@@ -85,6 +88,7 @@ export function FileConverterPage() {
     if (busy) return;
     const ticket = ++selectionGeneration.current;
     clearResults();
+    setPolicyConfirmed(false);
     setFiles([]);
     setRejected([]);
     const selection = Array.from(source ?? []);
@@ -113,6 +117,10 @@ export function FileConverterPage() {
 
   async function runConversion() {
     if (busy || validationBusy || files.length === 0) return;
+    if (!policyConfirmed) {
+      setMessage("Confirm the content rules before converting files.");
+      return;
+    }
     clearResults();
     setBusy(true);
     const controller = new AbortController();
@@ -282,9 +290,15 @@ export function FileConverterPage() {
                 {rejected.length > 3 ? "…" : ""}
               </p>
             )}
+            <ContentPolicyGate
+              id="converter-content-policy"
+              checked={policyConfirmed}
+              disabled={busy || validationBusy}
+              onChange={setPolicyConfirmed}
+            />
             <div className="compressor-actions">
               <button type="button" className="button primary"
-                disabled={busy || validationBusy || files.length === 0}
+                disabled={busy || validationBusy || files.length === 0 || !policyConfirmed}
                 onClick={() => void runConversion()}>
                 Convert files <Icon name="arrow" size={18} />
               </button>
