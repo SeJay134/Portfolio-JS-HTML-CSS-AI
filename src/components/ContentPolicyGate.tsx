@@ -29,7 +29,7 @@ export function ContentPolicyGate({ id, checked, disabled = false, onChange }: P
           disabled={disabled}
           onChange={(event) => onChange(event.currentTarget.checked)}
         />
-        <span>I confirm I have the right to process these files and that they do not contain prohibited material.</span>
+        <span>I confirm I have the right to process these files, that they comply with the prohibited-content rules, and that I have read and agree to the Terms of Service.</span>
       </label>
       <p className="compressor-note">
         Active on-device screening checks some adult imagery in supported image inputs.
