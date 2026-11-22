@@ -15,8 +15,8 @@ consent, copyright status, terrorism, threats, or general violence.
 
 Benchmarked here means **screened candidates for suitability by documented
 weight download footprint, licensing, task coverage and known limitations**,
-plus an optional direct desktop browser inference benchmark for the selected
-model. Do not confuse this with a validated precision/recall benchmark.
+plus an optional direct desktop browser inference benchmark for the two
+ONNX research candidates. Do not confuse this with a validated precision/recall benchmark.
 To print the source-derived comparison:
 
     node scripts/benchmark-moderation-candidates.mjs
@@ -51,13 +51,19 @@ Sources:
    produce a provisional flag; 0.5 is **NOT** a calibrated policy threshold.
 2. "violenceDetector.ts" defines a separate binary violence detector
    interface for evaluation but ships **no vetted general-violence model**.
+   "localViolenceCandidate.ts" provides a separate, opt-in **raw-logit probe**
+   using the 86.8 MB quantized ViT and its specified [-1,1] normalization.
+   It intentionally does not map logits to a safety verdict while the class
+   ordering remains unverified, and is never called by public tools.
 3. "localGoreCandidate.ts" loads an ONNX WASM runtime and 13.1 MB ONNX
    model from **this site's own origin only**, verifies the model's SHA-256,
    creates a 224 x 224 float32 RGB/NCHW tensor, and runs inference inside
    the browser. Zero image data is POSTed or stored. No CDN URLs appear in
    the runtime. The JS model loader is not invoked by either public tool.
 4. The optional "scripts/prepare-gore-assets.mjs" downloads **only model
-   weights and runtime code on the developer or CI machine**. The model
+   weights and runtime code on the developer or CI machine**. With
+   "--include-violence" it also downloads and SHA256-verifies the optional
+   ViT quantized ONNX research weights. The model
    SHA256 and the ONNX Runtime 1.24.3 NPM tarball SHA512 are checked before
    files are written under "public/experimental-gore/". Generated binaries
    are git-ignored; a site build without prepared assets has no gore model.
@@ -72,13 +78,13 @@ Sources:
 
     npm ci
     node scripts/benchmark-moderation-candidates.mjs
-    node scripts/prepare-gore-assets.mjs
+    node scripts/prepare-gore-assets.mjs --include-violence
     npx playwright install --with-deps chromium
-    RUN_GORE_BENCHMARK=1 npx playwright test --config playwright.gore.config.ts
+    RUN_GORE_BENCHMARK=1 RUN_VIOLENCE_BENCHMARK=1 npx playwright test --config playwright.gore.config.ts
 
 The last command runs locally in Chromium and prints p50/p95 warm-inference
-latency from the **actual** ONNX model on a synthetic canvas and cold model
-load time. This is *hardware-specific*, *not a dataset accuracy benchmark*,
+latency for **both actual ONNX candidates** on the same synthetic canvas
+and each model's cold setup time. This is *hardware-specific*, *not a dataset accuracy benchmark*,
 and does not establish iPhone Safari performance. It also checks that
 browser model/runtime requests stay same-origin and that no media POSTs
 occur. The experimental GitHub Actions workflow runs the same probe.
@@ -99,6 +105,29 @@ This is ONE candidate on a synthetic still image (5 measured inferences after
 | Model outcome on synthetic safe fixture | allow |
 | Actual image uploads | none |
 
+### Two-candidate measured benchmark — same GitHub Linux/Chromium runner
+
+Source: [experimental workflow #45047345543](https://github.com/SeJay134/Portfolio-JS-HTML-CSS-AI/actions/runs/45047345543).
+Both models passed real browser-side inference (each: 1 warmup + 5 timed
+passes of the **same synthetic, safe canvas**). No photos were uploaded.
+Model artifacts were downloaded only by CI and verified by pinned hashes.
+
+| Metric | Owen XS, NSFL/gore | ViT INT8, general violence probe |
+| --- | ---: | ---: |
+| Verified ONNX bytes | 13,137,569 | 86,803,109 |
+| Cold model/runtime setup | 893 ms | 2,270 ms |
+| Inference p50 | 84.8 ms | 748.7 ms |
+| Inference p95 | 90.0 ms | 845.9 ms |
+| Inference mean | 85.48 ms | 760.08 ms |
+| Output policy meaning | Provisional NSFL score only | **Raw logits only — class mapping unverified** |
+| Enforcement status | Disabled | Disabled |
+
+The ViT candidate was roughly **9× slower** in this small, single-host
+comparison, with more than six times the model download size. This does
+not establish device-independent performance, iPhone viability, real
+precision/recall, or legal/ethical suitability. No assertion about either
+model's safety accuracy follows from a synthetic test.
+
 Caution: running a sequential 100–300 image batch involves more than multiplying
 this inference-only benchmark by the photo count. Load time, decoding, the
 existing NSFWJS screen, memory pressure and iOS Safari performance differ.
@@ -116,7 +145,8 @@ security, and record real-device benchmarks before considering deployment.
   *non-graphic violence* on legally obtained, vetted and representative
   datasets, including legitimate artistic, documentary and medical cases.
 - Determine calibrated thresholds and a contextual review policy.
-- Find and independently validate a separate **general violence** model.
+- Independently validate the quantized ViT **general violence** candidate,
+  establish its missing class-label mapping, or select a more suitable model.
 - Validate model dataset licensing, data provenance, and the right to
   redistribute all binary assets; retain MIT/Apache notices as applicable.
 - Handle animation frames or explicitly exclude formats with unreviewed
