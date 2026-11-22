@@ -3,7 +3,7 @@
  * a detector for that category has been implemented or validated.
  */
 export const MODERATION_CATEGORIES = [
-  "adult", "graphic_violence", "self_harm", "threatening_text",
+  "adult", "graphic_violence", "gore", "self_harm", "threatening_text",
 ] as const;
 
 export type ModerationCategory = (typeof MODERATION_CATEGORIES)[number];
