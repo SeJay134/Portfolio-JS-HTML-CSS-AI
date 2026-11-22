@@ -90,9 +90,10 @@ describe("moderation engine", () => {
 
   it("fails closed for missing, duplicate, invalid or throwing detectors", async () => {
     expect((await moderateCanvas(canvas(), [])).verdict).toBe("unverified");
-    expect((await moderateCanvas(canvas(), [
+    const duplicate = await moderateCanvas(canvas(), [
       detector("adult", "allow"), detector("adult", "allow"),
-    ])).toMatchObject({ verdict: "unverified" });
+    ]);
+    expect(duplicate.verdict).toBe("unverified");
     expect((await moderateCanvas(canvas(), [detector("adult", "throw")])).verdict)
       .toBe("unverified");
     const invalid = detector("adult", "allow");
