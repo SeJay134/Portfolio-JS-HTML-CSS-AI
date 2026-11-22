@@ -1907,3 +1907,44 @@ details p {
   .site-footer { gap: 12px; }
   .footer-legal { justify-content: center; width: 100%; }
 }
+
+/* Explicit prohibited-content confirmation for local image/file tools. */
+.content-policy-gate {
+  margin-top: 22px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.content-policy-gate .compressor-note {
+  margin: 0 0 12px;
+  line-height: 1.6;
+}
+.content-policy-gate .compressor-note:last-child { margin-bottom: 0; }
+.content-policy-gate .compressor-note a {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.content-policy-confirmation {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  font-weight: 600;
+}
+.content-policy-confirmation input {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  accent-color: var(--accent);
+}
+.content-policy-confirmation input:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+.content-policy-confirmation:has(input:disabled) { cursor: not-allowed; }
