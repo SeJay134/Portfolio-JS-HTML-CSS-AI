@@ -83,6 +83,27 @@ and does not establish iPhone Safari performance. It also checks that
 browser model/runtime requests stay same-origin and that no media POSTs
 occur. The experimental GitHub Actions workflow runs the same probe.
 
+### Recorded first benchmark — GitHub Actions, Ubuntu 24.04 / Chromium
+
+Source: [experimental workflow #45047036160](https://github.com/SeJay134/Portfolio-JS-HTML-CSS-AI/actions/runs/45047036160).
+This is ONE candidate on a synthetic still image (5 measured inferences after
+1 warmup), not a cross-model accuracy comparison or mobile-device test.
+
+| Measurement | Observed result |
+| --- | ---: |
+| Candidate ONNX model bytes (SHA-256 verified) | 13,137,569 |
+| Model+runtime cold setup | 817 ms |
+| Inference median / p50 | 76.8 ms |
+| Inference p95 | 83.4 ms |
+| Inference mean | 77.84 ms |
+| Model outcome on synthetic safe fixture | allow |
+| Actual image uploads | none |
+
+Caution: running a sequential 100–300 image batch involves more than multiplying
+this inference-only benchmark by the photo count. Load time, decoding, the
+existing NSFWJS screen, memory pressure and iOS Safari performance differ.
+No reliable violence/gore recall or false-positive rate has been measured.
+
 Generated binaries must **not** be checked into Git or automatically
 downloaded by ordinary users. Run tests first, review model attribution and
 security, and record real-device benchmarks before considering deployment.
