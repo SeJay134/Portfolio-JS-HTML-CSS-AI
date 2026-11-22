@@ -79,7 +79,7 @@ for (const [tool, name] of [
     });
     await page.goto(tool);
     await page.getByRole("button", { name: "Continue with Google" }).click();
-    await expect(page).toHaveURL(/mock\\.supabase\\.co\\/auth\\/v1\\/authorize/);
+    await expect.poll(() => page.url()).toContain("mock.supabase.co/auth/v1/authorize");
     const url = new URL(authorizeUrl);
     expect(url.searchParams.get("provider")).toBe("google");
     expect(url.searchParams.get("redirect_to")).toBe(appOrigin + "/auth/callback/");
@@ -113,7 +113,7 @@ test("mocked OAuth callback saves session and returns to the selected tool", asy
   });
   await page.goto("/tools/file-converter/");
   await page.getByRole("button", { name: "Continue with Google" }).click();
-  await expect(page).toHaveURL(/\\/tools\\/file-converter\\/$/, { timeout: 15000 });
+  await expect(page).toHaveURL(appOrigin + "/tools/file-converter/", { timeout: 15000 });
   await expect(page.locator("#converter-files")).toHaveCount(1);
   expect(exchanged).toBe(true);
   expect(await page.evaluate((key) => sessionStorage.getItem(key), returnPathKey)).toBeNull();
