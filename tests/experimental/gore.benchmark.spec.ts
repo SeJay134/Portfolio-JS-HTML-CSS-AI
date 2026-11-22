@@ -7,7 +7,7 @@ test("experimental gore ONNX model loads and benchmarks locally with safe synthe
   const posts: string[] = [];
   page.on("request", request => {
     if (request.url().includes("experimental-gore")) requests.push(request.url());
-    if (request.method() === "POST" && request.url().includes("experimental-gore")) {
+    if (request.method() === "POST") {
       posts.push(request.url());
     }
   });
