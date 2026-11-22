@@ -334,6 +334,10 @@ export function PhotoCompressorPage() {
       <footer className="site-footer">
         <a className="wordmark" href="/" aria-label="Back to portfolio">SP<span>.</span></a>
         <p>© {new Date().getFullYear()} Sergei Patrushev</p>
+        <nav className="footer-legal" aria-label="Legal">
+          <a href="/privacy/">Privacy Policy</a>
+          <a href="/terms/">Terms of Service</a>
+        </nav>
         <a href="/">Back to portfolio ↑</a>
       </footer>
     </>
