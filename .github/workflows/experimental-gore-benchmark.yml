@@ -33,10 +33,11 @@ jobs:
       - name: Model candidate download-size research
         run: node scripts/benchmark-moderation-candidates.mjs
       - name: Download and verify pinned model and local WASM runtime
-        run: node scripts/prepare-gore-assets.mjs
+        run: node scripts/prepare-gore-assets.mjs --include-violence
       - name: Install browser
         run: npx playwright install --with-deps chromium
       - name: Benchmark actual local inference on synthetic canvas
         env:
           RUN_GORE_BENCHMARK: "1"
+          RUN_VIOLENCE_BENCHMARK: "1"
         run: npx playwright test --config playwright.gore.config.ts

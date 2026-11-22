@@ -23,7 +23,7 @@ type OrtSession = {
   readonly outputNames: readonly string[];
   run(feeds: Record<string, unknown>): Promise<Record<string, OrtTensor>>;
 };
-type OrtRuntime = {
+export type OrtRuntime = {
   env: { wasm: { wasmPaths: string; numThreads: number } };
   Tensor: new (type: "float32", data: Float32Array, dims: number[]) => unknown;
   InferenceSession: {
@@ -40,7 +40,7 @@ declare global {
 let runtimePromise: Promise<OrtRuntime> | undefined;
 let detectorPromise: Promise<ModerationDetector> | undefined;
 
-function sameOriginAsset(path: string): string {
+export function sameOriginAsset(path: string): string {
   const url = new URL(path, window.location.origin);
   if (url.origin !== window.location.origin || !url.pathname.startsWith(ROOT)) {
     throw new SafetyCheckError("A local moderation asset path is invalid.");
@@ -48,7 +48,7 @@ function sameOriginAsset(path: string): string {
   return url.href;
 }
 
-async function loadLocalRuntime(): Promise<OrtRuntime> {
+export async function loadLocalRuntime(): Promise<OrtRuntime> {
   if (!runtimePromise) {
     runtimePromise = (async () => {
       if (!window.ort) {

@@ -19,6 +19,11 @@ const NPM_TARBALL =
   "https://registry.npmjs.org/onnxruntime-web/-/onnxruntime-web-1.24.3.tgz";
 const NPM_SHA512 =
   "41dDq7fxtTm0XzGE7N0d6m8FcOY8EWtUA65GkOixJPB/G7DGzBmiDAnVVXHznRw9bgUZpb+4/1lQK/PNxGpbrQ==";
+const VIOLENCE_MODEL_URL =
+  "https://huggingface.co/onnx-community/vit-base-violence-detection-ONNX/resolve/main/onnx/model_int8.onnx";
+const VIOLENCE_MODEL_SHA256 =
+  "90f5f918763d0b2d74a1b1798a428065bee0be9862110d8a86048806f3f1f361";
+const includeViolence = process.argv.includes("--include-violence");
 const RUNTIME_ASSETS = [
   "ort.wasm.min.js",
   "ort-wasm-simd-threaded.mjs",
@@ -96,11 +101,26 @@ await writeFile(resolve(DIR, "image-safety-classifier-xs.onnx"), model);
 for (const file of RUNTIME_ASSETS) {
   await writeFile(resolve(DIR, file), entries.get("package/dist/" + file));
 }
+let violenceModel;
+if (includeViolence) {
+  console.log("Preparing optional 86.8 MB general-violence model for benchmark only...");
+  violenceModel = await fetchBytes(VIOLENCE_MODEL_URL, 105_000_000);
+  if (digest("sha256", violenceModel, "hex") !== VIOLENCE_MODEL_SHA256) {
+    throw new Error("ViT violence model SHA-256 mismatch. Do not use this model.");
+  }
+  await writeFile(resolve(DIR, "violence-vit-int8.onnx"), violenceModel);
+}
 const manifest = {
   model: "OwenElliott/image-safety-classifier-xs",
   modelSha256: MODEL_SHA256,
   modelBytes: model.byteLength,
   runtime: "onnxruntime-web@1.24.3",
+  violenceBenchmarkModel: violenceModel ? {
+    name: "onnx-community/vit-base-violence-detection-ONNX (int8)",
+    modelSha256: VIOLENCE_MODEL_SHA256,
+    modelBytes: violenceModel.byteLength,
+    enforcementApproved: false,
+  } : null,
   assetHashes: Object.fromEntries(RUNTIME_ASSETS.map((name) =>
     [name, digest("sha256", entries.get("package/dist/" + name), "hex")])),
   purpose: "Non-production research; not a calibrated safety filter",
