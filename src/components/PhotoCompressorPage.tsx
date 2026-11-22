@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Drawer } from "./Drawer";
 import { Icon } from "./Icon";
 import { AccountMenu } from "../auth/AccountMenu";
+import { ContentPolicyGate } from "./ContentPolicyGate";
 import { useTheme } from "../hooks/useTheme";
 import {
   loadSafetyModel, MAX_BATCH_FILES, screenImage,
@@ -34,6 +35,7 @@ export function PhotoCompressorPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [rejected, setRejected] = useState(0);
   const [blocked, setBlocked] = useState(0);
+  const [policyConfirmed, setPolicyConfirmed] = useState(false);
   const [limit, setLimit] = useState(String(DEFAULT_TARGET_KB));
   const [busy, setBusy] = useState(false);
   const [processed, setProcessed] = useState(0);
@@ -66,6 +68,7 @@ export function PhotoCompressorPage() {
 
   function chooseFiles(selected: FileList | null) {
     clearDownload();
+    setPolicyConfirmed(false);
     const collection = Array.from(selected ?? []);
     const valid = collection.filter(isImageFile);
     setRejected(collection.length - Math.min(valid.length, MAX_BATCH_FILES));
@@ -74,6 +77,10 @@ export function PhotoCompressorPage() {
 
   async function processBatch() {
     if (!files.length || busy) return;
+    if (!policyConfirmed) {
+      setMessage("Confirm the content rules before processing photos.");
+      return;
+    }
     let maxBytes: number;
     try {
       maxBytes = targetBytes(limit);
@@ -275,11 +282,17 @@ export function PhotoCompressorPage() {
               The size is a maximum, not an exact amount. Higher compression can reduce
               image resolution and detail. Originals stay unchanged.
             </p>
+            <ContentPolicyGate
+              id="photo-content-policy"
+              checked={policyConfirmed}
+              disabled={busy}
+              onChange={setPolicyConfirmed}
+            />
             <div className="compressor-actions">
               <button
                 type="button"
                 className="button primary"
-                disabled={busy || files.length === 0}
+                disabled={busy || files.length === 0 || !policyConfirmed}
                 onClick={() => void processBatch()}
               >
                 Compress photos <Icon name="arrow" size={18} />
