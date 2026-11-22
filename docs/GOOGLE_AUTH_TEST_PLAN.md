@@ -12,7 +12,7 @@ refresh tokens from real users, or a production `service_role` key.
 - `node --test tests/integration/frontend/google-auth-guard.test.mjs`:
   server-side authentication and profile-status authorization.
 - `VITE_ENABLE_GOOGLE_AUTH=true VITE_SUPABASE_URL=https://mock.supabase.co VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_test_only npm run build`
-  followed by `npx playwright test --config playwright.auth.config.ts --project=chromium`:
+  followed by `npx playwright test --config playwright.auth.config.ts` (Chromium and Safari WebKit):
   full browser tests of both protected tools, cached sessions, logout,
   OAuth PKCE parameters, callback/session exchange, and invalid callbacks.
 
