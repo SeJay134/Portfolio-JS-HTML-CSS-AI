@@ -99,8 +99,8 @@ jobs:
         with: { node-version: "22", cache: npm }
       - run: npm ci
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
-      - run: npx playwright test --config playwright.auth.config.ts --project=chromium
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npx playwright test --config playwright.auth.config.ts
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
