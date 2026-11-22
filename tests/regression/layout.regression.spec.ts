@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { projects } from "../../src/data/projects";
 
 for (const theme of ["light", "dark"] as const) {
   for (const width of [320, 360, 390, 768, 1024, 1440]) {
@@ -44,7 +45,7 @@ for (const theme of ["light", "dark"] as const) {
       for (const summary of await page.locator(".project-card summary").all()) {
         await summary.click();
       }
-      await expect(page.locator(".project-card details[open]")).toHaveCount(5);
+      await expect(page.locator(".project-card details[open]")).toHaveCount(projects.length);
       const problems = await page.evaluate(() => {
         const problems: string[] = [];
         if (document.documentElement.scrollWidth > innerWidth)
