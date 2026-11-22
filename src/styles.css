@@ -494,6 +494,21 @@ svg {
 .art-portfolio {
   background: #122535;
 }
+.art-life-expectancy {
+  background: linear-gradient(135deg, #e0ede8, #d8e7ed);
+}
+.art-mlb-history {
+  background: linear-gradient(135deg, #e9e3f2, #dce9f2);
+}
+.art-student-math {
+  background: linear-gradient(135deg, #e8e9f5, #dce5ef);
+}
+.art-spam-classifier {
+  background: linear-gradient(135deg, #f2e8dc, #e6e8ee);
+}
+.art-image-classification {
+  background: linear-gradient(135deg, #e2e9f1, #e2eee6);
+}
 .project-art img {
   width: 100%;
   height: 100%;
@@ -532,6 +547,37 @@ svg {
   font-size: 0.75rem;
   color: #243248;
   min-width: 0;
+}
+.project-artwork {
+  width: 100%;
+  max-width: 100%;
+  padding: 28px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.project-artwork strong {
+  max-width: 340px;
+  overflow-wrap: anywhere;
+  font-family: inherit;
+  font-size: clamp(1.15rem, 2vw, 1.7rem);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+.project-artwork .code-muted {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.artwork-caption {
+  border-top: 1px solid #a6b9c5;
+  padding-top: 12px;
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #526476;
 }
 .art-portfolio .code-art {
   color: #d2e3ee;

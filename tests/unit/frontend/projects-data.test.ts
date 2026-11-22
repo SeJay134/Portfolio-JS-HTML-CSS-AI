@@ -7,12 +7,18 @@ const expectedRepositories = {
   api: "https://github.com/SeJay134/Open-API-Project-JS",
   portfolio: "https://github.com/SeJay134/Portfolio-JS-HTML-CSS",
   "world-happiness": "https://github.com/SeJay134/World_Happiness_Pipeline",
+  "life-expectancy": "https://github.com/SeJay134/Life-Expectancy-WHO-Python",
+  "mlb-history": "https://github.com/SeJay134/WebScraping-and-Dashboard-Proj-Python",
+  "student-math": "https://github.com/SeJay134/student_math_performance_analysis_and_grade_prediction",
+  "spam-classifier": "https://github.com/SeJay134/Spam_Classification_with_Machine_Learning-_A_Classifier_Shootout",
+  "image-classification": "https://github.com/SeJay134/Image_Classification_with_Pretrained_CNNs_-PyTorch-",
 } as const;
 
 describe("standalone public project data contract", () => {
-  it("contains four curated local project records with unique IDs", () => {
+  it("contains ten curated local project records with unique IDs", () => {
     expect(projects.map((project) => project.id)).toEqual([
       "chocolate", "gdp", "api", "portfolio", "world-happiness",
+      "life-expectancy", "mlb-history", "student-math", "spam-classifier", "image-classification",
     ]);
     expect(new Set(projects.map((project) => project.id)).size).toBe(projects.length);
   });
@@ -34,8 +40,8 @@ describe("standalone public project data contract", () => {
   });
 
   it("filters local project data and supports an explicit empty state", () => {
-    expect(filterProjects(projects, "AI").map((project) => project.id)).toEqual(["portfolio"]);
-    expect(filterProjects(projects, "All")).toHaveLength(5);
+    expect(filterProjects(projects, "AI").map((project) => project.id)).toEqual(["portfolio", "student-math", "spam-classifier", "image-classification"]);
+    expect(filterProjects(projects, "All")).toHaveLength(10);
     expect(filterProjects([], "Data")).toEqual([]);
   });
 

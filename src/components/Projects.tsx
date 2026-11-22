@@ -111,15 +111,19 @@ export function Projects() {
                         <span className="node-label">grounded answer</span>
                       </>
                     ) : (
-                      <>
+                      <div className="project-artwork">
                         <span className="code-muted">
-                          const response = await
+                          {project.tags.slice(0, 2).join(" / ")}
                         </span>
-                        <strong>fetch(possibilities)</strong>
-                        <span className="code-muted">
-                          // turn data into something useful
+                        <strong>{project.title}</strong>
+                        <span className="artwork-caption">
+                          {project.category === "AI"
+                            ? "Learn · Evaluate · Predict"
+                            : project.category === "Data"
+                              ? "Collect · Transform · Visualize"
+                              : "Design · Build · Connect"}
                         </span>
-                      </>
+                      </div>
                     )}
                   </div>
                 )}
