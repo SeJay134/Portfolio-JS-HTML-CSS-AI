@@ -494,6 +494,10 @@ export default function App() {
           SP<span>.</span>
         </a>
         <p>© {new Date().getFullYear()} Sergei Patrushev</p>
+        <nav className="footer-legal" aria-label="Legal">
+          <a href="/privacy/">Privacy Policy</a>
+          <a href="/terms/">Terms of Service</a>
+        </nav>
         <a href="#Home">Back to top ↑</a>
       </footer>
       <MobileBottomNav
