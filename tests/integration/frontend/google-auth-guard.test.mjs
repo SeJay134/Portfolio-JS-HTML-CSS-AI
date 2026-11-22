@@ -64,11 +64,28 @@ test("accepts a verified active Google user", async () => {
 test("rejects blocked profiles and non-Google providers", async () => {
   configure();
   globalThis.fetch = async url => url.endsWith("/auth/v1/user") ?
-    response({id:"test-id",app_metadata:{provider:"google"}}) :
+    response({id:"test-id",app_metadata:{provider:"google",providers:["google"]}}) :
     response([{status:"blocked"}]);
   assert.equal((await verifyGoogleUser({headers:bearer})).status, 403);
   globalThis.fetch = async () => response({
     id:"test-id", app_metadata:{provider:"email",providers:["email"]}
+  });
+  assert.equal((await verifyGoogleUser({headers:bearer})).status, 403);
+});
+
+test("rejects linked non-Google accounts even if they have Google identity", async () => {
+  configure();
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls++;
+    return response({
+      id:"test-id", app_metadata:{provider:"email",providers:["email","google"]}
+    });
+  };
+  assert.equal((await verifyGoogleUser({headers:bearer})).status, 403);
+  assert.equal(calls, 1);
+  globalThis.fetch = async () => response({
+    id:"test-id", app_metadata:{provider:"google",providers:["google","email"]}
   });
   assert.equal((await verifyGoogleUser({headers:bearer})).status, 403);
 });

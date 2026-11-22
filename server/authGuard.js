@@ -51,9 +51,14 @@ export async function verifyGoogleUser(req) {
     if (typeof user?.id !== "string" || !user.id)
       return failure(401, "Invalid account.");
     const providers = user.app_metadata?.providers;
-    if (user.app_metadata?.provider !== "google" &&
-        !(Array.isArray(providers) && providers.includes("google")))
-      return failure(403, "Google account required.");
+    // Only accounts originating from Google and linked exclusively to Google
+    // may use this API. app_metadata.provider is the FIRST sign-in method,
+    // not proof of which method created this particular session. Disable
+    // other sign-in methods in Supabase to enforce Google-only sessions.
+    if (user.app_metadata?.provider !== "google" ||
+        !Array.isArray(providers) || providers.length !== 1 ||
+        providers[0] !== "google")
+      return failure(403, "Google-only account required.");
 
     // Profile status is independently protected by RLS; fail closed if
     // the migration has not yet been installed.

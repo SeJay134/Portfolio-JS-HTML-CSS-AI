@@ -6,7 +6,7 @@ This repository is a Vite multi-page app: the portfolio plus separate Photo Comp
 
 1. Create a project at https://supabase.com/dashboard.
 2. In Google Auth Platform create an **External** web OAuth client. Under Authorized JavaScript origins add `https://sergei-luna.vercel.app` and `http://127.0.0.1:5001`. Under Authorized redirect URIs add the *Supabase-provided* `https://<project-ref>.supabase.co/auth/v1/callback` — do not point Google directly at this site's callback.
-3. In Supabase Authentication > Providers enable Google with the Google Client ID and Client Secret. Turn off password/email, phone, and anonymous sign-in providers. Keep signups enabled. Google accounts with non-Gmail addresses are allowed.
+3. In Supabase Authentication > Providers enable Google with the Google Client ID and Client Secret. Turn off password/email, phone, and anonymous sign-in providers. Keep signups enabled. API access is additionally restricted to Google-only identities. Supabase's `app_metadata.provider` records the first provider used to register, not necessarily the method used for the current session; therefore disabling all other providers is essential. Google accounts with non-Gmail addresses are allowed.
 4. In Supabase Authentication > URL Configuration set Site URL to `https://sergei-luna.vercel.app`, and allow `https://sergei-luna.vercel.app/auth/callback/` and `http://127.0.0.1:5001/auth/callback/`.
 5. Put the Supabase project URL and **publishable** key in Vercel environment settings and in a local, ignored `.env.local`:
    - `VITE_SUPABASE_URL=https://<project-ref>.supabase.co`

@@ -21,7 +21,11 @@ create policy "Read own profile"
   on public.profiles for select to authenticated
   using ((select auth.uid()) = id);
 
-create or replace function public.handle_new_google_profile()
+-- A trigger function needs elevated privileges to write into an RLS table.
+-- Keep it outside the exposed public Data API schema.
+create schema if not exists private;
+revoke all on schema private from public;
+create or replace function private.handle_new_google_profile()
 returns trigger
 language plpgsql security definer set search_path = ''
 as $$
@@ -35,12 +39,13 @@ begin
   on conflict (id) do nothing;
   return new;
 end;
-$$;
+$;
+revoke all on function private.handle_new_google_profile() from public, anon, authenticated;
 
 drop trigger if exists on_google_account_created on auth.users;
 create trigger on_google_account_created
   after insert on auth.users for each row
-  execute function public.handle_new_google_profile();
+  execute function private.handle_new_google_profile();
 
 -- For any accounts created prior to this migration.
 insert into public.profiles (id, email, full_name, avatar_url)
