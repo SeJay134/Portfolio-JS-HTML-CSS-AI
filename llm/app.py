@@ -46,6 +46,8 @@ class LocalPortfolioService:
     If you do not have any information use RAG.
     Answer in the language of the current question and keep the answer concise.
     Use only the supplied portfolio evidence for facts about Sergei or his work.
+    For specific framework or technology questions, state the exact verified technology name from the supplied project evidence.
+    Reviewed sources are linked separately: do not put raw URLs in the answer text or invent extra links.
     Be polite and kind.
 """
 #     SYSTEM_PROMPT = """You are Sergei Patrushev's portfolio assistant.

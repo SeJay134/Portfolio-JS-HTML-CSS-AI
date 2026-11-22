@@ -1,3 +1,5 @@
+import { googleAuthRequired, verifyGoogleUser } from "./authGuard.js";
+
 // Only server-side Vercel Functions import this module.
 // Never expose the ngrok origin or Flask secret in the browser bundle.
 const allowedTunnelHost = (host) =>
@@ -91,6 +93,10 @@ export async function chatHandler(req, res) {
       typeof body.message !== "string" || !body.message.trim() ||
       [...body.message].length > 300)
     return json(res, 400, { error: "Provide a message between 1 and 300 characters." });
+  if (googleAuthRequired()) {
+    const auth = await verifyGoogleUser(req);
+    if (!auth.ok) return json(res, auth.status, { error: auth.error });
+  }
   return forward("chat", req, res, { message: body.message.trim() }, 125000);
 }
 

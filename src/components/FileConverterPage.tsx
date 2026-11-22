@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Drawer } from "./Drawer";
 import { Icon } from "./Icon";
+import { AccountMenu } from "../auth/AccountMenu";
 import { useTheme } from "../hooks/useTheme";
 import { loadSafetyModel, screenImage } from "../lib/contentSafety";
 import { createZip, formatBytes, type ZipEntry } from "../lib/photoCompressor";
@@ -200,6 +201,7 @@ export function FileConverterPage() {
           </div>
           <span className="header-caption">Software developer / Data & AI</span>
           <div className="header-actions">
+            <AccountMenu />
             <label htmlFor="converter-theme" className="sr-only">Color theme</label>
             <select id="converter-theme" value={theme} onChange={(event) => selectTheme(event.target.value)}>
               <option value="system">System</option>

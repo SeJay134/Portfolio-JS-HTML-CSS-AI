@@ -1888,6 +1888,16 @@ details p {
   .mobile-chat-preview { padding-left: 12px; padding-right: 12px; }
 }
 
+/* Feature-flagged Google-only auth styles. */
+.auth-gate { max-width: 760px; min-height: 50vh; }
+.auth-gate .auth-login-control { margin: 24px 0; }
+.auth-gate > p:last-child { margin-top: 24px; color: var(--muted); }
+.auth-account { display: inline-flex; gap: 9px; align-items: center; min-width: 0; }
+.auth-account-name { max-width: 135px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.8rem; color: var(--muted); }
+.auth-account-button { border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--text); padding: 7px 11px; white-space: nowrap; font-size: 0.82rem; }
+.auth-account-error { font-size: 0.72rem; color: var(--accent); }
+@media (max-width: 640px) { .auth-account-name { display: none; } .auth-account-button { padding: 6px 9px; } }
+
 /* Shared links to public legal pages. */
 .site-footer { flex-wrap: wrap; }
 .footer-legal { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }

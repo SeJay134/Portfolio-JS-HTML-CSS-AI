@@ -1,3 +1,5 @@
+import { getSupabase, isGoogleAuthEnabled } from "./supabase";
+
 export type Source = { title: string; url: string };
 export class ApiError extends Error {
   constructor(
@@ -47,9 +49,18 @@ export async function requestAnswer(
     throw new ApiError(
       "The assistant is not available in this deployment. Use Contact for now.",
     );
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (isGoogleAuthEnabled()) {
+    const client = getSupabase();
+    if (!client) throw new ApiError("Google sign-in is not configured.", 503);
+    const { data, error } = await client.auth.getSession();
+    if (error || !data.session?.access_token)
+      throw new ApiError("Sign in with Google to use this assistant.", 401);
+    headers.Authorization = `Bearer ${data.session.access_token}`;
+  }
   const response = await fetch(`${base}/chat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({ message }),
     signal,
   });
