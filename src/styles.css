@@ -2452,3 +2452,23 @@ details p {
   .collaboration-homepage-nav > span { font-size: .31rem; }
   .collaboration-homepage-hero-copy > strong { font-size: .86rem; }
 }
+
+
+/* Crawlable company collaboration page link. */
+.collaboration-details {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 20px;
+  color: var(--accent);
+  font-size: .81rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.collaboration-details:hover {
+  text-decoration-thickness: 2px;
+}
+.collaboration-content .collaboration-visit {
+  margin-top: 17px;
+}
