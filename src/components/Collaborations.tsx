@@ -13,10 +13,10 @@ function WebsitePreview() {
     <div
       className="collaboration-visual"
       role="img"
-      aria-label="Illustrative browser preview for Light Up Media & Signs, not an actual screenshot"
+      aria-label="Flat illustrative browser preview for Light Up Media & Signs, not an actual screenshot"
     >
-      <div className="collaboration-laptop">
-        <div className="collaboration-screen">
+      <div className="collaboration-browser-frame">
+        <div className="collaboration-browser-window">
           <div className="collaboration-browser-bar" aria-hidden="true">
             <span className="collaboration-browser-dots">
               <i />
@@ -54,7 +54,6 @@ function WebsitePreview() {
             <div className="collaboration-website-accent" />
           </div>
         </div>
-        <div className="collaboration-laptop-base" />
       </div>
       <span className="collaboration-preview-note">
         Illustrative website preview
