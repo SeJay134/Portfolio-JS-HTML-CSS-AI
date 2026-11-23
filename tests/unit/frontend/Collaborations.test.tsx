@@ -22,6 +22,12 @@ describe("Collaborations", () => {
     expect(
       screen.getByRole("img", { name: /illustrative browser preview/i }),
     ).toBeTruthy();
+    expect(screen.getByText(/not a live screenshot/i)).toBeTruthy();
+    const storefront = document.querySelector<HTMLImageElement>(
+      'img[src="/images/lightup-building-concept.webp"]',
+    );
+    expect(storefront).not.toBeNull();
+    expect(storefront?.getAttribute("loading")).toBe("lazy");
     expect(screen.getByText("Planned")).toBeTruthy();
   });
 });
