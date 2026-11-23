@@ -13,11 +13,11 @@ function WebsitePreview() {
     <div
       className="collaboration-visual"
       role="img"
-      aria-label="Flat illustrative browser preview for Light Up Media & Signs, not an actual screenshot"
+      aria-label="Illustrative browser preview of the Light Up Media and Signs homepage. This concept is not a live website screenshot."
     >
-      <div className="collaboration-browser-frame">
+      <div className="collaboration-browser-frame" aria-hidden="true">
         <div className="collaboration-browser-window">
-          <div className="collaboration-browser-bar" aria-hidden="true">
+          <div className="collaboration-browser-bar">
             <span className="collaboration-browser-dots">
               <i />
               <i />
@@ -27,36 +27,57 @@ function WebsitePreview() {
               lightupmediasigns.com
             </span>
           </div>
-          <div className="collaboration-website-art" aria-hidden="true">
-            <div className="collaboration-website-nav">
-              <strong>
-                LIGHT UP
-                <small>MEDIA &amp; SIGNS</small>
+          <div className="collaboration-homepage">
+            <div className="collaboration-homepage-nav">
+              <strong className="collaboration-homepage-logo">
+                LIGHT UP <small>MEDIA &amp; SIGNS LLC</small>
               </strong>
-              <span>Home&nbsp; · &nbsp;Services&nbsp; · &nbsp;Contact</span>
+              <span>Home&nbsp; · &nbsp;Services&nbsp; · &nbsp;About Us&nbsp; · &nbsp;Testimonials&nbsp; · &nbsp;Contact</span>
             </div>
-            <div className="collaboration-website-hero">
-              <span className="collaboration-preview-kicker">
-                BRANDING · SIGNS · MARKETING
-              </span>
-              <strong>
-                Make your brand
-                <br />
-                <em>stand out.</em>
-              </strong>
-              <span className="collaboration-preview-subtitle">
-                Creative solutions for businesses that want to be seen.
-              </span>
-              <span className="collaboration-preview-cta">
-                Get a free estimate
-              </span>
+            <div className="collaboration-homepage-hero">
+              <img
+                className="collaboration-homepage-building"
+                src="/images/lightup-building-concept.webp"
+                width="192"
+                height="121"
+                alt=""
+                decoding="async"
+                loading="lazy"
+              />
+              <div className="collaboration-homepage-hero-copy">
+                <strong>
+                  Welcome to the place where your brand
+                  <span> makes a difference.</span>
+                </strong>
+                <p>
+                  Helping businesses stand out, look professional,
+                  and attract attention.
+                </p>
+                <div className="collaboration-homepage-cta">
+                  <span>Call Now</span>
+                  <span>Get a Free Estimate</span>
+                </div>
+              </div>
             </div>
-            <div className="collaboration-website-accent" />
+            <div className="collaboration-homepage-stats">
+              <span><strong>20+</strong>Years of experience</span>
+              <span><strong>1,900+</strong>Satisfied clients</span>
+              <span><strong>700+</strong>Projects completed</span>
+              <span><strong>350+</strong>Vehicles branded</span>
+            </div>
+            <div className="collaboration-homepage-services">
+              <strong>OUR CORE SERVICES</strong>
+              <div>
+                <span>Branding &amp;<br />Graphic Design</span>
+                <span>Digital Presence &amp;<br />Marketing</span>
+                <span>Signs &amp;<br />Visual Advertising</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
       <span className="collaboration-preview-note">
-        Illustrative website preview
+        Illustrative homepage concept · not a live screenshot
       </span>
     </div>
   );
