@@ -2,6 +2,7 @@ import React from "react";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Drawer, sections, type SectionId } from "./components/Drawer";
 import { Projects } from "./components/Projects";
+import { Collaborations } from "./components/Collaborations";
 import { Contact } from "./components/Contact";
 import { Icon } from "./components/Icon";
 import { AccountMenu } from "./auth/AccountMenu";
@@ -381,6 +382,7 @@ export default function App() {
           </a>
         </div>
         <Projects />
+        <Collaborations />
         <section id="Skills" tabIndex={-1} className="section">
           <div className="section-heading">
             <div>
