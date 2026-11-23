@@ -13,6 +13,7 @@ export default defineConfig({
         authCallback: resolve(import.meta.dirname, "auth/callback/index.html"),
         photoCompressor: resolve(import.meta.dirname, "tools/photo-compressor/index.html"),
         fileConverter: resolve(import.meta.dirname, "tools/file-converter/index.html"),
+        lightUpCollaboration: resolve(import.meta.dirname, "collaborations/light-up-media-signs/index.html"),
       },
     },
   },

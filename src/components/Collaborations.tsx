@@ -118,6 +118,12 @@ export function Collaborations() {
             Independent external website · Opens in a new tab
           </p>
           <a
+            className="collaboration-details"
+            href="/collaborations/light-up-media-signs/"
+          >
+            Read about the collaboration <Icon name="arrow" size={16} />
+          </a>
+          <a
             className="collaboration-visit"
             href={featuredWebsite.url}
             target="_blank"
