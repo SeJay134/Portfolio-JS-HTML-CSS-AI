@@ -10,6 +10,8 @@ Approved product direction: a public author blog and private Blog Studio, with i
 ## Phase 1B: catalogue and article rendering
 - Typed article model, responsive cards, category/search controls and individual slug pages.
 - Test with fixtures only until owner approves real content.
+- Static public article source is intentionally empty. Build generates one HTML file per validated slug and extends the sitemap. No draft content belongs in the public bundle.
+- Phase 2 will replace the temporary static source with a reviewed published-content pipeline and protected admin storage.
 
 ## Phase 2: database and admin access
 - Reuse Google OAuth and existing profiles roles and active/blocked status.
