@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f8f9fb" />
+  <title>Blog — Sergei Patrushev</title>
+  <meta name="description" content="Articles and reflections on software development, data, artificial intelligence and personal projects." />
+  <link rel="canonical" href="https://sergei-luna.vercel.app/blog/" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <script>
+    (() => {
+      let saved = "system";
+      try { saved = localStorage.getItem("portfolio-theme") || "system"; } catch {}
+      const theme = saved === "light" || saved === "dark" ? saved :
+        matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      document.documentElement.dataset.theme = theme;
+      document.querySelector('meta[name="theme-color"]').content =
+        theme === "dark" ? "#0c141d" : "#f8f9fb";
+    })();
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+  <noscript><style>.menu-button,.header-actions select,.blog-controls {display:none!important}</style></noscript>
+  <script type="module" src="/src/blogMain.tsx"></script>
+</body>
+</html>

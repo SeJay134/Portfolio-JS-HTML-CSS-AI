@@ -21,6 +21,7 @@ export function Drawer({
   active,
   sectionHrefPrefix = "",
   activeTool,
+  activePage,
 }: {
   open: boolean;
   onClose: (reason: "dismiss" | "navigate") => void;
@@ -28,6 +29,7 @@ export function Drawer({
   active?: SectionId;
   sectionHrefPrefix?: string;
   activeTool?: "photo" | "converter";
+  activePage?: "blog";
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -103,6 +105,13 @@ export function Drawer({
             <a href="/tools/file-converter/" aria-current={activeTool === "converter" ? "page" : undefined}>
               <span className="nav-number">08</span>
               File Converter
+              <Icon name="arrow" />
+            </a>
+          </li>
+          <li>
+            <a href="/blog/" aria-current={activePage === "blog" ? "page" : undefined}>
+              <span className="nav-number">09</span>
+              Blog
               <Icon name="arrow" />
             </a>
           </li>

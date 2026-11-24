@@ -1,0 +1,16 @@
+.blog-main { min-height: 70vh; padding-top: 32px; }
+.blog-intro { padding: 44px 0 56px; border-bottom: 1px solid var(--line); }
+.blog-intro h1 { font-size: clamp(3rem, 7vw, 5.5rem); line-height: 1.06; letter-spacing: -.06em; overflow-wrap: anywhere; }
+.blog-intro h1 .serif-accent { color: var(--accent); }
+.blog-intro > p:last-child { margin-top: 24px; color: var(--muted); max-width: 58ch; }
+.blog-catalogue { padding-top: 48px; }
+.blog-empty { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: clamp(24px, 5vw, 56px); }
+.blog-empty .eyebrow { margin-bottom: 12px; }
+.blog-empty h3 + p { margin-top: 12px; color: var(--muted); }
+.blog-empty .text-link { margin-top: 12px; }
+@media (max-width: 600px) {
+  .blog-main { padding-top: 24px; }
+  .blog-intro { padding: 28px 0 36px; }
+  .blog-catalogue { padding-top: 32px; }
+  .blog-catalogue .section-heading { align-items: flex-start; flex-direction: column; gap: 12px; }
+}
