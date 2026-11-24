@@ -3,8 +3,10 @@ import { AccountMenu } from "../auth/AccountMenu";
 import { useTheme } from "../hooks/useTheme";
 import { Drawer } from "./Drawer";
 import { Icon } from "./Icon";
+import { BlogArticle, BlogCatalogue } from "./BlogContent";
+import { publishedPosts, type BlogPost } from "../data/blog";
 
-export function BlogPage() {
+export function BlogPage({ article }: { article?: BlogPost } = {}) {
   const { theme, selectTheme } = useTheme();
   const [menu, setMenu] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -44,24 +46,18 @@ export function BlogPage() {
       <Drawer open={menu} activePage="blog" sectionHrefPrefix="/"
         onClose={() => { setMenu(false); requestAnimationFrame(() => menuButton.current?.focus({ preventScroll: true })); }} />
       <main id="main" tabIndex={-1} className="section blog-main">
-        <a className="text-link" href="/">← Back to portfolio</a>
-        <div className="blog-intro">
-          <p className="eyebrow">Writing / Insights</p>
-          <h1>Blog <span className="serif-accent">&amp; Insights.</span></h1>
-          <p>Articles on software development, data, artificial intelligence and personal projects.</p>
-        </div>
-        <section className="blog-catalogue" aria-labelledby="latest-articles">
-          <div className="section-heading">
-            <div><p className="eyebrow">From the notebook</p><h2 id="latest-articles">Latest articles</h2></div>
-            <p>0 published articles</p>
+        {article ? <>
+          <a className="text-link" href="/blog/">← Back to blog</a>
+          <BlogArticle post={article} posts={publishedPosts} />
+        </> : <>
+          <a className="text-link" href="/">← Back to portfolio</a>
+          <div className="blog-intro">
+            <p className="eyebrow">Writing / Insights</p>
+            <h1>Blog <span className="serif-accent">&amp; Insights.</span></h1>
+            <p>Articles on software development, data, artificial intelligence and personal projects.</p>
           </div>
-          <div className="blog-empty">
-            <p className="eyebrow">Coming soon</p>
-            <h3>No articles published yet.</h3>
-            <p>New articles will appear here when they are published.</p>
-            <a className="text-link" href="/#Projects">Explore selected projects <Icon name="arrow" size={16} /></a>
-          </div>
-        </section>
+          <BlogCatalogue posts={publishedPosts} />
+        </>}
       </main>
       <footer className="site-footer">
         <a className="wordmark" href="/" aria-label="Portfolio home">SP<span>.</span></a>

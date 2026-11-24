@@ -1,3 +1,5 @@
+import { articleForPath } from "../data/blog";
+
 /**
  * Only known internal pages may be restored after an OAuth redirect.
  * Never pass an arbitrary URL from a query string into location.assign().
@@ -14,7 +16,7 @@ const ALLOWED_PATHS = new Set([
 export function safeReturnPath(candidate: unknown): string {
   if (typeof candidate !== "string") return "/";
   const path = candidate === "/" ? candidate : candidate.endsWith("/") ? candidate : candidate + "/";
-  return ALLOWED_PATHS.has(path) ? path : "/";
+  return ALLOWED_PATHS.has(path) || articleForPath(path) ? path : "/";
 }
 
 export function rememberReturnPath(

@@ -89,11 +89,18 @@ for (const theme of ["light", "dark"] as const) {
         // capture can also exceed the test timeout. Keep the full DOM and
         // accessibility checks above, but capture bounded viewports there.
         if (testInfo.project.name === "mobile") {
+          // The functional assertions have already passed. Give the two
+          // diagnostic captures extra time on slower mobile WebKit runners.
+          testInfo.setTimeout(60_000);
           await page.screenshot({
             path: testInfo.outputPath(`layout-${theme}-${width}-top.png`),
             scale: "css",
           });
-          await page.locator("#Projects h2").scrollIntoViewIfNeeded();
+          // This is a diagnostic capture, not an interaction test. Scroll
+          // directly instead of waiting for Playwright actionability frames.
+          await page.locator("#Projects h2").evaluate((heading) => {
+            heading.scrollIntoView({ block: "center", behavior: "instant" });
+          });
           await page.screenshot({
             path: testInfo.outputPath(`layout-${theme}-${width}-projects.png`),
             scale: "css",
