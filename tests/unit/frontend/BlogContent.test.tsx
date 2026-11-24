@@ -38,7 +38,7 @@ describe("published article catalogue", () => {
     expect(screen.getByRole("link", { name: "Read article: Fixture AI article" })).toHaveAttribute("href", "/blog/fixture-ai/");
     await user.type(screen.getByRole("searchbox"), "RAG");
     expect(screen.getAllByRole("article")).toHaveLength(1);
-    await user.selectOptions(screen.getByLabel("Category"), "Data");
+    await user.selectOptions(screen.getByLabelText("Category"), "Data");
     expect(screen.getByRole("heading", { name: "No matching articles." })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Clear filters" }));
     expect(screen.getAllByRole("article")).toHaveLength(2);
