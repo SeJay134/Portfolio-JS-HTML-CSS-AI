@@ -10,6 +10,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(import.meta.dirname, "index.html"),
+        blog: resolve(import.meta.dirname, "blog/index.html"),
         authCallback: resolve(import.meta.dirname, "auth/callback/index.html"),
         photoCompressor: resolve(import.meta.dirname, "tools/photo-compressor/index.html"),
         fileConverter: resolve(import.meta.dirname, "tools/file-converter/index.html"),
