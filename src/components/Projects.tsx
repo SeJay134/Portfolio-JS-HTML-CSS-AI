@@ -1,5 +1,5 @@
 import React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   filterProjects,
   projects,
@@ -11,6 +11,14 @@ const categories: Category[] = ["All", "Web", "Data", "AI"];
 
 function ProjectImage({ project }: { project: Project }) {
   const [failed, setFailed] = useState(false);
+  const imageRef = useRef<HTMLImageElement>(null);
+
+  // A prerendered image can fail before React attaches its error handler.
+  // Reconcile its actual state after hydration without changing server markup.
+  useEffect(() => {
+    const image = imageRef.current;
+    if (image?.complete && image.naturalWidth === 0) setFailed(true);
+  }, []);
 
   if (!project.image || failed) {
     return (
@@ -23,6 +31,7 @@ function ProjectImage({ project }: { project: Project }) {
 
   return (
     <img
+      ref={imageRef}
       src={project.image}
       alt={project.imageAlt ?? `${project.title} preview`}
       loading="lazy"

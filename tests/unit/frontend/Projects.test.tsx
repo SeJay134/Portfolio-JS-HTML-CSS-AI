@@ -1,5 +1,6 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
 import userEvent from "@testing-library/user-event";
 import { Projects } from "../../../src/components/Projects";
 import { beforeEach, it, expect, vi } from "vitest";
@@ -37,4 +38,30 @@ it("filters local project content without requiring a network request", async ()
   expect(screen.getAllByRole("article")).toHaveLength(1);
   await user.click(screen.getByRole("button", { name: /^All/ }));
   expect(screen.getAllByRole("article")).toHaveLength(10);
+});
+
+const previewAlt = "Chocolate sales dashboard with filters and sales visualizations.";
+
+it("shows the fallback when a project preview fails after mounting", () => {
+  render(<Projects />);
+  fireEvent.error(screen.getByAltText(previewAlt));
+  expect(screen.queryByAltText(previewAlt)).not.toBeInTheDocument();
+  expect(screen.getByText("Preview unavailable")).toBeVisible();
+});
+
+it("recovers a prerendered preview that failed before React hydration", () => {
+  const container = document.createElement("div");
+  container.innerHTML = renderToString(<Projects />);
+  const image = container.querySelector<HTMLImageElement>('img[src="/images/chocolate.webp"]')!;
+  Object.defineProperty(image, "complete", { value: true });
+  Object.defineProperty(image, "naturalWidth", { value: 0 });
+  document.body.appendChild(container);
+  try {
+    const view = render(<Projects />, { container, hydrate: true });
+    expect(view.queryByAltText(previewAlt)).not.toBeInTheDocument();
+    expect(view.getByText("Preview unavailable")).toBeVisible();
+    view.unmount();
+  } finally {
+    container.remove();
+  }
 });

@@ -84,10 +84,27 @@ for (const theme of ["light", "dark"] as const) {
           ).violations,
         ).toEqual([]);
         await page.evaluate(() => window.scrollTo(0, 0));
-        await page.screenshot({
-          path: testInfo.outputPath(`layout-${theme}-${width}.png`),
-          fullPage: true,
-        });
+        // The screenshots are diagnostic artifacts, not visual assertions.
+        // Mobile WebKit has a 32767px bitmap limit and high-DPR full-page
+        // capture can also exceed the test timeout. Keep the full DOM and
+        // accessibility checks above, but capture bounded viewports there.
+        if (testInfo.project.name === "mobile") {
+          await page.screenshot({
+            path: testInfo.outputPath(`layout-${theme}-${width}-top.png`),
+            scale: "css",
+          });
+          await page.locator("#Projects h2").scrollIntoViewIfNeeded();
+          await page.screenshot({
+            path: testInfo.outputPath(`layout-${theme}-${width}-projects.png`),
+            scale: "css",
+          });
+        } else {
+          await page.screenshot({
+            path: testInfo.outputPath(`layout-${theme}-${width}.png`),
+            fullPage: true,
+            scale: "css",
+          });
+        }
       }
     });
   }
