@@ -1,6 +1,6 @@
 # Phase 2F.2 — local Google OAuth staging
 
-Status: prepared in code, not yet executed with real Google credentials. PR #48 contains the separate readiness audit and remains open. No hosted changes, no paid resources. Use local Docker, Supabase CLI 3.4.0 (same as CI), Python 3 and Node >=22.12. Do not use the existing production OAuth client or any production account. No secret goes into Git, VITE_*, chat, CI or a Vercel environment.
+Status: local real administrator OAuth executed on Windows at the reviewed PR #50 commit; original checklist remains partially complete. See BLOG_OAUTH_LOCAL_ACCEPTANCE.md for results and the one-account exception. PR #48 contains the separate readiness audit and remains open. No hosted changes, no paid resources. Use local Docker, Supabase CLI 3.4.0 (same as CI), Python 3 and Node >=22.12. Do not use the existing production OAuth client or any production account. No secret goes into Git, VITE_*, chat, CI or a Vercel environment.
 
 ## Setup
 1. On a trusted workstation, install the prerequisites, clone/check out this reviewed branch and run npm ci. Ensure Docker uses a local socket, no tunnels or port forwarding, firewall blocks inbound Supabase/Docker ports from other hosts. The CLI may publish ports on all interfaces; the browser endpoints below use loopback but that alone does not bind Docker ports to loopback. Keep existing local Supabase stopped if it occupies these ports.
@@ -8,7 +8,7 @@ Status: prepared in code, not yet executed with real Google credentials. PR #48 
 3. Run python3 scripts/oauth-staging.py. Enter the separate test Client ID, secret and candidate email locally when prompted; secret/email entry is hidden. The launcher creates an unlinked temporary workdir, copies exactly three reviewed migrations, starts a uniquely named local Docker stack, checks its API and modern publishable key, seeds one local allowlist entry, then runs Vite on 127.0.0.1:5511. No account or role is assigned in production. The candidate becomes an admin only within this disposable local DB after actual verified OAuth. Never reuse the real intended admin email. Local credentials are not passed to CI; Google credentials are not passed to the frontend. A staging build is explicitly forbidden; normal mode requires HTTPS.
 4. Open http://127.0.0.1:5511/admin/blog/ in a private browser window (not the production tab). Never expose this server to LAN/public internet. Do not save browser storage, screenshots of credentials, token values, HAR or traces. Use only test identities.
 
-## Real OAuth acceptance checklist (manual; not yet passed)
+## Real OAuth acceptance checklist (manual; partially executed; see acceptance record)
 - Before login: Blog Studio requests Google sign-in, public blog is empty; no admin exists. Cancel Google consent: callback fails safely, no enrollment.
 - Ordinary test user (not in allowlist): real Google round trip, return to admin route, access denied, public catalogue remains readable. Sign out, verify admin UI remains hidden.
 - Separate allowlisted test user: real Google round trip; verify access confirmed only after server RPC; repeat login/refresh and back-forward restore; confirm exactly one bound UUID and Google subject, verified email and active profile. No real admin is assigned. 
