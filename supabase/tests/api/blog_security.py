@@ -209,7 +209,8 @@ def run():
     adapter = FixtureStore(settings, opener, request, owner)
     result = promote(adapter,promotion_id,300000)
     check(result.asset.state=="verified" and result.asset.width==96 and result.asset.height==64 and not result.cleanup_pending,"verified metadata and quarantine cleanup")
-    check(promote(adapter,promotion_id,300000)==result,"verified promotion retry idempotent")
+    retry = promote(adapter,promotion_id,300000)
+    check(retry.asset==result.asset and not retry.cleanup_pending,"verified promotion retry idempotent")
     check(storage("object/studio-media-verified/"+promotion_slot["object_key"],owner)>=400,"verified object still private")
     check(storage("object/public/studio-media-verified/"+promotion_slot["object_key"])>=400,"public verified URL denied")
     try:

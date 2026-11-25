@@ -144,6 +144,17 @@ class FixtureStore:
         self._same(asset)
         if asset.state!="verified":
             raise PromotionError("Not committed")
-        status,_ = self._storage("studio-media-quarantine",asset,"DELETE")
-        if status not in (200,204,404):
-            raise PromotionError("Cleanup unavailable")
+        # Use the exact-path bulk removal contract used by Storage SDK.
+        # A missing object is an empty successful removal, not a single
+        # object DELETE error. Never treat arbitrary HTTP 400 as success.
+        req = Request("http://127.0.0.1:54321/storage/v1/object/studio-media-quarantine",
+            method="DELETE", data=json.dumps({"prefixes":[asset.key]}).encode(),
+            headers={"apikey":self.service_key,"Authorization":"Bearer "+self.service_key,
+                     "Content-Type":"application/json","Cache-Control":"no-store"})
+        try:
+            with self.opener.open(req, timeout=15) as response:
+                raw = response.read(65537)
+                if response.status != 200 or len(raw)>65536 or not isinstance(json.loads(raw),list):
+                    raise PromotionError("Cleanup unavailable")
+        except (OSError, ValueError):
+            raise PromotionError("Cleanup unavailable") from None
