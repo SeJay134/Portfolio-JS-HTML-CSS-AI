@@ -3,10 +3,16 @@ import react from "@vitejs/plugin-react";
 import { resolve } from "node:path";
 import { loadEnv } from "vite";
 import { assertPublicEnvironment } from "./scripts/public-env";
+import { assertOAuthStaging } from "./scripts/oauth-staging-config";
+import { STAGING_MODE } from "./src/lib/oauthStaging";
 
 export default defineConfig(({ command, mode }) => {
+  assertOAuthStaging(command, mode, process.env);
   if (command === "build") assertPublicEnvironment(loadEnv(mode, process.cwd(), "VITE_"));
+  const staging = mode === STAGING_MODE;
+  if (staging) assertPublicEnvironment(process.env);
   return {
+  ...(staging ? { envDir: false as const, server: { host: "127.0.0.1", port: 5511, strictPort: true, headers: { "X-Robots-Tag": "noindex, nofollow", "Cache-Control": "no-store" } } } : {}),
   plugins: [react()],
   build: {
     target: ["es2022", "safari16"],

@@ -1,0 +1,2 @@
+undefined
+CI review: changes to scripts/oauth-staging.py now trigger the database security workflow even without a Supabase file change. A nonzero cleanup result fails the smoke job instead of reporting a successful smoke run. Interactive cleanup remains a visible warning requiring local inspection.

@@ -1,0 +1,30 @@
+# Phase 2F.2 — local Google OAuth staging
+
+Status: prepared in code, not yet executed with real Google credentials. PR #48 contains the separate readiness audit and remains open. No hosted changes, no paid resources. Use local Docker, Supabase CLI 3.4.0 (same as CI), Python 3 and Node >=22.12. Do not use the existing production OAuth client or any production account. No secret goes into Git, VITE_*, chat, CI or a Vercel environment.
+
+## Setup
+1. On a trusted workstation, install the prerequisites, clone/check out this reviewed branch and run npm ci. Ensure Docker uses a local socket, no tunnels or port forwarding, firewall blocks inbound Supabase/Docker ports from other hosts. The CLI may publish ports on all interfaces; the browser endpoints below use loopback but that alone does not bind Docker ports to loopback. Keep existing local Supabase stopped if it occupies these ports.
+2. In a separate Google Cloud project (no billing/paid API needed), create a Google Auth Platform Web application OAuth client in Testing mode, add only dedicated test users (one test admin candidate and one ordinary user). No production client edits. Authorized JavaScript origin: http://127.0.0.1:5511. Authorized redirect URI: http://127.0.0.1:54321/auth/v1/callback. Supabase redirects to http://127.0.0.1:5511/auth/callback/. The two callback URLs have distinct roles; do not register the app callback as Google's redirect. Use basic sign-in scopes only.
+3. Run python3 scripts/oauth-staging.py. Enter the separate test Client ID, secret and candidate email locally when prompted; secret/email entry is hidden. The launcher creates an unlinked temporary workdir, copies exactly three reviewed migrations, starts a uniquely named local Docker stack, checks its API and modern publishable key, seeds one local allowlist entry, then runs Vite on 127.0.0.1:5511. No account or role is assigned in production. The candidate becomes an admin only within this disposable local DB after actual verified OAuth. Never reuse the real intended admin email. Local credentials are not passed to CI; Google credentials are not passed to the frontend. A staging build is explicitly forbidden; normal mode requires HTTPS.
+4. Open http://127.0.0.1:5511/admin/blog/ in a private browser window (not the production tab). Never expose this server to LAN/public internet. Do not save browser storage, screenshots of credentials, token values, HAR or traces. Use only test identities.
+
+## Real OAuth acceptance checklist (manual; not yet passed)
+- Before login: Blog Studio requests Google sign-in, public blog is empty; no admin exists. Cancel Google consent: callback fails safely, no enrollment.
+- Ordinary test user (not in allowlist): real Google round trip, return to admin route, access denied, public catalogue remains readable. Sign out, verify admin UI remains hidden.
+- Separate allowlisted test user: real Google round trip; verify access confirmed only after server RPC; repeat login/refresh and back-forward restore; confirm exactly one bound UUID and Google subject, verified email and active profile. No real admin is assigned. 
+- In a second terminal, only against the uniquely named local container, run this aggregate query (does not expose emails, IDs or JWTs):
+
+```sh
+docker exec supabase_db_sergei-portfolio-oauth-staging psql -U postgres -d postgres -c "select count(*) filter (where role='admin') as admins, count(*) as profiles from public.profiles; select count(*) as bound_allowlist from private.admin_allowlist where user_id is not null and google_subject is not null;"
+```
+
+- Verify Google-only identities and active session metadata using local aggregate SQL or Supabase Studio; verify actual JWT's provider, OAuth amr, session_id and absence of client_id in memory only, never print or save the token. Use an isolated browser devtools session if necessary.
+- Test blocking/disabling the test account and session revocation in the local database; next administrative request must fail even if UI/session was previously accepted. Restore only local test state. Validate exact observed HTTP status, CORS and returned data with no tokens in reports. Existing automated 62 pgTAP and 29 local API assertions cover synthetic JWTs but do not replace these checks.
+- Ctrl+C stops the stack without backup and removes the temporary directory. Close private browser window; remove temporary Google test client when testing is complete. If cleanup fails inspect only staging containers. Never run a hosted reset or link. Record pass/fail/blocked for each scenario, not private data.
+
+## Limits
+Launcher refuses remote Docker endpoints, occupied known ports, mismatched CLI version, wrong API origins, legacy keys and any attempt to build oauth-staging. Vite disables .env loading in staging and uses a separate browser storage key. The script is designed for a fresh local workstation; Docker port exposure still requires firewall verification. No new dependency or paid service. Live Google sign-in requires operator-owned test credentials and interactive consent. CI tests isolation rules and starts the same disposable stack with dummy credentials; verifies Google-only provider settings and the authorization redirect without following it, does not authenticate with Google; don't mark OAuth acceptance complete until actual login and revocation are observed. Dynamic Vercel article rewrites and server SEO are outside this local OAuth test.
+
+References: https://supabase.com/docs/guides/auth/social-sign-in/auth-google ; https://supabase.com/docs/guides/local-development/managing-config ; https://developers.google.com/identity/protocols/oauth2/web-server .
+
+The CLI v3 provider-specific `enabled = false` fields disable email/phone sign-in, not merely new signup. The launcher refuses stale staging volumes and noninteractive credential entry. `--smoke` uses fake credentials, never creates an allowlist entry, and does not start Vite or follow the provider redirect. See https://supabase.com/docs/guides/local-development/cli/migrating-to-v3 .
