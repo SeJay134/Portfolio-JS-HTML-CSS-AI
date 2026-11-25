@@ -7,7 +7,7 @@ const fixture = {
   blog_categories: { name: "Data" }, blog_post_tags: [{ blog_tags: { name: "SQL" } }],
   content: [{ type: "paragraph", text: "Fixture article body" }],
 };
-async function mockApi(page: Page, fail = false) {
+async function mockApi(page: Page, fail = false, getPublished: () => Record<string, unknown> | null = () => fixture) {
   await page.route("https://mock.supabase.co/rest/v1/blog_posts?**", async route => {
     const request = route.request();
     const headers = { "access-control-allow-origin": "*", "access-control-allow-headers": "apikey,accept", "access-control-allow-methods": "GET,OPTIONS" };
@@ -23,7 +23,8 @@ async function mockApi(page: Page, fail = false) {
     expect(query.get("published_at")).toMatch(/^lte\./);
     const slug = query.get("slug");
     expect(query.get("select")?.includes(",content")).toBe(Boolean(slug));
-    const rows = slug ? slug === "eq.fixture" ? [fixture] : [] : [fixture, { status: "draft", title: "Private fixture" }];
+    const published = getPublished();
+    const rows = slug ? published && slug === `eq.${published.slug}` ? [published] : [] : [...(published ? [published] : []), { status: "draft", title: "Private fixture" }];
     await route.fulfill({ status: fail ? 503 : 200, headers, json: fail ? { message: "Private backend detail" } : rows });
   });
   // Vite preview has no Vercel rewrite engine. Test the built shell with the
@@ -63,4 +64,48 @@ test("API failure hides backend detail and supports retry", async ({page}) => {
   await mockApi(page);
   await page.getByRole("button", {name:"Retry"}).click();
   await expect(page.getByRole("link", {name:"Read article: Fixture published article"})).toBeVisible();
+});
+
+// Mirror the Phase 3E.1 projection contract; gateway/RLS itself is tested
+// separately against the real disposable Supabase API.
+test("published rich snapshot renders and refresh hides withdrawn content", async ({page}) => {
+  let snapshot: Record<string, unknown> | null = {
+    ...fixture, title: "Published Studio revision", content: [
+      { type: "heading", text: "Publication heading" },
+      { type: "rich-paragraph", version: 1, runs: [
+        { text: "Bold public text", bold: true }, { text: " and " },
+        { text: "italic public text", italic: true }, { text: " " },
+        { text: "Internal reference", href: "/blog/fixture/" },
+        { text: " <script>literal text</script>" },
+      ] },
+      { type: "list", items: ["First item", "Second item"] },
+      { type: "quote", text: "Public quotation" },
+      { type: "code", language: "SQL", text: "select 1;" },
+    ],
+  };
+  await mockApi(page, false, () => snapshot);
+  await page.goto("/blog/fixture/");
+  await expect(page.getByRole("heading", { name: "Published Studio revision" })).toBeVisible();
+  const prose = page.locator(".blog-prose");
+  await expect(prose.getByRole("heading", { name: "Publication heading" })).toBeVisible();
+  await expect(prose.locator("strong")).toHaveText("Bold public text");
+  await expect(prose.locator("em")).toHaveText("italic public text");
+  await expect(prose.getByRole("link", { name: "Internal reference" })).toHaveAttribute("href", "/blog/fixture/");
+  await expect(prose.locator(".blog-rich-paragraph")).toContainText("<script>literal text</script>");
+  await expect(prose.locator("script")).toHaveCount(0);
+  await expect(prose.getByRole("listitem")).toHaveText(["First item", "Second item"]);
+  await expect(prose.locator("blockquote")).toHaveText("Public quotation");
+  await expect(prose.locator("pre code")).toHaveText("select 1;");
+  snapshot = { ...fixture, title: "Republished Studio revision", content: [{ type: "rich-paragraph", version: 1, runs: [{ text: "Updated public snapshot" }] }] };
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Republished Studio revision" })).toBeVisible();
+  await expect(prose).toContainText("Updated public snapshot");
+  await expect(prose.getByText("Bold public text")).toHaveCount(0);
+  snapshot = null;
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Article not found." })).toBeVisible();
+  await expect(page.getByText("Updated public snapshot")).toHaveCount(0);
+  await page.goto("/blog/");
+  await expect(page.getByRole("heading", { name: "No articles published yet." })).toBeVisible();
+  await expect(page.getByText("Republished Studio revision")).toHaveCount(0);
 });
