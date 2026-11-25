@@ -27,3 +27,5 @@ Phase 2C adds the gated admin shell, parameterless self-enrollment RPC, session-
 Phase 2D: isolated anonymous Data API reader, validated content and gated live catalogue/slug pages. See BLOG_DATA_PHASE_2D.md for rollout blockers and SEO limitations.
 
 Phase 2E: configuration hardening, auth lifecycle regression checks and real local Data API security integration. See BLOG_SECURITY_PHASE_2E.md; hosted OAuth verification and explicit activation approval remain mandatory.
+
+Phase 2F.1: read-only production readiness audit and staged rollout runbook. See BLOG_PRODUCTION_READINESS_PHASE_2F.md. NO-GO for live activation until real OAuth staging, verified backup/rollback, configuration review and explicit approval.
