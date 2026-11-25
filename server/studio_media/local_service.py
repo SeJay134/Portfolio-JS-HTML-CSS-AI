@@ -33,7 +33,7 @@ def local_signer(secret: str) -> Callable[[dict], str]:
     def sign(claims):
         # Internal call only: never accept claims from an HTTP request.
         if (claims.get("role") != "studio_media_worker"
-                or claims.get("studio_media_action") not in ("promote", "cleanup")
+                or claims.get("studio_media_action") not in ("promote", "cleanup", "preview")
                 or not 0 < claims["exp"]-claims["iat"] <= 120):
             raise PromotionError("Invalid local capability")
         data = encode({"alg":"HS256","typ":"JWT"}) + b"." + encode(claims)
@@ -69,12 +69,12 @@ class LocalMediaHandler(BaseHTTPRequestHandler):
         return (self.headers.get_all("Host")==[f"127.0.0.1:{self.server.server_port}"]
                 and self.headers.get_all("Origin")==[APP_ORIGIN])
 
-    def _reply(self, status, value=None):
-        raw = json.dumps(value,separators=(",",":")).encode() if value is not None else b""
+    def _reply(self, status, value=None, mime="application/json"):
+        raw = value if mime=="image/jpeg" else json.dumps(value,separators=(",",":")).encode() if value is not None else b""
         self.send_response(status)
         self.send_header("Cache-Control","no-store")
         self.send_header("X-Content-Type-Options","nosniff")
-        self.send_header("Content-Type","application/json")
+        self.send_header("Content-Type",mime)
         self.send_header("Content-Length",str(len(raw)))
         self.send_header("Connection","close")
         if self._trusted_origin():
@@ -88,7 +88,7 @@ class LocalMediaHandler(BaseHTTPRequestHandler):
             self.wfile.write(raw)
 
     def do_OPTIONS(self):
-        if (not self._trusted_origin() or self.path not in ("/promote","/cleanup")
+        if (not self._trusted_origin() or self.path not in ("/promote","/cleanup","/preview")
             or self.headers.get("Access-Control-Request-Method")!="POST"):
             return self._reply(403,{"error":"Request denied"})
         requested={x.strip().lower() for x in self.headers.get("Access-Control-Request-Headers","").split(",") if x.strip()}
@@ -100,7 +100,7 @@ class LocalMediaHandler(BaseHTTPRequestHandler):
         return self._reply(405,{"error":"Method not allowed"})
 
     def do_POST(self):
-        if not self._trusted_origin() or self.path not in ("/promote","/cleanup"):
+        if not self._trusted_origin() or self.path not in ("/promote","/cleanup","/preview"):
             return self._reply(403,{"error":"Request denied"})
         if self.headers.get("Transfer-Encoding") or self.headers.get_all("Content-Type")!=["application/json"]:
             return self._reply(400,{"error":"Invalid request"})
@@ -128,6 +128,8 @@ class LocalMediaHandler(BaseHTTPRequestHandler):
                 asset=result.asset
                 return self._reply(200,{"id":asset.id,"state":asset.state,"byte_size":asset.byte_size,
                     "width":asset.width,"height":asset.height,"sha256":asset.sha256,"cleanup_pending":result.cleanup_pending})
+            if self.path=="/preview":
+                return self._reply(200,self.server.broker.preview(auth[0][7:],asset_id),"image/jpeg")
             self.server.broker.cleanup_expired(auth[0][7:],asset_id)
             return self._reply(200,{"id":asset_id,"state":"rejected","cleanup_complete":True})
         except (UnicodeError,ValueError) as error:

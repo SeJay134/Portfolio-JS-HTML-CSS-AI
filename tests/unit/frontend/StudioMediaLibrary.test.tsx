@@ -1,0 +1,28 @@
+import React from "react";
+import {render,screen,waitFor} from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import {expect,it,vi} from "vitest";
+import {StudioMediaLibrary} from "../../../src/components/StudioMediaLibrary";
+const mock=vi.hoisted(()=>({list:vi.fn(),preview:vi.fn()}));
+vi.mock("../../../src/lib/studioMediaLibrary",()=>({listStudioMedia:mock.list,previewStudioMedia:mock.preview}));
+it("loads saved assets explicitly, previews verified only, revokes URL on close",async()=>{
+ const row={id:"99000000-0000-0000-0000-000000000001",state:"verified",created_at:"2026-11-25T00:00:00Z",expires_at:"2026-11-25T01:00:00Z",byte_size:500,width:96,height:64,sha256:"a".repeat(64)};
+ mock.list.mockResolvedValue([row,{...row,id:"99000000-0000-0000-0000-000000000002",state:"rejected",byte_size:null,width:null,height:null,sha256:null}]);
+ mock.preview.mockResolvedValue(new Blob(["jpeg"],{type:"image/jpeg"}));
+ const create=vi.fn().mockReturnValue("blob:library"),revoke=vi.fn();
+ Object.defineProperty(URL,"createObjectURL",{configurable:true,value:create});
+ Object.defineProperty(URL,"revokeObjectURL",{configurable:true,value:revoke});
+ const user=userEvent.setup();
+ render(<StudioMediaLibrary/>);
+ await user.click(screen.getByRole("button",{name:"Load media library"}));
+ await screen.findByText("1 verified · 2/20 slots used");
+ expect(screen.getAllByRole("button",{name:/View stored photo/})).toHaveLength(1);
+ await user.click(screen.getByRole("button",{name:"View stored photo "+row.id}));
+ expect(await screen.findByRole("img",{name:"Private verified JPEG"})).toBeVisible();
+ await user.click(screen.getByRole("button",{name:"Close stored preview"}));
+ expect(revoke).toHaveBeenCalledWith("blob:library");
+ mock.list.mockRejectedValue(new Error("denied"));
+ await user.click(screen.getByRole("button",{name:"Refresh library"}));
+ await waitFor(()=>expect(screen.getByRole("alert")).toBeVisible());
+ expect(screen.queryByRole("button",{name:/View stored photo/})).not.toBeInTheDocument();
+});

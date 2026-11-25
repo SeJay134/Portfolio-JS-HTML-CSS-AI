@@ -1,0 +1,10 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+set local search_path=public,extensions;
+select no_plan();
+select ok(has_function_privilege('authenticated','public.list_studio_media()','EXECUTE'),'admin context may request library');
+select ok(not has_function_privilege('anon','public.list_studio_media()','EXECUTE'),'anonymous cannot list');
+select ok(not has_function_privilege('studio_media_worker','public.list_studio_media()','EXECUTE'),'worker cannot list');
+select ok(not (select prosecdef from pg_proc where oid='public.list_studio_media()'::regprocedure),'public listing invoker');
+select * from finish();
+rollback;

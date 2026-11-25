@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
+import hashlib
 import re
 import time
 from typing import Callable
@@ -47,7 +48,7 @@ class CapabilityBroker:
     def _authorize(self, user_token: str, asset_id: str, action: str) -> Grant:
         if (not isinstance(user_token,str) or len(user_token)>8000
             or not re.fullmatch(r"[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+",user_token)
-            or not isinstance(asset_id,str) or not UUID.fullmatch(asset_id) or action not in ("promote","cleanup")):
+            or not isinstance(asset_id,str) or not UUID.fullmatch(asset_id) or action not in ("promote","cleanup","preview")):
             raise PromotionError("Invalid request")
         req=Request(self._origin+"/rest/v1/rpc/authorize_media_grant",method="POST",
           data=json.dumps({"p_id":asset_id,"p_action":action}).encode(),
@@ -96,3 +97,16 @@ class CapabilityBroker:
             except ValueError:
                 raise PromotionError("Cleanup pending") from None
         return True
+
+    def preview(self,user_token: str,asset_id: str) -> bytes:
+        grant=self._authorize(user_token,asset_id,"preview")
+        store=self._store(grant)
+        asset=store.authorized_asset(asset_id)
+        if asset.state!="verified" or asset.owner_id!=grant.owner_id:
+            raise PromotionError("Media unavailable")
+        data=store.read_verified(asset)
+        if len(data)!=asset.byte_size or hashlib.sha256(data).hexdigest()!=asset.sha256:
+            raise PromotionError("Media integrity mismatch")
+        if store.authorized_asset(asset_id)!=asset:
+            raise PromotionError("Media unavailable")
+        return data

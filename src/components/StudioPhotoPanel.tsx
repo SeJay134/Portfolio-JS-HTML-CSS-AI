@@ -4,6 +4,8 @@ import { canProcess, processStudioPhotos, selectStudioPhotos, type PhotoItem } f
 
 import { localMediaUploadEnabled, storeStudioPhoto, type MediaReceipt } from "../lib/studioMediaUpload";
 
+import { StudioMediaLibrary } from "./StudioMediaLibrary";
+
 const labels = { queued: "Queued", checking: "Checking", compressing: "Compressing", ready: "Ready", failed: "Failed", blocked: "Blocked", cancelled: "Cancelled" };
 export function StudioPhotoPanel() {
   const [items, setItems] = useState<PhotoItem[]>([]);
@@ -175,5 +177,6 @@ export function StudioPhotoPanel() {
       {["failed","cancelled"].includes(item.state) && item.file && <button type="button" disabled={locked || !confirmed} onClick={() => void run([item.id])} aria-label={"Retry " + item.name}>Retry</button>}
       <button type="button" disabled={locked} onClick={() => remove(item.id)} aria-label={"Remove " + item.name}>Remove</button></div>
     </li>)}</ul>}
+    {uploadEnabled && <StudioMediaLibrary />}
   </section>;
 }
