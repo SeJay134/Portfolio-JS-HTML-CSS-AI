@@ -47,3 +47,5 @@ Phase 3D.2A: bounded isolated JPEG byte validator; see BLOG_STUDIO_PHASE_3D2A.md
 Phase 3D.2B-local: promotion orchestration and real disposable Storage integration; see BLOG_STUDIO_PHASE_3D2B_LOCAL.md. Hosted adapter and expired reservation/orphan reclamation remain gated.
 
 Phase 3D.2C: scoped worker role and HTTP adapter proof. See BLOG_STUDIO_PHASE_3D2C.md. No hosted token issuance or production endpoint.
+
+Phase 3D.2D: local capability broker and expired quarantine cleanup fence. See BLOG_STUDIO_PHASE_3D2D.md. Trusted hosted signer, automatic scheduling, quota reclamation and UI remain gated.
