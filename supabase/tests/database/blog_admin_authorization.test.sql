@@ -74,6 +74,21 @@ select lives_ok($q$insert into public.blog_posts(author_name,slug,title) values(
 reset role;
 select is((select user_id from private.admin_allowlist where email='enrollment1@example.invalid'),'60000000-0000-0000-0000-000000000001'::uuid,'UUID permanently bound');
 select is((select google_subject from private.admin_allowlist where email='enrollment1@example.invalid'),'enroll-1','Google subject bound');
+-- Primary Google claim is insufficient if a different identity is linked.
+insert into auth.identities(provider_id,user_id,identity_data,provider)
+values ('linked-other','60000000-0000-0000-0000-000000000001','{"sub":"linked-other","email":"enrollment1@example.invalid","email_verified":true}','github');
+set local role authenticated;
+select is(public.resolve_blog_admin(),false,'linked non-Google identity denies admin even with Google claim');
+select is((select count(*) from public.blog_posts where slug='admin-draft'),0::bigint,'linked identity cannot read draft');
+reset role;
+delete from auth.identities where provider='github' and provider_id='linked-other';
+-- OAuth server clients are a different trust boundary. A signed client_id
+-- claim alone must not permit admin access even with a live first-party session.
+set local request.jwt.claims='{"sub":"60000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"70000000-0000-0000-0000-000000000001","app_metadata":{"provider":"google"},"amr":[{"method":"oauth"}],"client_id":"80000000-0000-0000-0000-000000000001"}';
+set local role authenticated;
+select is(public.resolve_blog_admin(),false,'third-party OAuth token denied');
+reset role;
+set local request.jwt.claims='{"sub":"60000000-0000-0000-0000-000000000001","role":"authenticated","session_id":"70000000-0000-0000-0000-000000000001","app_metadata":{"provider":"google"},"amr":[{"method":"oauth"}]}';
 -- Session revocation blocks both RPC and actual RLS, even on cached JWT.
 delete from auth.sessions where id='70000000-0000-0000-0000-000000000001';
 set local role authenticated;

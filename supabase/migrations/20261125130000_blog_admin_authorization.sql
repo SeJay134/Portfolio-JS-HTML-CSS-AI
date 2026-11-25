@@ -6,11 +6,19 @@ language sql stable security definer set search_path = '' as $$
  select (select auth.uid()) is not null
  and coalesce((select auth.jwt())->'app_metadata'->>'provider' = 'google', false)
  and coalesce((select auth.jwt())->'amr' @> '[{"method":"oauth"}]'::jsonb, false)
+ and (select auth.jwt())->>'client_id' is null
+ -- A primary provider claim does not identify the initiating OAuth provider
+ -- on a linked account. Deny ambiguous/multi-provider identities entirely.
+ and not exists (
+   select 1 from auth.identities i
+   where i.user_id=(select auth.uid()) and i.provider <> 'google'
+ )
  and exists (
    select 1 from auth.sessions s
    where s.id = case when (select auth.jwt())->>'session_id' ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
      then ((select auth.jwt())->>'session_id')::uuid else null end
      and s.user_id = (select auth.uid())
+     and s.oauth_client_id is null
      and (s.not_after is null or s.not_after > now())
  );
 $$;
