@@ -41,3 +41,5 @@ Phase 3B.2: connect Studio to private draft RPCs, manual save and idle autosave,
 Phase 3C: local Studio photo queue using existing safety screen and JPEG/ZIP engine, with explicit target, previews, retry and cancellation. See BLOG_STUDIO_PHASE_3C.md. Upload and article attachment remain 3D.
 
 Phase 3D.1: private quarantine/verified bucket foundation and reservation security. See BLOG_STUDIO_PHASE_3D1.md. Server byte validation/promotion, UI integration and reference lifecycle remain separate gates.
+
+Phase 3D.2A: bounded isolated JPEG byte validator; see BLOG_STUDIO_PHASE_3D2A.md. Promotion/cleanup and media references/UI remain separate increments.
