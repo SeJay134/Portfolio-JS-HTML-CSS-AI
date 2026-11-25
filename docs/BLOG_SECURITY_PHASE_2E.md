@@ -16,3 +16,7 @@ Audited the three repository migrations, Google OAuth callback and return paths,
 - Check production schema/migration history, backup and rollback, security/performance advisors after approved schema deployment, exposed schema settings, Google-only provider settings, explicit email allowlist approval, then feature switch rollout.
 - Real publication remains blocked on SEO server response, actual 404/503, safe unpublish/invalidation, validated editor content and separate private draft media policies. A public row may contain only intentionally published fields/content; already viewed/copied public content cannot be recalled. Review editor state preservation before adding persistent editing to revalidation gate.
 - Client flags are UI rollout controls, not database authorization. Keep allowlist empty until approved. Existing public blog stays static.
+
+## CI isolation correction
+
+Initial local gateway run passed 29 checks using a publishable key. The pgTAP runner recursively discovered the API fixture SQL under supabase/tests, executed it, and contaminated the SQL suite (11 count assertions failed). The fixture has moved to supabase/test-fixtures/blog-api.sql, outside test discovery, and only the disposable API test script loads it. No policy or SQL test assertion was removed. Existing typed auth mocks now include authRevision; the stale-session regression explicitly flushes the deferred result before asserting. Re-run both workflows on the corrected commit.

@@ -1,6 +1,6 @@
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AuthProvider } from "../../../src/auth/AuthProvider";
 import { RequireAuth } from "../../../src/auth/RequireAuth";
@@ -136,8 +136,9 @@ it("does not restore an old cached session after a newer logout event", async ()
   let finish!: (result: unknown) => void;
   getSession.mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
   renderAuth();
-  authChange?.("SIGNED_OUT", null);
+  await act(async () => { authChange?.("SIGNED_OUT", null); });
   await screen.findByRole("button", { name: "Continue with Google" });
-  finish({ data: { session: googleSession }, error: null });
-  await waitFor(() => expect(screen.queryByText("Protected tool content")).not.toBeInTheDocument());
+  await act(async () => { finish({ data: { session: googleSession }, error: null }); });
+  expect(screen.queryByText("Protected tool content")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Continue with Google" })).toBeVisible();
 });

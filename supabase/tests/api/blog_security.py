@@ -42,7 +42,7 @@ def run():
         subprocess.run(["docker", "exec", "-i", "supabase_db_sergei-portfolio-local",
                         "psql", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1"],
                        input=statement, text=True, check=True, stdout=subprocess.DEVNULL)
-    sql(Path(__file__).with_name("fixtures.sql").read_text())
+    sql((Path(__file__).resolve().parents[2] / "test-fixtures" / "blog-api.sql").read_text())
 
     def jwt(n, session=None, exp=None):
         now = int(time.time())
