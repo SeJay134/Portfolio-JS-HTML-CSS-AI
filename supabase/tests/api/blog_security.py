@@ -310,6 +310,36 @@ def run():
     check(request("rpc/get_media_worker_asset",cleanup_token,"POST",{"p_id":malformed_id})[0]>=400,"cleanup capability cannot read promotion metadata")
     check(request("rpc/reserve_studio_media",owner,"POST",{"p_id":malformed_id})[0]>=400,"expired tombstone cannot be reused")
     check(storage("object/studio-media-verified/"+broker_slot["object_key"],cleanup_token,"DELETE")>=400,"cleanup scope cannot delete verified media")
+    # Actual HTTP boundary, with real broker/Storage and disposable signer.
+    from server.studio_media.local_service import LocalMediaServer, APP_ORIGIN
+    import threading
+    http_id="99000000-0000-0000-0000-000000000008"
+    status,http_slot=request("rpc/reserve_studio_media",owner,"POST",{"p_id":http_id})
+    check(status==200,"reserve local HTTP service fixture")
+    check(storage("object/studio-media-quarantine/"+http_slot["object_key"],owner,"POST",stream.getvalue(),"image/jpeg") in (200,201),"upload local HTTP fixture")
+    with LocalMediaServer(broker,0) as service:
+        thread=threading.Thread(target=service.serve_forever,daemon=True)
+        thread.start()
+        try:
+            def local_http(token, browser_origin=APP_ORIGIN):
+                req=Request(f"http://127.0.0.1:{service.server_port}/promote",method="POST",
+                    headers={"Origin":browser_origin,"Authorization":"Bearer "+token,"Content-Type":"application/json"},
+                    data=json.dumps({"asset_id":http_id,"target_bytes":300000}).encode())
+                try:
+                    with opener.open(req,timeout=30) as response:
+                        return response.status,json.loads(response.read(4096)),response.headers.get("Access-Control-Allow-Origin")
+                except HTTPError as error:
+                    return error.code,None,error.headers.get("Access-Control-Allow-Origin")
+            before=len(issued)
+            check(local_http(owner,"https://example.invalid")==(403,None,None),"local HTTP foreign origin refused")
+            check(local_http(ordinary)[0]==409 and len(issued)==before,"local HTTP nonadmin denied before issuance")
+            status,receipt,cors=local_http(owner)
+            check(status==200 and receipt["state"]=="verified" and receipt["id"]==http_id and cors==APP_ORIGIN and not receipt["cleanup_pending"],"local HTTP real promotion")
+            check("token" not in receipt and "owner_id" not in receipt,"local HTTP returns no capability")
+            check(local_http(owner)[1]==receipt,"local HTTP retry idempotent")
+        finally:
+            service.shutdown()
+            thread.join(timeout=3)
     second_media_id = "99000000-0000-0000-0000-000000000002"
     status, second_media = request("rpc/reserve_studio_media", owner, "POST", {"p_id":second_media_id})
     check(status == 200, "reserve another slot before revocation")
