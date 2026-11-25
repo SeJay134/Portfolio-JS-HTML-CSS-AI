@@ -244,7 +244,7 @@ def run():
         claims={"iss":"supabase","aud":"authenticated","role":"studio_media_worker",
           "sub":f"91000000-0000-0000-0000-00000000000{user}",
           "session_id":f"92000000-0000-0000-0000-00000000000{user}",
-          "iat":now,"exp":now+ttl,"studio_asset_id":asset_id,
+          "iat":now,"exp":now+ttl,"studio_asset_id":asset_id,"studio_media_action":"promote",
           "app_metadata":{"provider":"google","providers":["google"]},"amr":[{"method":"oauth","timestamp":now}]}
         def enc(value):
             return base64.urlsafe_b64encode(json.dumps(value,separators=(",",":")).encode()).rstrip(b"=")
@@ -268,6 +268,48 @@ def run():
     check(storage("object/sign/studio-media-verified/"+scoped_slot["object_key"],capability,"POST",b'{"expiresIn":60}',"application/json")>=400,"worker cannot sign verified URL")
     check(storage(scoped_v,capability,"DELETE")>=400,"worker cannot delete verified object")
     check(storage(scoped_v,capability,"POST",stream.getvalue(),"image/jpeg",{"x-upsert":"true"})>=400,"worker cannot overwrite verified object")
+    # The broker uses authorization returned by the real authenticated RPC;
+    # only CI has the local signing key. No signing secret is passed to the worker.
+    from server.studio_media.capability_broker import CapabilityBroker
+    issued=[]
+    def local_signer(claims):
+        issued.append(claims.copy())
+        def enc(value):
+            return base64.urlsafe_b64encode(json.dumps(value,separators=(",",":")).encode()).rstrip(b"=")
+        message=enc({"alg":"HS256","typ":"JWT"})+b"."+enc(claims)
+        return (message+b"."+base64.urlsafe_b64encode(hmac.new(secret.encode(),message,hashlib.sha256).digest()).rstrip(b"=")).decode()
+    broker=CapabilityBroker(origin,key,local_signer)
+    broker_id="99000000-0000-0000-0000-000000000007"
+    status, broker_slot=request("rpc/reserve_studio_media",owner,"POST",{"p_id":broker_id})
+    check(status==200,"reserve broker fixture")
+    check(storage("object/studio-media-quarantine/"+broker_slot["object_key"],owner,"POST",stream.getvalue(),"image/jpeg") in (200,201),"upload broker fixture")
+    for token in (ordinary,jwt(1,session="92000000-0000-0000-0000-000000000002"),jwt(1,exp=int(time.time())-120)):
+        try:
+            broker.process(token,broker_id)
+        except PromotionError:
+            check(not issued,"denied token never reaches signer")
+        else:
+            raise AssertionError("broker authorized denied user")
+    broker_result=broker.process(owner,broker_id)
+    check(broker_result.asset.state=="verified" and not broker_result.cleanup_pending,"broker authorizes and promotes through scoped adapter")
+    check(issued[-1]["sub"]=="91000000-0000-0000-0000-000000000001" and issued[-1]["studio_asset_id"]==broker_id and issued[-1]["exp"]-issued[-1]["iat"]<=120,"grant binds trusted owner, asset and expiry")
+    for protected_id in (broker_id,malformed_id):
+        try:
+            broker.cleanup_expired(owner,protected_id)
+        except PromotionError:
+            check(True,"verified or active reservation cannot be cleaned")
+        else:
+            raise AssertionError("protected media cleanup granted")
+    # Test-only fixture ages a failed reservation. The application never
+    # directly alters storage.objects or client-controlled expiry.
+    sql("update private.studio_media_assets set expires_at=now()-interval '16 minutes' where id='"+malformed_id+"'::uuid;")
+    check(broker.cleanup_expired(owner,malformed_id),"expired quarantine cleanup authorized")
+    check(broker.cleanup_expired(owner,malformed_id),"expired cleanup retry idempotent")
+    cleanup_token=local_signer(issued[-1])
+    check(storage("object/studio-media-quarantine/"+malformed["object_key"],cleanup_token)>=400,"cleanup capability cannot download")
+    check(request("rpc/get_media_worker_asset",cleanup_token,"POST",{"p_id":malformed_id})[0]>=400,"cleanup capability cannot read promotion metadata")
+    check(request("rpc/reserve_studio_media",owner,"POST",{"p_id":malformed_id})[0]>=400,"expired tombstone cannot be reused")
+    check(storage("object/studio-media-verified/"+broker_slot["object_key"],cleanup_token,"DELETE")>=400,"cleanup scope cannot delete verified media")
     second_media_id = "99000000-0000-0000-0000-000000000002"
     status, second_media = request("rpc/reserve_studio_media", owner, "POST", {"p_id":second_media_id})
     check(status == 200, "reserve another slot before revocation")
@@ -289,6 +331,13 @@ def run():
         raise AssertionError("revoked token promoted")
     check(request("rpc/get_media_worker_asset",capability,"POST",{"p_id":scoped_id})[0]>=400,"revoked scoped capability cannot read metadata")
     check(storage(scoped_v,capability)>=400,"revoked scoped capability cannot read verified bytes")
+    issued_before=len(issued)
+    try:
+        broker.process(owner,broker_id)
+    except PromotionError:
+        check(len(issued)==issued_before,"revoked session cannot obtain new capability")
+    else:
+        raise AssertionError("revoked broker authorization")
     print(f"Real local Data API checks: {checks} passed")
 
 

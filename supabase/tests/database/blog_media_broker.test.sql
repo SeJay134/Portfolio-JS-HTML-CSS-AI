@@ -1,0 +1,12 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+set local search_path=public,extensions;
+select no_plan();
+select ok(has_function_privilege('authenticated','public.authorize_media_grant(uuid,text)','EXECUTE'),'authenticated can request context only');
+select ok(not has_function_privilege('anon','public.authorize_media_grant(uuid,text)','EXECUTE'),'anonymous context denied');
+select ok(not has_function_privilege('studio_media_worker','public.authorize_media_grant(uuid,text)','EXECUTE'),'worker cannot issue context');
+select ok(not has_function_privilege('studio_media_worker','blog_internal.get_media_worker_asset_promotion(uuid)','EXECUTE'),'internal unwrapped read denied');
+select ok(not has_function_privilege('studio_media_worker','blog_internal.commit_media_worker_asset_promotion(uuid,text,integer,integer,integer)','EXECUTE'),'internal unwrapped commit denied');
+select ok(not (select prosecdef from pg_proc where oid='public.authorize_media_grant(uuid,text)'::regprocedure),'context public invoker');
+select * from finish();
+rollback;
