@@ -53,3 +53,5 @@ Phase 3D.2D: local capability broker and expired quarantine cleanup fence. See B
 Phase 3D.2E: optional local HTTP service for promotion/cleanup. See BLOG_STUDIO_PHASE_3D2E.md. No browser upload integration or hosted issuer; quota reclamation and automatic scheduling remain gated.
 
 Phase 3D.3A: explicit local-only compressed JPEG upload and verification in Studio; see BLOG_STUDIO_PHASE_3D3A.md. Persisted asset browsing, references, covers/galleries and production activation remain gated.
+
+Phase 3D.3B: local private media library and authenticated verified JPEG preview. See BLOG_STUDIO_PHASE_3D3B.md. References/covers/galleries remain 3D.3C.

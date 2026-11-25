@@ -340,6 +340,36 @@ def run():
         finally:
             service.shutdown()
             thread.join(timeout=3)
+    # Persistent owner-only library and exact read-only preview.
+    status,library=request("rpc/list_studio_media",owner,"POST",{})
+    check(status==200 and isinstance(library,list) and len(library)<=20,"owner media library loads")
+    check(any(a["id"]==http_id and a["state"]=="verified" for a in library),"verified asset survives separate library request")
+    check(all(set(a)=={"id","state","created_at","expires_at","byte_size","width","height","sha256"} for a in library),"library excludes owner IDs and storage paths")
+    check(request("rpc/list_studio_media",ordinary,"POST",{})[0]>=400,"ordinary library denied")
+    check(request("rpc/list_studio_media",method="POST",body={})[0]>=400,"anonymous library denied")
+    check(request("rpc/list_studio_media",capability,"POST",{})[0]>=400,"worker cannot list library")
+    check(request("rpc/authorize_media_grant",owner,"POST",{"p_id":malformed_id,"p_action":"preview"})[0]>=400,"rejected asset cannot preview")
+    preview_data=broker.preview(owner,http_id)
+    check(hashlib.sha256(preview_data).hexdigest()==receipt["sha256"],"verified preview bytes match digest")
+    preview_token=local_signer(issued[-1])
+    check(storage("object/studio-media-verified/"+http_slot["object_key"],preview_token)==200,"preview worker can read exact verified object")
+    check(storage(scoped_v,preview_token)>=400,"preview worker cannot read different verified object")
+    check(storage("object/studio-media-quarantine/"+http_slot["object_key"],preview_token)>=400,"preview worker cannot read quarantine")
+    check(storage("object/sign/studio-media-verified/"+http_slot["object_key"],preview_token,"POST",b'{"expiresIn":60}',"application/json")>=400,"preview worker cannot sign URL")
+    check(storage("object/studio-media-verified/"+http_slot["object_key"],preview_token,"POST",stream.getvalue(),"image/jpeg",{"x-upsert":"true"})>=400,"preview worker cannot write")
+    check(request("rpc/commit_media_worker_asset",preview_token,"POST",{"p_id":http_id,"p_sha256":receipt["sha256"],"p_byte_size":receipt["byte_size"],"p_width":96,"p_height":64})[0]>=400,"preview worker cannot commit")
+    with LocalMediaServer(broker,0) as service:
+        thread=threading.Thread(target=service.serve_forever,daemon=True)
+        thread.start()
+        try:
+            req=Request(f"http://127.0.0.1:{service.server_port}/preview",method="POST",
+                headers={"Origin":APP_ORIGIN,"Authorization":"Bearer "+owner,"Content-Type":"application/json"},
+                data=json.dumps({"asset_id":http_id}).encode())
+            with opener.open(req,timeout=30) as response:
+                check(response.status==200 and response.headers.get("Content-Type")=="image/jpeg" and response.headers.get("Cache-Control")=="no-store" and response.read()==preview_data,"HTTP private JPEG preview verified")
+        finally:
+            service.shutdown()
+            thread.join(timeout=3)
     second_media_id = "99000000-0000-0000-0000-000000000002"
     status, second_media = request("rpc/reserve_studio_media", owner, "POST", {"p_id":second_media_id})
     check(status == 200, "reserve another slot before revocation")
@@ -368,6 +398,8 @@ def run():
         check(len(issued)==issued_before,"revoked session cannot obtain new capability")
     else:
         raise AssertionError("revoked broker authorization")
+    check(request("rpc/list_studio_media",owner,"POST",{})[0]>=400,"revoked library access denied")
+    check(storage("object/studio-media-verified/"+http_slot["object_key"],preview_token)>=400,"revoked preview token denied")
     print(f"Real local Data API checks: {checks} passed")
 
 
