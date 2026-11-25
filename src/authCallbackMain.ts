@@ -1,5 +1,6 @@
 import { consumeReturnPath } from "./auth/returnPath";
 import { getSupabase } from "./lib/supabase";
+import { isBlogAdminEnabled, resolveBlogAdmin } from "./auth/blogAdmin";
 
 const status = document.getElementById("auth-status");
 
@@ -20,6 +21,14 @@ async function completeSignIn(): Promise<void> {
     path = consumeReturnPath(window.sessionStorage);
   } catch {
     // Session storage may be disabled; returning home is safe.
+  }
+  // Enrollment is optional for ordinary sign-in. Missing schema or network
+  // errors must never break login or grant administrator access.
+  if (isBlogAdminEnabled()) {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 3000);
+    try { await resolveBlogAdmin(controller.signal); }
+    finally { window.clearTimeout(timeout); }
   }
   window.location.replace(path);
 }
