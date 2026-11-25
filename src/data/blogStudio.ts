@@ -67,7 +67,8 @@ export function previewPost(draft: StudioDraft): StudioPreview {
     } else throw new Error("Unsupported content block.");
   }
   const words = blocks.map(block => block.type === "list" ? block.items.join(" ") :
-    block.type === "rich-paragraph" ? block.runs.map(run => run.text).join("") : block.text).join(" ").trim().split(/\s+/u).filter(Boolean).length;
+    block.type === "rich-paragraph" ? block.runs.map(run => run.text).join("") :
+    block.type === "image" || block.type === "gallery" ? "" : block.text).join(" ").trim().split(/\s+/u).filter(Boolean).length;
   return { slug: draft.slug || slugFromTitle(draft.title) || "local-preview",
     title: draft.title.trim() || "Untitled draft", description: draft.description, author: draft.author.trim() || "Author",
     category: draft.category.trim() || "Uncategorized", tags: [...new Set(draft.tags.split(",").map(tag => tag.trim()).filter(Boolean))],

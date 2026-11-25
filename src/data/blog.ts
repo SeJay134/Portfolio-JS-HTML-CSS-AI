@@ -1,7 +1,9 @@
 import type { RichParagraph } from "./blogRichText";
+import { decodePublishedMediaBlock, isPublicCoverPath, type PublishedMediaBlock } from "./blogMedia";
 
 export type BlogBlock =
   | RichParagraph
+  | PublishedMediaBlock
   | { type: "heading"; text: string }
   | { type: "paragraph"; text: string }
   | { type: "quote"; text: string }
@@ -63,8 +65,15 @@ export function validatePosts(posts: readonly BlogPost[]): void {
     if (!post.title.trim() || !post.description.trim() || !post.author.trim() || !post.category.trim() ||
       !Number.isFinite(Date.parse(post.publishedAt)) || !Number.isInteger(post.readingMinutes) ||
       post.readingMinutes < 1 || !post.blocks.length) throw new Error("Incomplete blog post: " + post.slug);
-    if (post.cover && (!/^\/(?!\/)[a-zA-Z0-9/_.-]+$/.test(post.cover.src) ||
-      post.cover.src.split("/").includes("..") || !post.cover.alt.trim() ||
+    let mediaCount = post.cover && post.cover.src.startsWith("/blog/media/") ? 1 : 0;
+    for (const block of post.blocks) {
+      if (block.type === "image" || block.type === "gallery") {
+        const media = decodePublishedMediaBlock(block);
+        mediaCount += media.type === "image" ? 1 : media.images.length;
+      }
+    }
+    if (mediaCount > 20) throw new Error("Too many published media references");
+    if (post.cover && (!isPublicCoverPath(post.cover.src) || !post.cover.alt.trim() ||
       !Number.isInteger(post.cover.width) || !Number.isInteger(post.cover.height) ||
       post.cover.width < 1 || post.cover.height < 1)) throw new Error("Invalid blog cover: " + post.slug);
   }

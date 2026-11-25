@@ -1,0 +1,9 @@
+# Phase 3E.2A — public media reader contract
+
+Stacked on #65, whose text publication CI passed. This increment is intentionally reader-first; no public Storage policy, public route, publication RPC change, hosted migration, UI activation or deployment. The existing text-only guard remains intact.
+
+Version 1 image block: {type: "image", version: 1, image: {src, alt, caption, width, height}}. Gallery: {type: "gallery", version: 1, images: [image, ...]}, 2–8 distinct URLs per gallery. Maximum 20 references including a canonical media cover. Alt required, caption optional as empty string, bounded dimensions and metadata. Canonical image path is /blog/media/<lowercase UUID>.jpg; no arbitrary remote URL, private object key, signed URL, query, or fragment. Legacy static covers remain supported outside the reserved media namespace. Images use intrinsic dimensions, lazy loading, text captions and responsive galleries. Private Studio previews remain separate.
+
+Next increment must atomically bind verified assets to published snapshots and resolve only active references through a server-side private Storage read with no-store. Do not grant anonymous object access or signed URLs. The route must validate IDs, enforce byte size/hash and content type, reject redirects, verify access again before responding, and return generic 404/503 without storage identifiers. Unpublish and archive must remove eligibility; shared assets remain readable only while referenced by another active publication. No claim that previously downloaded bytes can be recalled. Server role/issuer and actual Storage/Data API tests need separate review before enabling media publication. Cover captions are not included in the existing cover projection and require a separate schema decision.
+
+Unit tests cover canonical paths, malformed metadata, reference limits and escaped accessible rendering. CI pending.

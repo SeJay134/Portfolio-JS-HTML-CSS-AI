@@ -2,6 +2,16 @@ import React, { useState } from "react";
 import { articlePath, blogDate, filterPosts, type BlogPost, type BlogSummary } from "../data/blog";
 import { safeBlogHref, type RichRun } from "../data/blogRichText";
 import { Icon } from "./Icon";
+import type { PublishedImage } from "../data/blogMedia";
+import { isPublishedMediaPath } from "../data/blogMedia";
+
+function ArticleImage({ image }: { image: PublishedImage }) {
+  if (!isPublishedMediaPath(image.src)) return null;
+  return <figure className="blog-media-figure">
+    <img src={image.src} alt={image.alt} width={image.width} height={image.height} loading="lazy" decoding="async" referrerPolicy="no-referrer" />
+    {image.caption && <figcaption>{image.caption}</figcaption>}
+  </figure>;
+}
 
 function Cover({ post }: { post: BlogSummary }) {
   const cover = post.cover;
@@ -89,6 +99,8 @@ export function BlogArticle({ post, posts, preview = false, privatePreview }: { 
         {post.blocks.map((block, index) => {
           if(preview&&privatePreview&&Object.hasOwn(privatePreview.blocks,index))return <React.Fragment key={index}>{privatePreview.blocks[index]}</React.Fragment>;
           switch (block.type) {
+            case "image": return <ArticleImage key={index} image={block.image} />;
+            case "gallery": return <div key={index} className="blog-media-gallery" role="group" aria-label="Image gallery">{block.images.map(image => <ArticleImage key={image.src} image={image} />)}</div>;
             case "heading": return <h2 key={index} id={`section-${index + 1}`}>{block.text}</h2>;
             case "paragraph": return <p key={index}>{block.text}</p>;
             case "rich-paragraph": return <p className="blog-rich-paragraph" key={index}>{block.runs.map((run, i) => <FormattedRun key={i} run={run} preview={preview} />)}</p>;
