@@ -1,0 +1,22 @@
+name: Allocate local media library migration
+on:
+  push:
+    branches: [feat/blog-media-library]
+    paths: ['.github/workflows/allocate-media-library-migration.yml']
+permissions:
+  contents: read
+jobs:
+  allocate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb
+        with:
+          version: 3.4.0
+      - run: |
+          supabase --version
+          supabase migration new --help
+          supabase migration new blog_media_library
+          ls supabase/migrations/*_blog_media_library.sql
