@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { lazy, Suspense, useEffect, useState } from "react";
 import { BlogArticle } from "./BlogContent";
 import { fitsDraft, MAX_BLOCKS, MAX_DRAFTS, MAX_TEXT, moveBlock, newBlock, newDraft, previewPost, slugFromTitle,
   type BlockKind, type StudioBlock, type StudioDraft } from "../data/blogStudio";
 import { safeBlogHref, type RichRun } from "../data/blogRichText";
 import { useStudioDrafts } from "../hooks/useStudioDrafts";
 import type { RevisionSummary } from "../data/blogDraftRepository";
+
+const StudioPhotoPanel = lazy(() => import("./StudioPhotoPanel").then(module => ({ default: module.StudioPhotoPanel })));
 
 const kinds: { value: BlockKind; label: string }[] = [
   { value: "paragraph", label: "Paragraph" }, { value: "heading", label: "Heading" },
@@ -164,5 +166,6 @@ export function BlogStudioWorkspace({ persistent = false }: { persistent?: boole
         </>}
       </aside>
     </div>
+    {import.meta.env.VITE_ENABLE_BLOG_PHOTOS === "true" && <Suspense fallback={<p role="status">Loading photo preparation…</p>}><StudioPhotoPanel /></Suspense>}
   </section>;
 }

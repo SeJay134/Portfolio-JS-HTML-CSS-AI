@@ -37,3 +37,5 @@ Phase 3A: feature-gated, memory-only Studio workspace with structured formatted 
 Phase 3B.1: private draft and revision RPC foundation, see BLOG_STUDIO_PHASE_3B1.md. Frontend persistence/autosave remains 3B.2 after automated local database and API verification. No hosted changes.
 
 Phase 3B.2: connect Studio to private draft RPCs, manual save and idle autosave, reload/conflict and revision restoration. See BLOG_STUDIO_PHASE_3B2.md. Hosted flags remain disabled; revision retention/deletion and real end-to-end acceptance remain release gates.
+
+Phase 3C: local Studio photo queue using existing safety screen and JPEG/ZIP engine, with explicit target, previews, retry and cancellation. See BLOG_STUDIO_PHASE_3C.md. Upload and article attachment remain 3D.
