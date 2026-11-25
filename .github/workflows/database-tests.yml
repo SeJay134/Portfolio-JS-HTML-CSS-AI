@@ -3,11 +3,15 @@ on:
   pull_request:
     paths:
       - 'supabase/**'
+      - 'package.json'
+      - 'package-lock.json'
       - 'scripts/oauth-staging.py'
       - '.github/workflows/database-tests.yml'
   push:
     paths:
       - 'supabase/**'
+      - 'package.json'
+      - 'package-lock.json'
       - 'scripts/oauth-staging.py'
       - '.github/workflows/database-tests.yml'
 permissions:

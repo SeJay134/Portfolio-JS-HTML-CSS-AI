@@ -20,3 +20,6 @@ img/
 
 # Opt-in 13 MB research model and WASM runtime. Never commit generated binaries.
 public/experimental-gore/
+
+# Supabase CLI local metadata/cache
+supabase/.temp/
