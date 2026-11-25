@@ -3,6 +3,8 @@ import { BlogArticle } from "./BlogContent";
 import { fitsDraft, MAX_BLOCKS, MAX_DRAFTS, MAX_TEXT, moveBlock, newBlock, newDraft, previewPost, slugFromTitle,
   type BlockKind, type StudioBlock, type StudioDraft } from "../data/blogStudio";
 import { safeBlogHref, type RichRun } from "../data/blogRichText";
+import { useStudioDrafts } from "../hooks/useStudioDrafts";
+import type { RevisionSummary } from "../data/blogDraftRepository";
 
 const kinds: { value: BlockKind; label: string }[] = [
   { value: "paragraph", label: "Paragraph" }, { value: "heading", label: "Heading" },
@@ -47,15 +49,20 @@ function BlockEditor({ block, index, count, onChange, onMove, onRemove }: {
   </fieldset>;
 }
 
-export function BlogStudioWorkspace() {
-  const [drafts, setDrafts] = useState<StudioDraft[]>([]);
+export function BlogStudioWorkspace({ persistent = false }: { persistent?: boolean }) {
+  const store = useStudioDrafts(persistent);
+  const { drafts, setDrafts, dirty } = store;
   const [selected, setSelected] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [kind, setKind] = useState<BlockKind>("paragraph");
   const [mode, setMode] = useState<"edit" | "preview">("edit");
   const [error, setError] = useState("");
   const draft = drafts.find(item => item.id === selected);
-  const dirty = drafts.length > 0;
+  const [history, setHistory] = useState<{ id: string; rows: RevisionSummary[] } | null>(null);
+  const [historyError, setHistoryError] = useState("");
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const currentFailure = draft && store.failures[draft.id];
+  const currentSaved = draft && store.saved[draft.id];
   useEffect(() => {
     if (!dirty) return;
     const beforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
@@ -64,21 +71,32 @@ export function BlogStudioWorkspace() {
   }, [dirty]);
 
   function addDraft() {
-    if (drafts.length >= MAX_DRAFTS) return;
+    if (drafts.length >= MAX_DRAFTS || store.loading || store.loadError || store.denied || store.busy) return;
     const next = newDraft(uid(), uid());
-    setDrafts(items => [...items, next]); setSelected(next.id); setMode("edit"); setSearch(""); setError("");
+    setDrafts(items => [...items, next]); setSelected(next.id); setMode("edit"); setSearch(""); setError(""); setHistory(null); setHistoryError("");
   }
   function update(changes: Partial<StudioDraft>) {
-    if (!draft) return;
+    if (!draft || store.busy) return;
     const next = { ...draft, ...changes };
     if (!fitsDraft(next)) { setError("This draft exceeds the 1 MiB local limit. Remove some content."); return; }
-    setDrafts(items => items.map(item => item.id === next.id ? next : item)); setError("");
+    setDrafts(items => items.map(item => item.id === next.id ? next : item)); store.edited(next.id); setError("");
   }
   function removeDraft() {
-    if (!draft || !window.confirm("Discard this local draft? This cannot be undone.")) return;
+    if (!draft || !window.confirm("Discard this unsaved local draft? This cannot be undone.")) return;
+    if (!store.discardLocal(draft)) { setError("This draft may already be saved. Reload to confirm its state."); return; }
     const next = drafts.filter(item => item.id !== draft.id);
-    setDrafts(next); setSelected(next[0]?.id ?? null); setMode("edit"); setError("");
+    setSelected(next[0]?.id ?? null); setMode("edit"); setError(""); setHistory(null);
   }
+  async function showHistory() {
+    if (!draft || historyLoading) return;
+    setHistoryLoading(true); setHistoryError("");
+    try { setHistory({ id: draft.id, rows: await store.history(draft.id) }); }
+    catch { setHistoryError("Revision history unavailable. Try again."); }
+    finally { setHistoryLoading(false); }
+  }
+  if (store.denied) return <p role="alert">Administrator access is no longer available. Reload to check access.</p>;
+  if (store.loading) return <p role="status">Loading private drafts…</p>;
+  if (store.loadError) return <section><p role="alert">{store.loadError}</p><button type="button" onClick={store.retryLoad}>Retry loading drafts</button></section>;
   let preview: ReturnType<typeof previewPost> | undefined;
   let previewError = "";
   if (draft && mode === "preview") {
@@ -86,16 +104,16 @@ export function BlogStudioWorkspace() {
   }
   const matches = drafts.filter(item => (item.title + " " + item.category + " " + item.tags).toLowerCase().includes(search.toLowerCase().trim()));
   return <section className="studio-workspace" aria-label="Article workspace">
-    <div className="studio-banner"><div><p className="eyebrow">Phase 3A / Local workspace</p><h2>Administrator access confirmed</h2>
-      <p>Drafts are temporary and held in memory only. Reloading, leaving, or an access recheck (including window focus) can discard them. No saving or publishing yet.</p></div>
-      <span className="studio-state" role="status">{drafts.length ? "Unsaved local drafts" : "No local drafts"}</span>
+    <div className="studio-banner"><div><p className="eyebrow">{persistent ? "Phase 3B / Private drafts" : "Phase 3A / Local workspace"}</p><h2>Administrator access confirmed</h2>
+      <p>{persistent ? "Saved drafts are private. Unsaved edits may be lost on reload or access recheck (including window focus). Wait for Saved before leaving. Publishing is not enabled." : "Drafts are temporary and held in memory only. Reloading, leaving, or an access recheck (including window focus) can discard them. No saving or publishing yet."}</p></div>
+      <span className="studio-state" role="status">{persistent ? (store.busy ? "Saving or loading…" : dirty ? "Unsaved changes" : drafts.length ? "All drafts saved" : "No saved drafts") : (drafts.length ? "Unsaved local drafts" : "No local drafts")}</span>
     </div>
     <div className="studio-grid">
       <aside className="studio-panel studio-library" aria-label="Draft library">
-        <div className="studio-panel-heading"><h3>Articles</h3><button className="button primary" type="button" onClick={addDraft} disabled={drafts.length >= MAX_DRAFTS}>+ New draft</button></div>
+        <div className="studio-panel-heading"><h3>Articles</h3><button className="button primary" type="button" onClick={addDraft} disabled={drafts.length >= MAX_DRAFTS || !!store.busy}>+ New draft</button></div>
         <label>Search drafts<input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Title, category, tags" /></label>
-        <p className="studio-hint">{matches.length} of {drafts.length} local drafts</p>
-        {matches.length ? <ul className="studio-draft-list">{matches.map(item => <li key={item.id}><button type="button" aria-current={selected === item.id ? "true" : undefined} onClick={() => { setSelected(item.id); setMode("edit"); setError(""); }}><strong>{item.title || "Untitled draft"}</strong><span>Draft · {item.category || "Uncategorized"}</span></button></li>)}</ul> : <p>No matching local drafts.</p>}
+        <p className="studio-hint">{matches.length} of {drafts.length} {persistent ? "private" : "local"} drafts</p>
+        {matches.length ? <ul className="studio-draft-list">{matches.map(item => <li key={item.id}><button type="button" aria-current={selected === item.id ? "true" : undefined} onClick={() => { setSelected(item.id); setMode("edit"); setError(""); setHistory(null); setHistoryError(""); }}><strong>{item.title || "Untitled draft"}</strong><span>Draft · {item.category || "Uncategorized"}{persistent && (store.isDirty(item) ? " · Unsaved" : " · Saved")}</span></button></li>)}</ul> : <p>No matching local drafts.</p>}
       </aside>
       <section className="studio-panel studio-canvas" aria-label="Article editor">
         {!draft ? <div className="studio-empty"><h3>Start writing</h3><p>Create a draft to compose text, format blocks and preview an article.</p><button className="button secondary" type="button" onClick={addDraft}>Create first draft</button></div> : <>
@@ -104,9 +122,16 @@ export function BlogStudioWorkspace() {
             <button type="button" aria-pressed={mode === "preview"} onClick={() => setMode("preview")}>Preview</button>
           </div></div>
           {error && <p role="alert" className="studio-error">{error}</p>}
+          {persistent && <div className="studio-save-panel">
+            <div className="studio-actions"><button type="button" disabled={!!store.busy || !store.isDirty(draft) && !currentFailure || currentFailure?.kind === "conflict"} onClick={() => { void store.save(draft, true); setHistory(null); }}>Save draft</button>
+              <label className="studio-autosave"><input type="checkbox" checked={store.auto} onChange={event => store.setAuto(event.target.checked)}/> Autosave</label></div>
+            <p className="studio-hint">{currentSaved ? "Saved revision " + currentSaved.revision + " / 100" : "Not saved yet"} · {store.auto ? "15-second idle autosave" : "Manual saving"}</p>
+            {currentFailure && <p role="alert" className="studio-error">{currentFailure.message}</p>}
+            {(currentSaved || currentFailure?.kind === "conflict" || currentFailure?.kind === "unavailable") && <button type="button" disabled={!!store.busy} onClick={() => { if (window.confirm("Reload latest saved draft and discard unsaved edits?")) { void store.reload(draft); setHistory(null); } }}>Reload saved version</button>}
+          </div>}
           {mode === "preview" ? <div className="studio-preview">
             {previewError ? <p role="alert" className="studio-error">{previewError}</p> : preview && <BlogArticle post={preview} posts={[]} preview />}
-          </div> : <>
+          </div> : <fieldset className="studio-edit-fields" disabled={!!store.busy}>
             <label>Article title<input className="studio-title-input" maxLength={240} value={draft.title} onChange={event => update({ title: event.target.value })} placeholder="Give your article a title"/></label>
             <label>Summary<textarea rows={3} maxLength={2000} value={draft.description} onChange={event => update({ description: event.target.value })} placeholder="A short introduction"/></label>
             {draft.blocks.map((block, index) => <BlockEditor key={block.id} block={block} index={index} count={draft.blocks.length}
@@ -115,12 +140,12 @@ export function BlogStudioWorkspace() {
               onRemove={() => update({ blocks: draft.blocks.filter(item => item.id !== block.id) })}/>)}
             <div className="studio-add"><label>Block type<select value={kind} onChange={event => setKind(event.target.value as BlockKind)}>{kinds.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
               <button type="button" disabled={draft.blocks.length >= MAX_BLOCKS} onClick={() => update({ blocks: [...draft.blocks, newBlock(uid(), kind)] })}>+ Add block</button></div>
-          </>}
+          </fieldset>}
         </>}
       </section>
       <aside className="studio-panel studio-settings" aria-label="Article settings"><h3>Article settings</h3>
         {!draft ? <p>Choose a local draft to edit its details.</p> : <>
-          <p className="studio-hint">Status: Draft · Not published</p>
+          <fieldset className="studio-edit-fields" disabled={!!store.busy}><p className="studio-hint">Status: Draft · Not published</p>
           <label>URL slug<input maxLength={160} value={draft.slug} onChange={event => update({ slug: event.target.value })} placeholder={slugFromTitle(draft.title) || "article-slug"}/></label>
           <button type="button" onClick={() => update({ slug: slugFromTitle(draft.title) })}>Generate slug from title</button>
           <label>Category<input maxLength={100} value={draft.category} onChange={event => update({ category: event.target.value })}/></label>
@@ -128,8 +153,14 @@ export function BlogStudioWorkspace() {
           <label>Public byline<input maxLength={160} value={draft.author} onChange={event => update({ author: event.target.value })}/></label>
           <label>SEO title<input maxLength={240} value={draft.seoTitle} onChange={event => update({ seoTitle: event.target.value })}/></label>
           <label>SEO description<textarea rows={3} maxLength={500} value={draft.seoDescription} onChange={event => update({ seoDescription: event.target.value })}/></label>
-          <div className="studio-next"><strong>Coming next</strong><p>Database saving, categories, photos and publishing are not enabled in this phase.</p></div>
-          <button type="button" className="studio-discard" onClick={removeDraft}>Discard draft</button>
+          </fieldset>
+          {persistent && currentSaved && <section className="studio-history" aria-label="Revision history"><h4>Revision history</h4>
+            <button type="button" disabled={historyLoading || !!store.busy} onClick={() => void showHistory()}>Load revision history</button>
+            {historyError && <p role="alert">{historyError}</p>}
+            {history?.id === draft.id && <ul>{history.rows.map(item => <li key={item.revision}><span>Revision {item.revision} · {new Date(item.created_at).toLocaleString()}</span><button type="button" disabled={!!store.busy || !!currentFailure || item.revision === currentSaved.revision} onClick={() => { if (window.confirm("Load this revision as unsaved edits? Save to create a new revision.")) { void store.restore(draft, item.revision); setMode("edit"); } }}>Restore revision {item.revision}</button></li>)}</ul>}
+          </section>}
+          <div className="studio-next"><strong>Coming next</strong><p>{persistent ? "Media, publishing and saved draft deletion are not enabled. History has a temporary storage cap." : "Database saving, categories, photos and publishing are not enabled in this phase."}</p></div>
+          {!currentSaved && <button type="button" className="studio-discard" disabled={!!store.busy || !!currentFailure && currentFailure.kind !== "invalid"} onClick={removeDraft}>Discard draft</button>}
         </>}
       </aside>
     </div>

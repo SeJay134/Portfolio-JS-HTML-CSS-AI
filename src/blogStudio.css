@@ -32,3 +32,10 @@
 .studio-preview .blog-prose { margin: 24px 0; }
 @media (max-width: 1000px) { .studio-grid { grid-template-columns: minmax(140px, 1fr) minmax(0, 3fr); } .studio-settings { grid-column: 2; } }
 @media (max-width: 680px) { .studio-grid { grid-template-columns: minmax(0, 1fr); } .studio-settings { grid-column: auto; } .studio-panel { gap: 12px; } }
+
+.studio-edit-fields, .studio-save-panel, .studio-history { display: grid; gap: 12px; border: 0; padding: 0; margin: 0; }
+.studio-save-panel { padding: 12px; background: var(--soft); border-radius: 8px; }
+.studio-workspace .studio-autosave { display: flex; align-items: center; }
+.studio-workspace .studio-autosave input { width: 20px; height: 20px; min-height: 20px; }
+.studio-history ul { display: grid; gap: 10px; list-style: none; padding: 0; margin: 0; }
+.studio-history li { display: grid; gap: 4px; font-size: .8rem; }

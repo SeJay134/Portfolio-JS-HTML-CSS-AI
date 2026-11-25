@@ -23,7 +23,7 @@ export function BlogAdminPage() {
       <div className="blog-intro"><p className="eyebrow">Private workspace</p><h1>Blog Studio</h1></div>
       <section className={import.meta.env.VITE_ENABLE_BLOG_EDITOR === "true" ? "studio-gate" : "blog-empty"} aria-label="Administrator access">
         <RequireBlogAdmin>
-          {import.meta.env.VITE_ENABLE_BLOG_EDITOR === "true" ? <BlogStudioWorkspace /> : <><h2>Administrator access confirmed</h2>
+          {import.meta.env.VITE_ENABLE_BLOG_EDITOR === "true" ? <BlogStudioWorkspace persistent={import.meta.env.VITE_ENABLE_BLOG_DRAFTS === "true"} /> : <><h2>Administrator access confirmed</h2>
           <p>Blog Studio editing tools will be added in the next phase.</p></>}
         </RequireBlogAdmin>
       </section>
