@@ -12,14 +12,19 @@ export function LiveBlogPage({ pathname }: { pathname: string }) {
   useEffect(() => {
     const controller = new AbortController();
     let active = true;
-    const timeout = window.setTimeout(() => { controller.abort(); if (active) setState({ kind: "error" }); }, 12000);
+    let articleLoaded = false;
+    const timeout = window.setTimeout(() => { controller.abort(); if (active && !articleLoaded) setState({ kind: "error" }); }, 12000);
     async function load() {
       if (!catalogue && !slug) return { kind: "missing" } as const;
       if (catalogue) return { kind: "catalogue", posts: await loadBlogCatalogue(controller.signal) } as const;
       const post = await loadBlogArticle(slug!, controller.signal);
       if (!post) return { kind: "missing" } as const;
-      // Related articles are optional; a catalogue failure does not hide a
-      // successfully fetched article.
+      // Render the article immediately; optional related metadata must not
+      // delay or replace it if catalogue loading fails or times out.
+      if (active && !controller.signal.aborted) {
+        articleLoaded = true;
+        setState({ kind: "article", post, posts: [] });
+      }
       const posts = await loadBlogCatalogue(controller.signal).catch(() => []);
       return { kind: "article", post, posts } as const;
     }

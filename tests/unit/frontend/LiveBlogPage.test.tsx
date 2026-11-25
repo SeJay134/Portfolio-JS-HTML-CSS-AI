@@ -37,3 +37,10 @@ it("shows safe error and supports retry without stale content", async () => {
   await userEvent.setup().click(screen.getByRole("button",{name:"Retry"}));
   expect(await screen.findByRole("heading",{name:"Recovered fixture"})).toBeVisible();
 });
+
+it("renders an article without waiting for optional related articles", async () => {
+  mocks.article.mockResolvedValue({title:"Independent article"});
+  mocks.catalogue.mockImplementation(() => new Promise(() => {}));
+  render(<LiveBlogPage pathname="/blog/independent/" />);
+  expect(await screen.findByRole("heading", {name:"Independent article"})).toBeVisible();
+});

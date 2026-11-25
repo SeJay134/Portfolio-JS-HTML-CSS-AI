@@ -25,7 +25,7 @@ const blogPath = "dist/blog/index.html";
 const blogHtml = readFileSync(blogPath, "utf8");
 writeFileSync(blogPath, blogHtml.replace(
   '<div id="root"></div>',
-  `<div id="root">${renderToString(<AuthProvider><BlogPage /></AuthProvider>)}</div>`,
+  `<div id="root">${renderToString(<AuthProvider><BlogPage notice={live ? <section className="blog-empty"><p>Published articles require JavaScript to load.</p></section> : undefined} /></AuthProvider>)}</div>`,
 ));
 console.log("Prerendered the public blog catalogue.");
 
