@@ -6,11 +6,12 @@ export const MAX_DRAFTS = 20;
 export const MAX_BLOCKS = 100;
 export const MAX_DRAFT_BYTES = 1048576;
 export const MAX_TEXT = 10000;
-export type BlockKind = "heading" | "paragraph" | "quote" | "list" | "code";
-export type StudioBlock = { id: string; kind: BlockKind; text: string; language: string; runs: RichRun[] };
+export type StudioImage = { assetId: string; alt: string; caption: string };
+export type BlockKind = "heading" | "paragraph" | "quote" | "list" | "code" | "image" | "gallery";
+export type StudioBlock = { id: string; kind: BlockKind; text: string; language: string; runs: RichRun[]; images?: StudioImage[] };
 export type StudioDraft = {
-  id: string; version: 1; title: string; description: string; slug: string; category: string;
-  tags: string; author: string; seoTitle: string; seoDescription: string; blocks: StudioBlock[];
+  id: string; version: 1 | 2; title: string; description: string; slug: string; category: string;
+  tags: string; author: string; seoTitle: string; seoDescription: string; blocks: StudioBlock[]; cover?: StudioImage | null;
 };
 
 export function newBlock(id: string, kind: BlockKind = "paragraph"): StudioBlock {
@@ -35,12 +36,21 @@ export function moveBlock(blocks: StudioBlock[], index: number, direction: -1 | 
   return result;
 }
 
-export function previewPost(draft: StudioDraft): BlogPost {
-  if (draft.version !== STUDIO_SCHEMA_VERSION || !fitsDraft(draft) || draft.blocks.length > MAX_BLOCKS) throw new Error("Draft exceeds supported limits.");
+export function mediaReferenceCount(draft: StudioDraft): number {
+  return (draft.cover ? 1 : 0) + draft.blocks.reduce((n, block) => n + (block.images?.length ?? 0), 0);
+}
+export type StudioPreview = BlogPost & { privateMedia?: { cover: StudioImage | null; blocks: Record<number, StudioImage[]> } };
+export function previewPost(draft: StudioDraft): StudioPreview {
+  if (![1,2].includes(draft.version) || !fitsDraft(draft) || draft.blocks.length > MAX_BLOCKS) throw new Error("Draft exceeds supported limits.");
   if (draft.slug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(draft.slug)) throw new Error("Use lowercase letters, numbers and hyphens in the URL slug.");
   const blocks: BlogBlock[] = [];
+  const privateBlocks: Record<number, StudioImage[]> = {};
   for (const block of draft.blocks) {
-    if (block.kind === "paragraph") {
+    if (block.kind === "image" || block.kind === "gallery") {
+      if (draft.version !== 2 || !block.images?.length) throw new Error("Invalid media block.");
+      privateBlocks[blocks.length] = block.images;
+      blocks.push({ type: "quote", text: "" });
+    } else if (block.kind === "paragraph") {
       if (block.runs.some(run => run.href !== undefined && !safeBlogHref(run.href))) throw new Error("Use an http/https or internal path for links.");
       const runs = block.runs.filter(run => run.text.length > 0);
       if (!runs.some(run => run.text.trim())) continue;
@@ -61,5 +71,6 @@ export function previewPost(draft: StudioDraft): BlogPost {
   return { slug: draft.slug || slugFromTitle(draft.title) || "local-preview",
     title: draft.title.trim() || "Untitled draft", description: draft.description, author: draft.author.trim() || "Author",
     category: draft.category.trim() || "Uncategorized", tags: [...new Set(draft.tags.split(",").map(tag => tag.trim()).filter(Boolean))],
-    publishedAt: "1970-01-01T00:00:00.000Z", readingMinutes: Math.max(1, Math.ceil(words / 200)), blocks };
+    publishedAt: "1970-01-01T00:00:00.000Z", readingMinutes: Math.max(1, Math.ceil(words / 200)), blocks,
+    ...(draft.version === 2 ? { privateMedia: { cover: draft.cover ?? null, blocks: privateBlocks } } : {}) };
 }

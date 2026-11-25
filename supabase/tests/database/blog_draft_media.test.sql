@@ -1,0 +1,11 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+set local search_path=public,extensions;
+select no_plan();
+select ok(not has_table_privilege('authenticated','private.studio_revision_media','SELECT'),'revision references private');
+select ok(not has_table_privilege('studio_media_worker','private.studio_revision_media','INSERT'),'worker cannot create references');
+select ok(private.valid_studio_image('{"assetId":"99000000-0000-0000-0000-000000000001","alt":"","caption":""}'::jsonb),'valid image reference');
+select ok(not private.valid_studio_image('{"assetId":"https://example.com","alt":"","caption":""}'::jsonb),'URL not a valid reference');
+select ok(not private.valid_studio_image('{"assetId":"99000000-0000-0000-0000-000000000001","alt":"","caption":"","src":"x"}'::jsonb),'extra image fields denied');
+select * from finish();
+rollback;
