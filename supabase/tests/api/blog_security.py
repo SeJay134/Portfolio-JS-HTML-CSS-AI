@@ -185,6 +185,23 @@ def run():
     check(status==200 and archived["status"]=="archived" and slugs()==set(),"archive keeps projection private")
     check(request("rpc/get_studio_publication",owner,"POST",{"p_id":draft["id"]})==(200,archived),"owner publication state")
     check(request("studio_publication_events",owner,extra={"Accept-Profile":"private"})[0]>=400,"private publication history not exposed")
+    # Accelerate the bounded lifecycle edge in the disposable fixture only.
+    # The public RPC must never spend the final removal slots on publishing.
+    sql("update private.studio_publications set generation=197 where draft_id='96000000-0000-0000-0000-000000000001';")
+    last_publish={**updated_args,"p_expected_generation":197,"p_request_id":"98000000-0000-0000-0000-000000000028"}
+    status,last_receipt=request("rpc/change_studio_publication",owner,"POST",last_publish)
+    check(status==200 and last_receipt["generation"]==198 and slugs()=={"studio-fixture"},"last allowed publish retains removal budget")
+    rejected={**last_publish,"p_expected_generation":198,"p_request_id":"98000000-0000-0000-0000-000000000029"}
+    check(request("rpc/change_studio_publication",owner,"POST",rejected)[0]==400,"publish cannot exhaust removal budget")
+    check(request("rpc/get_studio_publication",owner,"POST",{"p_id":draft["id"]})==(200,last_receipt),"limit rejection leaves projection unchanged")
+    final_unpublish={**rejected,"p_action":"unpublish","p_request_id":"98000000-0000-0000-0000-000000000030"}
+    status,final_hidden=request("rpc/change_studio_publication",owner,"POST",final_unpublish)
+    check(status==200 and final_hidden["generation"]==199 and final_hidden["status"]=="draft" and slugs()==set(),"unpublish remains possible at limit")
+    final_archive={**final_unpublish,"p_action":"archive","p_expected_generation":199,"p_request_id":"98000000-0000-0000-0000-000000000031"}
+    status,final_archived=request("rpc/change_studio_publication",owner,"POST",final_archive)
+    check(status==200 and final_archived["generation"]==200 and final_archived["status"]=="archived","archive remains possible at limit")
+    check(request("rpc/change_studio_publication",owner,"POST",final_archive)==(200,final_archived),"final operation remains exactly retryable")
+    check(request("rpc/change_studio_publication",owner,"POST",last_publish)==(200,last_receipt) and slugs()==set(),"old retry cannot republish archived content")
     # Real Storage gateway checks, not simulated storage.objects inserts.
     def storage(path, token=None, method="GET", data=None, mime=None, extra=None):
         headers = {"apikey": key, "Cache-Control": "no-store"}
@@ -452,7 +469,8 @@ def run():
         raise AssertionError("revoked broker authorization")
     check(request("rpc/list_studio_media",owner,"POST",{})[0]>=400,"revoked library access denied")
     check(storage("object/studio-media-verified/"+http_slot["object_key"],preview_token)>=400,"revoked preview token denied")
-    check(request("rpc/change_studio_publication",owner,"POST",{**archive,"p_expected_generation":4,"p_request_id":"98000000-0000-0000-0000-000000000027","p_action":"publish"})[0]>=400,"revoked session cannot publish")
+    check(request("rpc/change_studio_publication",owner,"POST",last_publish)[0] in (401,403),"revoked session cannot replay publication receipt")
+    check(request("rpc/change_studio_publication",owner,"POST",{**final_archive,"p_request_id":"98000000-0000-0000-0000-000000000027","p_action":"publish"})[0] in (401,403),"revoked session cannot publish")
     print(f"Real local Data API checks: {checks} passed")
 
 

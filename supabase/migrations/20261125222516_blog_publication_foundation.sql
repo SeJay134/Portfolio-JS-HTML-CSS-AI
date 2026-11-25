@@ -118,6 +118,10 @@ begin
  if s.post_id is not null then select * into p from public.blog_posts where id=s.post_id for update; end if;
  next_generation:=p_expected_generation+1;
  if p_action='publish' then
+   -- Reserve two final generations for unpublish and archive. Exact retries
+   -- above remain available even when the event budget is exhausted.
+   if p_expected_generation>=198 then
+     raise exception 'Publication limit reached; removal remains available' using errcode='22023'; end if;
    select document into doc from private.studio_draft_revisions where draft_id=p_id and revision=p_expected_revision;
    if doc is null or doc is distinct from d.document or doc->>'slug'='' or
       doc->>'slug' in ('media','readiness-probe') or
