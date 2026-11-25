@@ -1,0 +1,18 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+set local search_path=public,extensions;
+select no_plan();
+select ok(exists(select 1 from pg_roles where rolname='studio_media_worker' and not rolcanlogin and not rolbypassrls and not rolsuper and not rolcreaterole),'worker non-login, non-bypass role');
+select ok(not pg_has_role('authenticated','studio_media_worker','MEMBER'),'browser role cannot assume worker');
+select ok(not pg_has_role('anon','studio_media_worker','MEMBER'),'anon cannot assume worker');
+select ok(not pg_has_role('studio_media_worker','service_role','MEMBER'),'worker cannot assume service role');
+select ok(not has_table_privilege('studio_media_worker','private.studio_media_assets','UPDATE'),'worker has no direct media metadata DML');
+select ok(not has_table_privilege('studio_media_worker','storage.objects','UPDATE'),'worker cannot update objects');
+select ok(not has_function_privilege('authenticated','public.commit_media_worker_asset(uuid,text,integer,integer,integer)','EXECUTE'),'browser cannot commit worker receipt');
+select ok(not has_function_privilege('anon','public.get_media_worker_asset(uuid)','EXECUTE'),'anon cannot read worker metadata');
+select ok(not has_function_privilege('studio_media_worker','public.save_studio_draft(uuid,integer,uuid,jsonb)','EXECUTE'),'worker cannot save draft');
+select ok(not has_function_privilege('studio_media_worker','public.resolve_blog_admin()','EXECUTE'),'worker cannot enroll');
+select ok(has_function_privilege('studio_media_worker','public.commit_media_worker_asset(uuid,text,integer,integer,integer)','EXECUTE'),'worker allowed narrow commit RPC');
+select ok(not (select prosecdef from pg_proc where oid='public.commit_media_worker_asset(uuid,text,integer,integer,integer)'::regprocedure),'public worker RPC invoker');
+select * from finish();
+rollback;
