@@ -128,6 +128,27 @@ def run():
           "verified synthetic owner enrolls through real API")
     check(slugs(owner) == {"api-live","api-draft","api-archive","api-future"},
           "bound admin can read all fixture posts")
+    # Studio working copies are a separate private store; no public projection changes.
+    draft = json.loads('{"id":"96000000-0000-0000-0000-000000000001","version":1,"title":"Private studio fixture","description":"Working copy","slug":"studio-fixture","category":"Test","tags":"SQL","author":"Fixture","seoTitle":"","seoDescription":"","blocks":[{"id":"97000000-0000-0000-0000-000000000001","kind":"paragraph","text":"","language":"","runs":[{"text":"Private body","bold":true,"href":"/blog/fixture/"}]}]}')
+    args = {"p_id": draft["id"], "p_expected_revision": 0,
+            "p_request_id": "98000000-0000-0000-0000-000000000001", "p_document": draft}
+    check(request("rpc/list_studio_drafts", method="POST", body={})[0] in (401,403,404), "anonymous studio list denied")
+    check(request("rpc/save_studio_draft", ordinary, "POST", args)[0] in (401,403), "ordinary studio write denied")
+    check(request("rpc/list_studio_drafts", ordinary, "POST", {})[0] in (401,403), "ordinary studio list denied")
+    status, saved = request("rpc/save_studio_draft", owner, "POST", args)
+    check(status == 200 and saved["revision"] == 1, "admin saves private working copy")
+    check(request("rpc/save_studio_draft", owner, "POST", args) == (200, saved), "idempotent retry")
+    changed = {**args, "p_document": {**draft, "title": "Revision two"}, "p_expected_revision": 1,
+               "p_request_id": "98000000-0000-0000-0000-000000000002"}
+    check(request("rpc/save_studio_draft", owner, "POST", changed)[0] == 200, "second revision saved")
+    stale = {**changed, "p_request_id": "98000000-0000-0000-0000-000000000003"}
+    check(request("rpc/save_studio_draft", owner, "POST", stale)[0] >= 400, "stale update rejected")
+    check(request("rpc/get_studio_draft", owner, "POST", {"p_id": draft["id"]})[1]["document"]["title"] == "Revision two", "current working copy restored")
+    check(request("rpc/get_studio_draft", owner, "POST", {"p_id": draft["id"], "p_revision": 1})[1]["document"] == draft, "immutable previous revision restored")
+    check(len(request("rpc/list_studio_revisions", owner, "POST", {"p_id": draft["id"]})[1]) == 2, "revision listing")
+    check(len(request("rpc/list_studio_drafts", owner, "POST", {})[1]) == 1, "owner list")
+    check(request("studio_drafts", owner, extra={"Accept-Profile": "private"})[0] >= 400, "private draft table not exposed")
+    check(slugs() == {"api-live"}, "working copy absent from public blog")
     status, body = request("blog_posts", owner, "PATCH", {"status":"archived"},
                            {"slug":"eq.api-live"}, {"Prefer":"return=representation"})
     check(status == 200 and len(body) == 1, "admin archives through API")
@@ -138,6 +159,8 @@ def run():
     check(slugs(owner) == set(), "revoked session cannot read private rows")
     check(request("blog_posts", owner, "POST", {"slug":"api-revoked","title":"Denied","author_name":"Fixture"})[0] in (401,403),
           "revoked session cannot write")
+    check(request("rpc/get_studio_draft", owner, "POST", {"p_id": draft["id"]})[0] in (401,403), "revoked studio read denied")
+    check(request("rpc/save_studio_draft", owner, "POST", args)[0] in (401,403), "revoked studio write denied")
     print(f"Real local Data API checks: {checks} passed")
 
 

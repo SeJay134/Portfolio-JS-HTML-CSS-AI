@@ -33,3 +33,5 @@ Phase 2F.2: local-only Google OAuth staging launcher and isolation tests, see BL
 Phase 3: proposed incremental Studio editor, private drafts and revisions, shared photo compression, validated private media storage, publication/SEO and release gates. See BLOG_STUDIO_PHASE_3_ARCHITECTURE.md. Plan only; all hosted activation remains separately approved.
 
 Phase 3A: feature-gated, memory-only Studio workspace with structured formatted paragraphs, draft list and shared preview. See BLOG_STUDIO_PHASE_3A.md. No persistence or publishing yet.
+
+Phase 3B.1: private draft and revision RPC foundation, see BLOG_STUDIO_PHASE_3B1.md. Frontend persistence/autosave remains 3B.2 after automated local database and API verification. No hosted changes.
