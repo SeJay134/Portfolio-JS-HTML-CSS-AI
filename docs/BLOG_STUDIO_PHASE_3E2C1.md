@@ -1,0 +1,7 @@
+# Phase 3E.2C.1 — public media delivery core (not routed)
+
+Stacked on #67, which remains under verification. Server-only JavaScript core accepts an exact GET /blog/media/<lowercase UUID>.jpg path and trusted resolver/read adapters. No credentials, API endpoint, rewrite, public storage grants or deployment. The resolver must consult active published references and return null only for ineligible assets; backend failures throw. The reader must use the fixed private verified bucket with a scoped server credential, reject redirects at fetch, and honor the abort signal. The existing local-only admin preview broker is not public delivery authorization.
+
+Core validates metadata and exact owner/asset object key, bounds reads to verified length and 5 MB, verifies content type, framing and SHA-256, re-resolves immediately before returning bytes, and returns generic no-store 404/405/503 or JPEG. No request credentials or arbitrary upstream URLs are forwarded. No guarantee of recalling previously delivered bytes or preventing an unpublish racing the final response after the last authorization check. No HEAD or Range support in this increment.
+
+Unit-level Node integration tests use injected adapters and synthetic JPEG framing, not the actual storage gateway. Next: dedicated narrow read role and capability issuance, active-reference RLS and real gateway tests (including direct listing/signing/anonymous denial and shared asset withdrawal), atomic media publication, explicit route and preview deployment verification. Production remains disabled.
