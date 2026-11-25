@@ -14,7 +14,7 @@ insert into auth.users(id,email,email_confirmed_at) values
 insert into private.studio_media_assets(id,owner_id,state,verified_key,byte_size,width,height,sha256)
 values ('82000000-0000-0000-0000-000000000001','62000000-0000-0000-0000-000000000001','verified',
  '62000000-0000-0000-0000-000000000001/82000000-0000-0000-0000-000000000001.jpg',100,96,64,repeat('a',64));
-select set_config('test.media_doc',$doc{"id":"96000000-0000-0000-0000-000000000001","version":2,"title":"Fixture","description":"Fixture","slug":"media-fixture","category":"Test","tags":"","author":"Fixture","seoTitle":"","seoDescription":"","cover":null,"blocks":[{"id":"97000000-0000-0000-0000-000000000001","kind":"image","text":"","language":"","runs":[{"text":""}],"images":[{"assetId":"82000000-0000-0000-0000-000000000001","alt":"Fixture photo","caption":"Caption"}]}]}$doc$,true);
+select set_config('test.media_doc',$doc${"id":"96000000-0000-0000-0000-000000000001","version":2,"title":"Fixture","description":"Fixture","slug":"media-fixture","category":"Test","tags":"","author":"Fixture","seoTitle":"","seoDescription":"","cover":null,"blocks":[{"id":"97000000-0000-0000-0000-000000000001","kind":"image","text":"","language":"","runs":[{"text":""}],"images":[{"assetId":"82000000-0000-0000-0000-000000000001","alt":"Fixture photo","caption":"Caption"}]}]}$doc$,true);
 insert into private.studio_drafts(id,owner_id,revision,document) values
  ('96000000-0000-0000-0000-000000000001','62000000-0000-0000-0000-000000000001',1,current_setting('test.media_doc')::jsonb);
 insert into private.studio_draft_revisions(draft_id,revision,request_id,document) values
