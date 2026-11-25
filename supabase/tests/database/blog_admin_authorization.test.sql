@@ -70,7 +70,7 @@ set local request.jwt.claims='{"sub":"60000000-0000-0000-0000-000000000001","rol
 select is(public.resolve_blog_admin(),true,'first verified enrollment succeeds');
 select is(public.resolve_blog_admin(),true,'returning enrollment is idempotent');
 select is((select role from public.profiles where id=auth.uid()),'admin','profile role assigned by DB');
-select lives_ok($q$insert into public.blog_posts(author_name,slug,title) values('Fixture','admin-draft','Draft')$q$,'active session can write');
+select throws_ok($q$insert into public.blog_posts(author_name,slug,title) values('Fixture','admin-draft','Draft')$q$,'42501',null,'active session still cannot bypass publication RPC');
 reset role;
 select is((select user_id from private.admin_allowlist where email='enrollment1@example.invalid'),'60000000-0000-0000-0000-000000000001'::uuid,'UUID permanently bound');
 select is((select google_subject from private.admin_allowlist where email='enrollment1@example.invalid'),'enroll-1','Google subject bound');

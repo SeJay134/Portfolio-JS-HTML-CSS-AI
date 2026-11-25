@@ -1,0 +1,16 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+set local search_path=public,extensions;
+select no_plan();
+select ok(not has_table_privilege('authenticated','public.blog_posts','INSERT'),'no direct post insert');
+select ok(not has_table_privilege('authenticated','public.blog_posts','UPDATE'),'no direct post update');
+select ok(not has_table_privilege('authenticated','public.blog_posts','DELETE'),'no direct post delete');
+select ok(not has_table_privilege('authenticated','public.blog_tags','INSERT'),'no direct tag insert');
+select ok(not has_table_privilege('authenticated','public.blog_categories','UPDATE'),'no direct category update');
+select ok(not has_table_privilege('authenticated','public.blog_post_tags','DELETE'),'no direct link delete');
+select ok(not has_table_privilege('authenticated','private.studio_publication_events','SELECT'),'private events');
+select ok(not has_function_privilege('anon','public.change_studio_publication(uuid,integer,integer,uuid,text)','EXECUTE'),'anon publication denied');
+select ok(not has_function_privilege('studio_media_worker','public.change_studio_publication(uuid,integer,integer,uuid,text)','EXECUTE'),'media worker cannot publish');
+select ok(not (select prosecdef from pg_proc where oid='public.change_studio_publication(uuid,integer,integer,uuid,text)'::regprocedure),'public publication invoker');
+select * from finish();
+rollback;
