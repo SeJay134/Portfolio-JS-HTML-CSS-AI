@@ -1,4 +1,5 @@
 import { articlePath, type BlogBlock, type BlogPost, type BlogSummary, validatePosts } from "./blog";
+import { decodeRichParagraph } from "./blogRichText";
 import { validSupabaseSettings } from "../lib/supabase";
 
 export const isLiveBlogEnabled = (): boolean => import.meta.env?.VITE_ENABLE_LIVE_BLOG === "true";
@@ -30,6 +31,7 @@ function parseBlocks(value: unknown): BlogBlock[] {
   return value.map((item): BlogBlock => {
     const block = row(item);
     switch (block.type) {
+      case "rich-paragraph": return decodeRichParagraph(block);
       case "heading": case "paragraph": case "quote":
         return { type: block.type, text: text(block.text, 1000000) };
       case "code":

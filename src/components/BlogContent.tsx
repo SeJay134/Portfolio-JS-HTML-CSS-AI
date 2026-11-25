@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { articlePath, blogDate, filterPosts, type BlogPost, type BlogSummary } from "../data/blog";
+import { safeBlogHref, type RichRun } from "../data/blogRichText";
 import { Icon } from "./Icon";
 
 function Cover({ post }: { post: BlogSummary }) {
@@ -59,7 +60,17 @@ export function BlogCatalogue({ posts }: { posts: readonly BlogSummary[] }) {
   );
 }
 
-export function BlogArticle({ post, posts }: { post: BlogPost; posts: readonly BlogSummary[] }) {
+function FormattedRun({ run, preview }: { run: RichRun; preview: boolean }) {
+  let content: React.ReactNode = run.text;
+  if (run.bold) content = <strong>{content}</strong>;
+  if (run.italic) content = <em>{content}</em>;
+  if (safeBlogHref(run.href)) content = preview
+    ? <span className="blog-preview-link">{content}</span>
+    : <a href={run.href} rel="noreferrer">{content}</a>;
+  return <>{content}</>;
+}
+
+export function BlogArticle({ post, posts, preview = false }: { post: BlogPost; posts: readonly BlogSummary[]; preview?: boolean }) {
   const headings = post.blocks.flatMap((block, index) => block.type === "heading" ? [{ text: block.text, id: `section-${index + 1}` }] : []);
   const related = filterPosts(posts, "", post.category).filter((other) => other.slug !== post.slug).slice(0, 3);
   return (
@@ -69,7 +80,7 @@ export function BlogArticle({ post, posts }: { post: BlogPost; posts: readonly B
         <h1>{post.title}</h1>
         <p className="blog-lead">{post.description}</p>
         <p className="blog-author">By {post.author}</p>
-        <Metadata post={post} />
+        {preview ? <p className="blog-meta">{post.readingMinutes} min read · Unpublished preview</p> : <Metadata post={post} />}
         <ul className="tags" aria-label="Article tags">{post.tags.map((tag) => <li key={tag}>{tag}</li>)}</ul>
         <Cover post={post} />
       </header>
@@ -79,14 +90,15 @@ export function BlogArticle({ post, posts }: { post: BlogPost; posts: readonly B
           switch (block.type) {
             case "heading": return <h2 key={index} id={`section-${index + 1}`}>{block.text}</h2>;
             case "paragraph": return <p key={index}>{block.text}</p>;
+            case "rich-paragraph": return <p className="blog-rich-paragraph" key={index}>{block.runs.map((run, i) => <FormattedRun key={i} run={run} preview={preview} />)}</p>;
             case "quote": return <blockquote key={index}>{block.text}</blockquote>;
             case "code": return <div className="blog-code" key={index}>{block.language && <p>{block.language}</p>}<pre><code>{block.text}</code></pre></div>;
             case "list": return <ul key={index}>{block.items.map((item, itemIndex) => <li key={itemIndex}>{item}</li>)}</ul>;
           }
         })}
       </div>
-      {related.length > 0 && <section className="blog-related" aria-labelledby="related-articles"><h2 id="related-articles">Related articles</h2><div className="blog-grid">{related.map((other) => <ArticleCard key={other.slug} post={other} />)}</div></section>}
-      <a className="text-link" href="/blog/">← All articles</a>
+      {!preview && related.length > 0 && <section className="blog-related" aria-labelledby="related-articles"><h2 id="related-articles">Related articles</h2><div className="blog-grid">{related.map((other) => <ArticleCard key={other.slug} post={other} />)}</div></section>}
+      {!preview && <a className="text-link" href="/blog/">← All articles</a>}
     </article>
   );
 }

@@ -4,4 +4,5 @@ import { AuthProvider } from "./auth/AuthProvider";
 import { BlogAdminPage } from "./components/BlogAdminPage";
 import "./styles.css";
 import "./blog.css";
+import "./blogStudio.css";
 createRoot(document.getElementById("root")!).render(<StrictMode><AuthProvider><BlogAdminPage /></AuthProvider></StrictMode>);

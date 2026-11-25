@@ -1,4 +1,7 @@
+import type { RichParagraph } from "./blogRichText";
+
 export type BlogBlock =
+  | RichParagraph
   | { type: "heading"; text: string }
   | { type: "paragraph"; text: string }
   | { type: "quote"; text: string }
