@@ -27,3 +27,5 @@ Phase 2C adds the gated admin shell, parameterless self-enrollment RPC, session-
 Phase 2D: isolated anonymous Data API reader, validated content and gated live catalogue/slug pages. See BLOG_DATA_PHASE_2D.md for rollout blockers and SEO limitations.
 
 Phase 2E: configuration hardening, auth lifecycle regression checks and real local Data API security integration. See BLOG_SECURITY_PHASE_2E.md; hosted OAuth verification and explicit activation approval remain mandatory.
+
+Phase 2F.2: local-only Google OAuth staging launcher and isolation tests, see BLOG_OAUTH_STAGING_PHASE_2F.md. Real test credentials and manual OAuth acceptance are still required; no hosted changes.

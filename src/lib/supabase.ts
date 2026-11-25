@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { isStagingConnection, STAGING_MODE } from "./oauthStaging";
 
 /** Auth is opt-in until Google OAuth and Supabase settings are ready. */
 export function isGoogleAuthEnabled(): boolean {
@@ -9,6 +10,9 @@ let instance: SupabaseClient | null = null;
 
 export function validSupabaseSettings(url: unknown, key: unknown): boolean {
   if (typeof url !== "string" || typeof key !== "string" || !/^sb_publishable_[A-Za-z0-9_-]+$/.test(key)) return false;
+  const mode = import.meta.env?.MODE;
+  if (mode === STAGING_MODE) return typeof window !== "undefined" &&
+    import.meta.env.DEV && isStagingConnection(mode, window.location.origin, url);
   try {
     const parsed = new URL(url);
     return parsed.protocol === "https:" &&
@@ -37,7 +41,7 @@ export function getSupabase(): SupabaseClient | null {
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: false,
-        storageKey: "sergei-portfolio-supabase-auth",
+        storageKey: import.meta.env.MODE === STAGING_MODE ? "sergei-portfolio-oauth-staging" : "sergei-portfolio-supabase-auth",
       },
     });
   }
