@@ -1,0 +1,28 @@
+name: Database security tests
+on:
+  pull_request:
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/database-tests.yml'
+  push:
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/database-tests.yml'
+permissions:
+  contents: read
+jobs:
+  database-security:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb
+        with:
+          version: 3.4.0
+      - run: supabase db start
+      - run: supabase test db --local
+      - run: supabase db lint --local --level error --fail-on error
+      - if: always()
+        run: supabase stop --no-backup
