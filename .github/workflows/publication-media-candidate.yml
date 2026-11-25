@@ -1,0 +1,31 @@
+name: Validate candidate publication media migration
+on:
+  push:
+    branches: [feat/blog-published-media-references]
+    paths: ['supabase/staging/publication-media/**', '.github/workflows/publication-media-candidate.yml']
+permissions:
+  contents: read
+jobs:
+  candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb
+        with:
+          version: 3.4.0
+      - name: Allocate and install candidate locally
+        run: |
+          supabase migration new blog_publication_media_references
+          migration=$(find supabase/migrations -name '*_blog_publication_media_references.sql')
+          test -n "$migration"
+          echo "Allocated migration: $migration"
+          cp supabase/staging/publication-media/candidate.sql "$migration"
+          cp supabase/staging/publication-media/candidate.test.sql supabase/tests/database/blog_publication_media.test.sql
+      - run: supabase db start
+      - run: supabase test db --local
+      - run: supabase db lint --local --level error --fail-on error
+      - if: always()
+        run: supabase stop --no-backup
