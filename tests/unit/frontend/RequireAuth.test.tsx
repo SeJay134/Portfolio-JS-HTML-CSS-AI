@@ -18,7 +18,7 @@ describe("feature-flagged tool access", () => {
   it("shows Google login without mounting an unauthenticated tool", () => {
     vi.stubEnv("VITE_ENABLE_GOOGLE_AUTH", "true");
     mockedAuth.mockReturnValue({
-      status: "unauthenticated", user: null,
+      status: "unauthenticated", user: null, authRevision: 0,
       signInWithGoogle: vi.fn(), signOut: vi.fn(),
     });
     render(<RequireAuth toolName="File Converter"><p>Protected converter</p></RequireAuth>);
@@ -28,7 +28,7 @@ describe("feature-flagged tool access", () => {
   it("mounts the tool for a signed-in user", () => {
     vi.stubEnv("VITE_ENABLE_GOOGLE_AUTH", "true");
     mockedAuth.mockReturnValue({
-      status: "authenticated", user: null,
+      status: "authenticated", user: null, authRevision: 0,
       signInWithGoogle: vi.fn(), signOut: vi.fn(),
     });
     render(<RequireAuth toolName="Photo Compressor"><p>Protected compressor</p></RequireAuth>);

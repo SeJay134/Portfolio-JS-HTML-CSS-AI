@@ -10,7 +10,7 @@ vi.mock("../../../src/auth/GoogleLoginButton", () => ({ GoogleLoginButton: () =>
 const studio = () => <RequireBlogAdmin><p>Private studio</p></RequireBlogAdmin>;
 beforeEach(() => {
   mocks.enabled.mockReturnValue(true);
-  mocks.auth.mockReturnValue({ status: "authenticated", user: { id: "owner" }, signOut: vi.fn() });
+  mocks.auth.mockReturnValue({ status: "authenticated", authRevision: 0, user: { id: "owner" }, signOut: vi.fn() });
   mocks.resolve.mockReset().mockResolvedValue(false);
 });
 it("fails closed when rollout is disabled", () => {
@@ -20,13 +20,13 @@ it("fails closed when rollout is disabled", () => {
   expect(mocks.resolve).not.toHaveBeenCalled();
 });
 it("requires sign-in", () => {
-  mocks.auth.mockReturnValue({ status: "unauthenticated", user: null });
+  mocks.auth.mockReturnValue({ status: "unauthenticated", authRevision: 0, user: null });
   render(studio());
   expect(screen.getByRole("button", { name: "Continue with Google" })).toBeVisible();
   expect(mocks.resolve).not.toHaveBeenCalled();
 });
 it("does not trust cached role or email", async () => {
-  mocks.auth.mockReturnValue({ status: "authenticated", user: { id: "owner", user_metadata: { role: "admin" }, email: "owner@example.invalid" } });
+  mocks.auth.mockReturnValue({ status: "authenticated", authRevision: 0, user: { id: "owner", user_metadata: { role: "admin" }, email: "owner@example.invalid" } });
   render(studio());
   expect(await screen.findByRole("alert")).toHaveTextContent("Administrator access is not available");
   expect(screen.queryByText("Private studio")).not.toBeInTheDocument();
@@ -36,7 +36,7 @@ it("shows studio only after DB confirmation, and hides it on logout", async () =
   const view = render(studio());
   expect(screen.queryByText("Private studio")).not.toBeInTheDocument();
   await screen.findByText("Private studio");
-  mocks.auth.mockReturnValue({ status: "unauthenticated", user: null });
+  mocks.auth.mockReturnValue({ status: "unauthenticated", authRevision: 0, user: null });
   view.rerender(studio());
   expect(screen.queryByText("Private studio")).not.toBeInTheDocument();
 });
@@ -44,7 +44,7 @@ it("ignores previous account response", async () => {
   let finish!: (value: boolean) => void;
   mocks.resolve.mockImplementationOnce(() => new Promise<boolean>((resolve) => { finish = resolve; }));
   const view = render(studio());
-  mocks.auth.mockReturnValue({ status: "authenticated", user: { id: "other" } });
+  mocks.auth.mockReturnValue({ status: "authenticated", authRevision: 0, user: { id: "other" } });
   view.rerender(studio());
   await screen.findByRole("alert");
   await act(async () => finish(true));
@@ -63,4 +63,24 @@ it("denies failed requests", async () => {
   await screen.findByRole("alert");
   expect(screen.queryByText("Private studio")).not.toBeInTheDocument();
   expect(screen.queryByText("private backend details")).not.toBeInTheDocument();
+});
+
+it("rechecks the same user after a new auth event rather than trusting a prior decision", async () => {
+  const user = { id: "owner" };
+  mocks.auth.mockReturnValue({status:"authenticated", user, authRevision:1, signOut:vi.fn()});
+  mocks.resolve.mockResolvedValueOnce(true);
+  const view = render(studio());
+  await screen.findByText("Private studio");
+  mocks.auth.mockReturnValue({status:"authenticated", user, authRevision:2, signOut:vi.fn()});
+  view.rerender(studio());
+  expect(screen.queryByText("Private studio")).not.toBeInTheDocument();
+  await screen.findByRole("alert");
+});
+it("rechecks authorization when a page is restored from browser cache", async () => {
+  mocks.resolve.mockResolvedValueOnce(true);
+  render(studio());
+  await screen.findByText("Private studio");
+  await act(async () => { window.dispatchEvent(new PageTransitionEvent("pageshow", {persisted:true})); });
+  await screen.findByRole("alert");
+  expect(screen.queryByText("Private studio")).not.toBeInTheDocument();
 });
