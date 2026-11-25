@@ -190,6 +190,7 @@ def main():
                        "VITE_ENABLE_BLOG_DRAFTS": "true", "VITE_ENABLE_BLOG_PHOTOS": "true",
                        "VITE_ENABLE_PUBLIC_CHAT_UI": "false"}
             if media:
+                app_env["VITE_ENABLE_LOCAL_MEDIA_UPLOAD"] = "true"
                 # Only freshly generated disposable credentials, never hosted.
                 local_secret = status.get("JWT_SECRET", "")
                 if not isinstance(local_secret,str) or not 32<=len(local_secret)<=1024:

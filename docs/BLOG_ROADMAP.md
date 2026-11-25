@@ -51,3 +51,5 @@ Phase 3D.2C: scoped worker role and HTTP adapter proof. See BLOG_STUDIO_PHASE_3D
 Phase 3D.2D: local capability broker and expired quarantine cleanup fence. See BLOG_STUDIO_PHASE_3D2D.md. Trusted hosted signer, automatic scheduling, quota reclamation and UI remain gated.
 
 Phase 3D.2E: optional local HTTP service for promotion/cleanup. See BLOG_STUDIO_PHASE_3D2E.md. No browser upload integration or hosted issuer; quota reclamation and automatic scheduling remain gated.
+
+Phase 3D.3A: explicit local-only compressed JPEG upload and verification in Studio; see BLOG_STUDIO_PHASE_3D3A.md. Persisted asset browsing, references, covers/galleries and production activation remain gated.
