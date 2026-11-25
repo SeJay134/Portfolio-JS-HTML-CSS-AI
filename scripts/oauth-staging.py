@@ -185,6 +185,8 @@ def main():
                                          cwd=work, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 if stopped.returncode:
                     print("Cleanup failed. Inspect ONLY containers ending in _" + PROJECT)
+                    if smoke:
+                        raise RuntimeError("Local OAuth smoke cleanup failed.")
                 else:
                     print("Disposable staging stack stopped; close the private browser window.")
 
@@ -192,6 +194,6 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except (RuntimeError, OSError, getpass.GetPassWarning) as error:
+    except (RuntimeError, OSError, getpass.GetPassWarning, subprocess.CalledProcessError) as error:
         print(str(error))
         raise SystemExit(1) from None

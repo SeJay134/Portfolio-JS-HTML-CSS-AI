@@ -3,10 +3,12 @@ on:
   pull_request:
     paths:
       - 'supabase/**'
+      - 'scripts/oauth-staging.py'
       - '.github/workflows/database-tests.yml'
   push:
     paths:
       - 'supabase/**'
+      - 'scripts/oauth-staging.py'
       - '.github/workflows/database-tests.yml'
 permissions:
   contents: read
