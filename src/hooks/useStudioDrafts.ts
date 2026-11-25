@@ -31,6 +31,7 @@ export function useStudioDrafts(enabled: boolean) {
     if (!enabled) return;
     const controller = new AbortController();
     lifecycle.current = controller;
+    const requests = pending.current;
     setLoading(true); setLoadError("");
     void (async () => {
       try {
@@ -51,7 +52,7 @@ export function useStudioDrafts(enabled: boolean) {
         else setLoadError(problem.message);
       } finally { if (!controller.signal.aborted) setLoading(false); }
     })();
-    return () => { controller.abort(); pending.current.clear(); };
+    return () => { controller.abort(); requests.clear(); };
   }, [enabled, attempt, deny]);
 
   const isDirty = (doc: StudioDraft) => !saved[doc.id] || JSON.stringify(doc) !== JSON.stringify(saved[doc.id].document);

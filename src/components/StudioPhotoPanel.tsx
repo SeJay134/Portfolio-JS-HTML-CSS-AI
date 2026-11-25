@@ -20,10 +20,11 @@ export function StudioPhotoPanel() {
   const [zipping, setZipping] = useState(false);
   useEffect(() => {
     mounted.current = true;
+    const generation = zipGeneration;
     return () => {
       mounted.current = false;
       active.current?.abort();
-      zipGeneration.current++;
+      generation.current++;
       if (zipRef.current) URL.revokeObjectURL(zipRef.current);
       zipRef.current = "";
     };

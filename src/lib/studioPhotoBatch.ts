@@ -9,7 +9,7 @@ export type PhotoItem = {
   id: string; name: string; sourceBytes: number; file: File | null; state: PhotoState;
   result?: ReadyPhoto; reason?: string;
 };
-export function selectStudioPhotos(files: readonly File[], makeId = () => crypto.randomUUID()) {
+export function selectStudioPhotos(files: readonly File[], makeId: () => string = () => crypto.randomUUID()) {
   const items: PhotoItem[] = [];
   let bytes = 0, rejected = 0;
   for (const file of files) {
