@@ -41,5 +41,11 @@
     "api/ready.js": {
       "maxDuration": 10
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/blog/:slug",
+      "destination": "/blog-article/index.html"
+    }
+  ]
 }

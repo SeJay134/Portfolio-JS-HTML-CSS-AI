@@ -1,4 +1,5 @@
 import { articleForPath } from "../data/blog";
+import { blogSlugForPath, isLiveBlogEnabled } from "../data/blogRemote";
 
 /**
  * Only known internal pages may be restored after an OAuth redirect.
@@ -17,7 +18,7 @@ const ALLOWED_PATHS = new Set([
 export function safeReturnPath(candidate: unknown): string {
   if (typeof candidate !== "string") return "/";
   const path = candidate === "/" ? candidate : candidate.endsWith("/") ? candidate : candidate + "/";
-  return ALLOWED_PATHS.has(path) || articleForPath(path) ? path : "/";
+  return ALLOWED_PATHS.has(path) || articleForPath(path) || (isLiveBlogEnabled() && blogSlugForPath(path)) ? path : "/";
 }
 
 export function rememberReturnPath(

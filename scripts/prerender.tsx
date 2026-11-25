@@ -1,10 +1,13 @@
 import React from "react";
 import { renderToString } from "react-dom/server";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { loadEnv } from "vite";
 import App from "../src/App";
 import { BlogPage } from "../src/components/BlogPage";
 import { articlePath, publishedPosts, validatePosts } from "../src/data/blog";
 import { AuthProvider } from "../src/auth/AuthProvider";
+const live = loadEnv("production", process.cwd(), "VITE_").VITE_ENABLE_LIVE_BLOG === "true";
+if (live && publishedPosts.length) throw new Error("Live blog cannot include static article snapshots");
 const path = "dist/index.html";
 const html = readFileSync(path, "utf8");
 writeFileSync(

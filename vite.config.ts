@@ -11,6 +11,7 @@ export default defineConfig({
       input: {
         main: resolve(import.meta.dirname, "index.html"),
         blog: resolve(import.meta.dirname, "blog/index.html"),
+        blogArticle: resolve(import.meta.dirname, "blog-article/index.html"),
         blogAdmin: resolve(import.meta.dirname, "admin/blog/index.html"),
         authCallback: resolve(import.meta.dirname, "auth/callback/index.html"),
         photoCompressor: resolve(import.meta.dirname, "tools/photo-compressor/index.html"),

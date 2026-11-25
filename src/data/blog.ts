@@ -19,6 +19,8 @@ export type BlogPost = {
   blocks: readonly BlogBlock[];
 };
 
+export type BlogSummary = Omit<BlogPost, "blocks">;
+
 // This module is public and bundled into the static site. Only reviewed,
 // published articles belong here. Drafts will live in protected storage later.
 export const publishedPosts: readonly BlogPost[] = [];
@@ -37,7 +39,7 @@ export function articleForPath(pathname: string, posts: readonly BlogPost[] = pu
   });
 }
 
-export function filterPosts(posts: readonly BlogPost[], query = "", category = ""): BlogPost[] {
+export function filterPosts<T extends BlogSummary>(posts: readonly T[], query = "", category = ""): T[] {
   const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   return posts.filter((post) => {
     const text = [post.title, post.description, post.category, ...post.tags].join(" ").toLowerCase();
