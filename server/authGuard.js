@@ -11,7 +11,7 @@ function config() {
   const raw = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const key = process.env.SUPABASE_PUBLISHABLE_KEY ||
     process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  if (typeof raw !== "string" || typeof key !== "string" || !key.trim())
+  if (typeof raw !== "string" || typeof key !== "string" || !/^sb_publishable_[A-Za-z0-9_-]+$/.test(key))
     return null;
   try {
     const url = new URL(raw);

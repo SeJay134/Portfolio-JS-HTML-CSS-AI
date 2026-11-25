@@ -26,3 +26,20 @@ jobs:
       - run: supabase db lint --local --level error --fail-on error
       - if: always()
         run: supabase stop --no-backup
+
+  data-api-security:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb
+        with:
+          version: 3.4.0
+      - name: Start disposable local API stack
+        run: supabase start
+      - name: Exercise real local Data API with synthetic fixtures
+        run: python3 supabase/tests/api/blog_security.py
+      - if: always()
+        run: supabase stop --no-backup

@@ -64,3 +64,23 @@ it("denies failed requests", async () => {
   expect(screen.queryByText("Private studio")).not.toBeInTheDocument();
   expect(screen.queryByText("private backend details")).not.toBeInTheDocument();
 });
+
+it("rechecks the same user after a new auth event rather than trusting a prior decision", async () => {
+  const user = { id: "owner" };
+  mocks.auth.mockReturnValue({status:"authenticated", user, authRevision:1, signOut:vi.fn()});
+  mocks.resolve.mockResolvedValueOnce(true);
+  const view = render(studio());
+  await screen.findByText("Private studio");
+  mocks.auth.mockReturnValue({status:"authenticated", user, authRevision:2, signOut:vi.fn()});
+  view.rerender(studio());
+  expect(screen.queryByText("Private studio")).not.toBeInTheDocument();
+  await screen.findByRole("alert");
+});
+it("rechecks authorization when a page is restored from browser cache", async () => {
+  mocks.resolve.mockResolvedValueOnce(true);
+  render(studio());
+  await screen.findByText("Private studio");
+  await act(async () => { window.dispatchEvent(new PageTransitionEvent("pageshow", {persisted:true})); });
+  await screen.findByRole("alert");
+  expect(screen.queryByText("Private studio")).not.toBeInTheDocument();
+});

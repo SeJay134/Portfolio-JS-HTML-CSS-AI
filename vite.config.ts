@@ -1,8 +1,12 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import { resolve } from "node:path";
+import { loadEnv } from "vite";
+import { assertPublicEnvironment } from "./scripts/public-env";
 
-export default defineConfig({
+export default defineConfig(({ command, mode }) => {
+  if (command === "build") assertPublicEnvironment(loadEnv(mode, process.cwd(), "VITE_"));
+  return {
   plugins: [react()],
   build: {
     target: ["es2022", "safari16"],
@@ -25,4 +29,5 @@ export default defineConfig({
     setupFiles: ["./tests/setup/frontend.ts"],
     include: ["tests/unit/frontend/**/*.test.{ts,tsx}"],
   },
+  };
 });

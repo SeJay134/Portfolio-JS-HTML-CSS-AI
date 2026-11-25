@@ -8,7 +8,7 @@ export function isGoogleAuthEnabled(): boolean {
 let instance: SupabaseClient | null = null;
 
 export function validSupabaseSettings(url: unknown, key: unknown): boolean {
-  if (typeof url !== "string" || typeof key !== "string" || !key.trim()) return false;
+  if (typeof url !== "string" || typeof key !== "string" || !/^sb_publishable_[A-Za-z0-9_-]+$/.test(key)) return false;
   try {
     const parsed = new URL(url);
     return parsed.protocol === "https:" &&

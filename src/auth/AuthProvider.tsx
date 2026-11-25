@@ -11,6 +11,7 @@ type AuthStatus = "loading" | "authenticated" | "unauthenticated" | "unavailable
 type AuthContextValue = {
   status: AuthStatus;
   user: User | null;
+  authRevision: number;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -20,6 +21,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>("loading");
   const [user, setUser] = useState<User | null>(null);
+  const [authRevision, setAuthRevision] = useState(0);
 
   useEffect(() => {
     const client = getSupabase();
@@ -29,9 +31,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     let active = true;
+    let receivedAuthEvent = false;
     const { data: { subscription } } = client.auth.onAuthStateChange(
       (_event, session) => {
         if (!active) return;
+        receivedAuthEvent = true;
+        setAuthRevision((revision) => revision + 1);
         setUser(session?.user ?? null);
         setStatus(session?.user ? "authenticated" : "unauthenticated");
       },
@@ -40,12 +45,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Also handle storage-disabled browsers and failed initial hydration.
     void client.auth.getSession()
       .then(({ data, error }) => {
-        if (!active) return;
+        if (!active || receivedAuthEvent) return;
         setUser(error ? null : data.session?.user ?? null);
         setStatus(!error && data.session?.user ? "authenticated" : "unauthenticated");
       })
       .catch(() => {
-        if (!active) return;
+        if (!active || receivedAuthEvent) return;
         setUser(null);
         setStatus("unauthenticated");
       });
@@ -83,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ status, user, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ status, user, authRevision, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );

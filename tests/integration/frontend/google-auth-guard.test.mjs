@@ -97,3 +97,10 @@ test("does not leak errors from Supabase", async () => {
   assert.equal(result.status, 503);
   assert.ok(!JSON.stringify(result).includes("private auth secret"));
 });
+
+test("rejects a privileged key instead of using it for public authentication", async () => {
+  configure();
+  process.env.SUPABASE_PUBLISHABLE_KEY = "sb_secret_fixture";
+  globalThis.fetch = () => { throw new Error("must not fetch"); };
+  assert.equal((await verifyGoogleUser({headers:bearer})).status, 503);
+});

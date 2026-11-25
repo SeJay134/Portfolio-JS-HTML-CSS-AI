@@ -131,3 +131,13 @@ describe("Google authentication lifecycle", () => {
     expect(unsubscribe).toHaveBeenCalledTimes(1);
   });
 });
+
+it("does not restore an old cached session after a newer logout event", async () => {
+  let finish!: (result: unknown) => void;
+  getSession.mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+  renderAuth();
+  authChange?.("SIGNED_OUT", null);
+  await screen.findByRole("button", { name: "Continue with Google" });
+  finish({ data: { session: googleSession }, error: null });
+  await waitFor(() => expect(screen.queryByText("Protected tool content")).not.toBeInTheDocument());
+});
