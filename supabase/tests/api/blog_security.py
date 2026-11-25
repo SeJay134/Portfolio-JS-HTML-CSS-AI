@@ -153,6 +153,48 @@ def run():
                            {"slug":"eq.api-live"}, {"Prefer":"return=representation"})
     check(status == 200 and len(body) == 1, "admin archives through API")
     check(slugs() == set(), "archived post immediately disappears from anonymous API")
+    # Real Storage gateway checks, not simulated storage.objects inserts.
+    def storage(path, token=None, method="GET", data=None, mime=None, extra=None):
+        headers = {"apikey": key, "Cache-Control": "no-store"}
+        if token or legacy:
+            headers["Authorization"] = "Bearer " + (token or key)
+        if mime:
+            headers["Content-Type"] = mime
+        if extra:
+            headers.update(extra)
+        req = Request(origin + "/storage/v1/" + path, data=data, headers=headers, method=method)
+        try:
+            with opener.open(req, timeout=15) as response:
+                return response.status
+        except HTTPError as error:
+            return error.code
+
+    media_id = "99000000-0000-0000-0000-000000000001"
+    media_args = {"p_id": media_id}
+    check(request("rpc/reserve_studio_media", method="POST", body=media_args)[0] in (401,403,404), "anonymous media reservation denied")
+    check(request("rpc/reserve_studio_media", ordinary, "POST", media_args)[0] in (401,403), "ordinary media reservation denied")
+    status, reservation = request("rpc/reserve_studio_media", owner, "POST", media_args)
+    check(status == 200 and reservation["state"] == "reserved" and reservation["max_bytes"] == 5000000, "admin reserves bounded media slot")
+    media_key = "91000000-0000-0000-0000-000000000001/" + media_id + ".jpg"
+    check(reservation["object_key"] == media_key, "server derives object key")
+    check(request("rpc/reserve_studio_media", owner, "POST", media_args) == (200, reservation), "reservation idempotent")
+    jpeg = base64.b64decode("/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAQABADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDhaKKK9k8Y/9k=")
+    quarantine = "object/studio-media-quarantine/" + media_key
+    verified = "object/studio-media-verified/" + media_key
+    check(storage(quarantine, method="POST", data=jpeg, mime="image/jpeg") >= 400, "anonymous quarantine write denied")
+    check(storage(quarantine, ordinary, "POST", jpeg, "image/jpeg") >= 400, "ordinary quarantine write denied")
+    check(storage("object/studio-media-quarantine/unknown.jpg", owner, "POST", jpeg, "image/jpeg") >= 400, "unreserved path denied")
+    check(storage(verified, owner, "POST", jpeg, "image/jpeg") >= 400, "client verified bucket write denied")
+    check(storage(quarantine, owner, "POST", jpeg, "image/jpeg") in (200,201), "reserved JPEG reaches quarantine")
+    check(storage(quarantine, owner, "POST", jpeg, "image/jpeg", {"x-upsert":"true"}) >= 400, "overwrite denied")
+    check(storage(quarantine, owner) >= 400, "quarantine cannot be downloaded even by owner")
+    check(storage("object/public/studio-media-quarantine/" + media_key) >= 400, "public quarantine URL denied")
+    check(storage("object/sign/studio-media-quarantine/" + media_key, owner, "POST", b'{"expiresIn":60}', "application/json") >= 400, "quarantine signed read denied")
+    # Direct metadata updates are impossible. Byte verification belongs to 3D.2.
+    check(request("studio_media_assets", owner, extra={"Accept-Profile":"private"})[0] >= 400, "private media table not exposed")
+    second_media_id = "99000000-0000-0000-0000-000000000002"
+    status, second_media = request("rpc/reserve_studio_media", owner, "POST", {"p_id":second_media_id})
+    check(status == 200, "reserve another slot before revocation")
     sql("delete from auth.sessions where id='92000000-0000-0000-0000-000000000001';")
     check(request("rpc/resolve_blog_admin", owner, "POST", {}) == (200, False),
           "same signed token denied after session deletion")
@@ -161,6 +203,8 @@ def run():
           "revoked session cannot write")
     check(request("rpc/get_studio_draft", owner, "POST", {"p_id": draft["id"]})[0] in (401,403), "revoked studio read denied")
     check(request("rpc/save_studio_draft", owner, "POST", args)[0] in (401,403), "revoked studio write denied")
+    check(storage("object/studio-media-quarantine/" + second_media["object_key"], owner, "POST", jpeg, "image/jpeg") >= 400, "revoked session cannot use reserved upload")
+    check(request("rpc/reserve_studio_media", owner, "POST", {"p_id":"99000000-0000-0000-0000-000000000003"})[0] in (401,403), "revoked reservation denied")
     print(f"Real local Data API checks: {checks} passed")
 
 
