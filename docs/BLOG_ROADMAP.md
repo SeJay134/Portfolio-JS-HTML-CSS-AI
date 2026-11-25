@@ -59,3 +59,5 @@ Phase 3D.3B: local private media library and authenticated verified JPEG preview
 Phase 3D.3C: v2 draft cover/image/gallery references, immutable revision bindings and protected article preview. See BLOG_STUDIO_PHASE_3D3C.md. Public projection/publishing and hosted readiness remain gated.
 
 Phase 3E.1: local text-only atomic publication and lifecycle, no direct projection DML. See BLOG_STUDIO_PHASE_3E1.md. Public media, UI and SEO remain gated.
+
+Phase 3E.2A: public image/gallery reader contract, validation and rendering only; publication and private Storage route remain gated. See BLOG_STUDIO_PHASE_3E2A.md.

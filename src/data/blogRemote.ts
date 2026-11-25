@@ -1,5 +1,6 @@
 import { articlePath, type BlogBlock, type BlogPost, type BlogSummary, validatePosts } from "./blog";
 import { decodeRichParagraph } from "./blogRichText";
+import { decodePublishedMediaBlock, isPublicCoverPath } from "./blogMedia";
 import { validSupabaseSettings } from "../lib/supabase";
 
 export const isLiveBlogEnabled = (): boolean => import.meta.env?.VITE_ENABLE_LIVE_BLOG === "true";
@@ -32,6 +33,7 @@ function parseBlocks(value: unknown): BlogBlock[] {
     const block = row(item);
     switch (block.type) {
       case "rich-paragraph": return decodeRichParagraph(block);
+      case "image": case "gallery": return decodePublishedMediaBlock(block);
       case "heading": case "paragraph": case "quote":
         return { type: block.type, text: text(block.text, 1000000) };
       case "code":
@@ -65,7 +67,7 @@ export function decodeSummary(value: unknown, now = Date.now()): BlogSummary | n
   };
   if ([item.cover_image, item.cover_alt, item.cover_width, item.cover_height].some((v) => v != null)) {
     const src = text(item.cover_image, 2000);
-    if (!/^\/[a-zA-Z0-9][a-zA-Z0-9/_.-]*$/.test(src) || src.split("/").includes("..")) return invalid();
+    if (!isPublicCoverPath(src)) return invalid();
     summary.cover = { src, alt: text(item.cover_alt, 500), width: integer(item.cover_width, 20000), height: integer(item.cover_height, 20000) };
   }
   return summary;

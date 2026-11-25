@@ -58,3 +58,26 @@ describe("anonymous blog reader", () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 });
+
+const media = { src: "/blog/media/12345678-1234-1234-1234-123456789abc.jpg", alt: "Fixture image", caption: "", width: 96, height: 64 };
+const secondMedia = { ...media, src: "/blog/media/12345678-1234-1234-1234-123456789abd.jpg" };
+describe("published media projection", () => {
+  const image = { type: "image", version: 1, image: media };
+  const gallery = { type: "gallery", version: 1, images: [media, secondMedia] };
+  it("decodes only bounded versioned image and gallery metadata", () => {
+    expect(decodeArticle({ ...fixture, content: [image, gallery] })?.blocks).toEqual([image, gallery]);
+    expect(decodeSummary({ ...fixture, cover_image: media.src, cover_alt: media.alt, cover_width: 96, cover_height: 64 })?.cover?.src).toBe(media.src);
+  });
+  it.each(["https://evil.example/a.jpg", "//evil.example/a.jpg", "blob:private", "/storage/v1/object/private/a.jpg", "/blog/media/../a.jpg", media.src + "?token=x", media.src.toUpperCase(), media.src + "/", media.src + "\n"])("rejects noncanonical media path %s", src => {
+    expect(() => decodeArticle({ ...fixture, content: [{ ...image, image: { ...media, src } }] })).toThrow();
+  });
+  it("rejects hidden fields, missing alt, invalid dimensions and excess references", () => {
+    for (const item of [{ ...media, owner_id: "private" }, { ...media, alt: " " }, { ...media, width: 0 }, { ...media, height: 20001 }, { ...media, caption: "a".repeat(1001) }])
+      expect(() => decodeArticle({ ...fixture, content: [{ ...image, image: item }] })).toThrow();
+    for (const block of [{ ...image, version: 2 }, { ...gallery, images: [media] }, { ...gallery, images: [media, media] }, { ...gallery, images: Array(9).fill(media) }])
+      expect(() => decodeArticle({ ...fixture, content: [block] })).toThrow();
+    expect(() => decodeArticle({ ...fixture, content: Array(21).fill(image) })).toThrow();
+    expect(() => decodeSummary({ ...fixture, cover_image: "/blog/media/not-a-uuid.jpg", cover_alt: "x", cover_width: 1, cover_height: 1 })).toThrow();
+    expect(decodeArticle({ status: "draft", content: [image] })).toBeNull();
+  });
+});

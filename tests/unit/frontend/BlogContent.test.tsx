@@ -55,3 +55,15 @@ describe("published article catalogue", () => {
     expect(html).not.toContain("<script>alert(1)</script>");
   });
 });
+
+it("renders public image and gallery accessibly, escaping captions", () => {
+  const image = { src: "/blog/media/12345678-1234-1234-1234-123456789abc.jpg", alt: "Blue fixture", caption: "<script>caption</script>", width: 96, height: 64 };
+  const other = { ...image, src: "/blog/media/12345678-1234-1234-1234-123456789abd.jpg", alt: "Green fixture", caption: "" };
+  const post: BlogPost = { ...fixture, blocks: [{ type: "image", version: 1, image }, { type: "gallery", version: 1, images: [image, other] }] };
+  const { container } = render(<BlogArticle post={post} posts={[]} />);
+  const gallery = screen.getByRole("group", { name: "Image gallery" });
+  expect(within(gallery).getByRole("img", { name: "Green fixture" })).toHaveAttribute("src", other.src);
+  expect(screen.getAllByRole("img", { name: "Blue fixture" })[0]).toHaveAttribute("width", "96");
+  expect(screen.getAllByText(image.caption)).toHaveLength(2);
+  expect(container.querySelector("script")).toBeNull();
+});
