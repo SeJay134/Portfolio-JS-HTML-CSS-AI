@@ -1,17 +1,17 @@
 import React, { useState } from "react";
-import { articlePath, blogDate, filterPosts, type BlogPost } from "../data/blog";
+import { articlePath, blogDate, filterPosts, type BlogPost, type BlogSummary } from "../data/blog";
 import { Icon } from "./Icon";
 
-function Cover({ post }: { post: BlogPost }) {
+function Cover({ post }: { post: BlogSummary }) {
   const cover = post.cover;
   return cover ? <img className="blog-cover" src={cover.src} alt={cover.alt} width={cover.width} height={cover.height} loading="lazy" decoding="async" /> : null;
 }
 
-function Metadata({ post }: { post: BlogPost }) {
+function Metadata({ post }: { post: BlogSummary }) {
   return <p className="blog-meta"><time dateTime={post.publishedAt}>{blogDate(post.publishedAt)}</time><span>{post.readingMinutes} min read</span></p>;
 }
 
-function ArticleCard({ post, featured = false }: { post: BlogPost; featured?: boolean }) {
+function ArticleCard({ post, featured = false }: { post: BlogSummary; featured?: boolean }) {
   return (
     <article className={featured ? "blog-card blog-featured" : "blog-card"}>
       <Cover post={post} />
@@ -26,7 +26,7 @@ function ArticleCard({ post, featured = false }: { post: BlogPost; featured?: bo
   );
 }
 
-export function BlogCatalogue({ posts }: { posts: readonly BlogPost[] }) {
+export function BlogCatalogue({ posts }: { posts: readonly BlogSummary[] }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
   const categories = Array.from(new Set(posts.map((post) => post.category))).sort();
@@ -59,7 +59,7 @@ export function BlogCatalogue({ posts }: { posts: readonly BlogPost[] }) {
   );
 }
 
-export function BlogArticle({ post, posts }: { post: BlogPost; posts: readonly BlogPost[] }) {
+export function BlogArticle({ post, posts }: { post: BlogPost; posts: readonly BlogSummary[] }) {
   const headings = post.blocks.flatMap((block, index) => block.type === "heading" ? [{ text: block.text, id: `section-${index + 1}` }] : []);
   const related = filterPosts(posts, "", post.category).filter((other) => other.slug !== post.slug).slice(0, 3);
   return (

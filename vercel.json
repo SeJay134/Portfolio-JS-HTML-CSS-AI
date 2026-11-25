@@ -32,6 +32,45 @@
           "value": "no-store"
         }
       ]
+    },
+    {
+      "source": "/blog/:slug",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/blog/:slug/",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/blog-article/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
     }
   ],
   "functions": {
@@ -41,5 +80,15 @@
     "api/ready.js": {
       "maxDuration": 10
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/blog/:slug",
+      "destination": "/blog-article/index.html"
+    },
+    {
+      "source": "/blog/:slug/",
+      "destination": "/blog-article/index.html"
+    }
+  ]
 }

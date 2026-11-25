@@ -23,3 +23,5 @@ Approved product direction: a public author blog and private Blog Studio, with i
 Blog Studio, visual editor, media compression, drafts and publication; revisions and scheduling; article SEO and static rendering, RSS, search; optional analytics and explicitly approved AI/RAG integration. Ensure unpublish removes static snapshots and cached media where applicable; design publication/rebuild failure handling before enabling live publishing.
 
 Phase 2C adds the gated admin shell, parameterless self-enrollment RPC, session-aware RLS and local tests. See BLOG_ADMIN_PHASE_2C.md; no live activation before review.
+
+Phase 2D: isolated anonymous Data API reader, validated content and gated live catalogue/slug pages. See BLOG_DATA_PHASE_2D.md for rollout blockers and SEO limitations.

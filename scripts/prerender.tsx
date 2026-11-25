@@ -1,10 +1,13 @@
 import React from "react";
 import { renderToString } from "react-dom/server";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { loadEnv } from "vite";
 import App from "../src/App";
 import { BlogPage } from "../src/components/BlogPage";
 import { articlePath, publishedPosts, validatePosts } from "../src/data/blog";
 import { AuthProvider } from "../src/auth/AuthProvider";
+const live = loadEnv("production", process.cwd(), "VITE_").VITE_ENABLE_LIVE_BLOG === "true";
+if (live && publishedPosts.length) throw new Error("Live blog cannot include static article snapshots");
 const path = "dist/index.html";
 const html = readFileSync(path, "utf8");
 writeFileSync(
@@ -22,7 +25,7 @@ const blogPath = "dist/blog/index.html";
 const blogHtml = readFileSync(blogPath, "utf8");
 writeFileSync(blogPath, blogHtml.replace(
   '<div id="root"></div>',
-  `<div id="root">${renderToString(<AuthProvider><BlogPage /></AuthProvider>)}</div>`,
+  `<div id="root">${renderToString(<AuthProvider><BlogPage notice={live ? <section className="blog-empty"><p>Published articles require JavaScript to load.</p></section> : undefined} /></AuthProvider>)}</div>`,
 ));
 console.log("Prerendered the public blog catalogue.");
 

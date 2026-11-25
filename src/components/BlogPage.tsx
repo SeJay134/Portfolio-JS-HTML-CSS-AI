@@ -4,9 +4,11 @@ import { useTheme } from "../hooks/useTheme";
 import { Drawer } from "./Drawer";
 import { Icon } from "./Icon";
 import { BlogArticle, BlogCatalogue } from "./BlogContent";
-import { publishedPosts, type BlogPost } from "../data/blog";
+import { publishedPosts, type BlogPost, type BlogSummary } from "../data/blog";
 
-export function BlogPage({ article }: { article?: BlogPost } = {}) {
+type BlogPageProps = { article?: BlogPost; posts?: readonly BlogSummary[]; notice?: React.ReactNode; articleRoute?: boolean };
+
+export function BlogPage({ article, posts = publishedPosts, notice, articleRoute = false }: BlogPageProps = {}) {
   const { theme, selectTheme } = useTheme();
   const [menu, setMenu] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -46,9 +48,12 @@ export function BlogPage({ article }: { article?: BlogPost } = {}) {
       <Drawer open={menu} activePage="blog" sectionHrefPrefix="/"
         onClose={() => { setMenu(false); requestAnimationFrame(() => menuButton.current?.focus({ preventScroll: true })); }} />
       <main id="main" tabIndex={-1} className="section blog-main">
-        {article ? <>
+        {articleRoute && !article ? <>
           <a className="text-link" href="/blog/">← Back to blog</a>
-          <BlogArticle post={article} posts={publishedPosts} />
+          {notice}
+        </> : article ? <>
+          <a className="text-link" href="/blog/">← Back to blog</a>
+          <BlogArticle post={article} posts={posts} />
         </> : <>
           <a className="text-link" href="/">← Back to portfolio</a>
           <div className="blog-intro">
@@ -56,7 +61,7 @@ export function BlogPage({ article }: { article?: BlogPost } = {}) {
             <h1>Blog <span className="serif-accent">&amp; Insights.</span></h1>
             <p>Articles on software development, data, artificial intelligence and personal projects.</p>
           </div>
-          <BlogCatalogue posts={publishedPosts} />
+          {notice ?? <BlogCatalogue posts={posts} />}
         </>}
       </main>
       <footer className="site-footer">
