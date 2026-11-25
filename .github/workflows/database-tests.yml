@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'supabase/**'
+      - 'server/studio_media/**'
+      - 'requirements-studio-media.txt'
       - 'package.json'
       - 'package-lock.json'
       - 'scripts/oauth-staging.py'
@@ -10,6 +12,8 @@ on:
   push:
     paths:
       - 'supabase/**'
+      - 'server/studio_media/**'
+      - 'requirements-studio-media.txt'
       - 'package.json'
       - 'package-lock.json'
       - 'scripts/oauth-staging.py'
@@ -43,10 +47,16 @@ jobs:
       - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb
         with:
           version: 3.4.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          architecture: x64
+      - run: |
+          python -m pip install --require-hashes --only-binary=:all: -r requirements-studio-media.txt
       - name: Start disposable local API stack
         run: supabase start
       - name: Exercise real local Data API with synthetic fixtures
-        run: python3 supabase/tests/api/blog_security.py
+        run: PYTHONPATH="$PWD" python supabase/tests/api/blog_security.py
       - if: always()
         run: supabase stop --no-backup
 

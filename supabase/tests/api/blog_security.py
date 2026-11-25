@@ -192,6 +192,42 @@ def run():
     check(storage("object/sign/studio-media-quarantine/" + media_key, owner, "POST", b'{"expiresIn":60}', "application/json") >= 400, "quarantine signed read denied")
     # Direct metadata updates are impossible. Byte verification belongs to 3D.2.
     check(request("studio_media_assets", owner, extra={"Accept-Profile":"private"})[0] >= 400, "private media table not exposed")
+    # Promotion is exercised only in this disposable synthetic fixture suite.
+    from local_media_promotion import FixtureStore
+    from server.studio_media.promotion import promote, PromotionError
+    from server.studio_media.validator import MediaValidationError
+    from PIL import Image
+    import io
+    # Use a separately generated, truly decodable fixture for promotion.
+    promotion_id = "99000000-0000-0000-0000-000000000004"
+    status, promotion_slot = request("rpc/reserve_studio_media", owner, "POST", {"p_id":promotion_id})
+    check(status == 200, "reserve promotion fixture")
+    stream = io.BytesIO()
+    with Image.new("RGB", (96,64), "steelblue") as image:
+        image.save(stream, "JPEG", progressive=True)
+    check(storage("object/studio-media-quarantine/"+promotion_slot["object_key"],owner,"POST",stream.getvalue(),"image/jpeg") in (200,201),"upload real JPEG for promotion")
+    adapter = FixtureStore(settings, opener, request, owner)
+    result = promote(adapter,promotion_id,300000)
+    check(result.asset.state=="verified" and result.asset.width==96 and result.asset.height==64 and not result.cleanup_pending,"verified metadata and quarantine cleanup")
+    check(promote(adapter,promotion_id,300000)==result,"verified promotion retry idempotent")
+    check(storage("object/studio-media-verified/"+promotion_slot["object_key"],owner)>=400,"verified object still private")
+    check(storage("object/public/studio-media-verified/"+promotion_slot["object_key"])>=400,"public verified URL denied")
+    try:
+        promote(FixtureStore(settings,opener,request,ordinary),promotion_id)
+    except PromotionError:
+        check(True,"ordinary fixture cannot promote")
+    else:
+        raise AssertionError("ordinary fixture unexpectedly promoted")
+    malformed_id = "99000000-0000-0000-0000-000000000005"
+    status, malformed = request("rpc/reserve_studio_media",owner,"POST",{"p_id":malformed_id})
+    check(status==200,"reserve malformed fixture")
+    check(storage("object/studio-media-quarantine/"+malformed["object_key"],owner,"POST",b"<html>fixture</html>","image/jpeg") in (200,201),"quarantine MIME alone is not verification")
+    try:
+        promote(adapter,malformed_id)
+    except MediaValidationError:
+        check(adapter.authorized_asset(malformed_id).state=="reserved","invalid bytes not promoted")
+    else:
+        raise AssertionError("invalid bytes promoted")
     second_media_id = "99000000-0000-0000-0000-000000000002"
     status, second_media = request("rpc/reserve_studio_media", owner, "POST", {"p_id":second_media_id})
     check(status == 200, "reserve another slot before revocation")
@@ -205,6 +241,12 @@ def run():
     check(request("rpc/save_studio_draft", owner, "POST", args)[0] in (401,403), "revoked studio write denied")
     check(storage("object/studio-media-quarantine/" + second_media["object_key"], owner, "POST", jpeg, "image/jpeg") >= 400, "revoked session cannot use reserved upload")
     check(request("rpc/reserve_studio_media", owner, "POST", {"p_id":"99000000-0000-0000-0000-000000000003"})[0] in (401,403), "revoked reservation denied")
+    try:
+        promote(adapter,promotion_id)
+    except PromotionError:
+        check(True,"revoked token cannot retry promotion")
+    else:
+        raise AssertionError("revoked token promoted")
     print(f"Real local Data API checks: {checks} passed")
 
 
