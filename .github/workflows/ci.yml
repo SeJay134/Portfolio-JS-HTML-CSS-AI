@@ -170,3 +170,23 @@ jobs:
           path: |
             playwright-report/
             test-results/
+
+  blog-draft-persistence:
+    runs-on: ubuntu-24.04
+    env:
+      VITE_ENABLE_GOOGLE_AUTH: "true"
+      VITE_ENABLE_BLOG_ADMIN: "true"
+      VITE_ENABLE_BLOG_EDITOR: "true"
+      VITE_ENABLE_BLOG_DRAFTS: "true"
+      VITE_SUPABASE_URL: https://mock.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_test_only
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm }
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npx playwright test --config playwright.blog-drafts.config.ts

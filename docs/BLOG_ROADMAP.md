@@ -35,3 +35,5 @@ Phase 3: proposed incremental Studio editor, private drafts and revisions, share
 Phase 3A: feature-gated, memory-only Studio workspace with structured formatted paragraphs, draft list and shared preview. See BLOG_STUDIO_PHASE_3A.md. No persistence or publishing yet.
 
 Phase 3B.1: private draft and revision RPC foundation, see BLOG_STUDIO_PHASE_3B1.md. Frontend persistence/autosave remains 3B.2 after automated local database and API verification. No hosted changes.
+
+Phase 3B.2: connect Studio to private draft RPCs, manual save and idle autosave, reload/conflict and revision restoration. See BLOG_STUDIO_PHASE_3B2.md. Hosted flags remain disabled; revision retention/deletion and real end-to-end acceptance remain release gates.
