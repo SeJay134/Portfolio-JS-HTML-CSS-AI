@@ -1,0 +1,7 @@
+# Phase 3E.2B — candidate private published media references
+
+Stacked on #66, whose CI must still pass. The candidate SQL is NOT in migrations yet: the isolated workflow allocates a filename with pinned Supabase CLI 3.4.0, installs it into a disposable local stack and runs pgTAP/lint. Promote it into the normal migration and test directories only after verification.
+
+Private manifest resolves verified assets from the immutable saved revision and owner binding, preserves per-use alt/caption and emits only canonical public URLs and dimensions. Cover caption is rejected rather than silently dropped because the current cover schema cannot store it. A private registry ties a distinct asset to the exact publish event, generation and retained revision reference. Binding checks the stored public image/gallery projection and cover against the manifest. Eligibility checks current generation, source revision, published state/time and verified metadata. Old generations remain retained but inactive; another active publication may retain eligibility for a shared asset.
+
+No public RPC, Storage policy changes, credential issuer, route, or actual media publication. Existing text-only RPC stays unchanged. Tests use synthetic verified metadata, not actual bytes. Before enabling publication, integrate these helpers atomically into the existing lifecycle and verify real Storage reads, manifest/cover/gallery consistency, owner isolation, removal and shared assets. No hosted writes or deployment.
