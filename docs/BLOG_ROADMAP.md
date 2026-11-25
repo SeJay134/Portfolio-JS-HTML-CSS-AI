@@ -31,3 +31,5 @@ Phase 2E: configuration hardening, auth lifecycle regression checks and real loc
 Phase 2F.2: local-only Google OAuth staging launcher and isolation tests, see BLOG_OAUTH_STAGING_PHASE_2F.md. Real local administrator OAuth and UI revocation were observed on Windows; overall acceptance is partial (one identity only). See BLOG_OAUTH_LOCAL_ACCEPTANCE.md. No hosted changes.
 
 Phase 3: proposed incremental Studio editor, private drafts and revisions, shared photo compression, validated private media storage, publication/SEO and release gates. See BLOG_STUDIO_PHASE_3_ARCHITECTURE.md. Plan only; all hosted activation remains separately approved.
+
+Phase 3A: feature-gated, memory-only Studio workspace with structured formatted paragraphs, draft list and shared preview. See BLOG_STUDIO_PHASE_3A.md. No persistence or publishing yet.
