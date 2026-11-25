@@ -370,6 +370,25 @@ def run():
         finally:
             service.shutdown()
             thread.join(timeout=3)
+    # Save media in immutable v2 revisions; reject missing or unverified references atomically.
+    media_draft={**draft,"id":"98000000-0000-0000-0000-000000000009","version":2,"slug":"media-reference-fixture",
+        "cover":{"assetId":http_id,"alt":"Fixture cover","caption":"Cover caption"},
+        "blocks":[{"id":"97000000-0000-0000-0000-000000000009","kind":"gallery","text":"","language":"","runs":[{"text":""}],
+            "images":[{"assetId":scoped_id,"alt":"First","caption":""},{"assetId":broker_id,"alt":"Second","caption":"Fixture"}]}]}
+    media_args={"p_id":media_draft["id"],"p_expected_revision":0,"p_request_id":"96000000-0000-0000-0000-000000000009","p_document":media_draft}
+    status,media_saved=request("rpc/save_studio_draft",owner,"POST",media_args)
+    check(status==200 and media_saved["revision"]==1,"v2 cover and gallery saved atomically")
+    check(request("rpc/save_studio_draft",owner,"POST",media_args)==(200,media_saved),"v2 save retry idempotent")
+    check(request("rpc/get_studio_draft",owner,"POST",{"p_id":media_draft["id"],"p_revision":1})[1]["document"]==media_draft,"v2 revision preserves media references and captions")
+    invalid_media={**media_draft,"cover":{"assetId":malformed_id,"alt":"","caption":""}}
+    check(request("rpc/save_studio_draft",owner,"POST",{**media_args,"p_expected_revision":1,"p_request_id":"96000000-0000-0000-0000-000000000010","p_document":invalid_media})[0]>=400,"unverified asset reference denied")
+    missing_media={**media_draft,"cover":{"assetId":"99000000-0000-0000-0000-000000000099","alt":"","caption":""}}
+    check(request("rpc/save_studio_draft",owner,"POST",{**media_args,"p_expected_revision":1,"p_request_id":"96000000-0000-0000-0000-000000000011","p_document":missing_media})[0]>=400,"missing asset reference denied")
+    check(request("rpc/get_studio_draft",owner,"POST",{"p_id":media_draft["id"]})[1]["revision"]==1,"failed reference save rolls back working copy")
+    no_media={**media_draft,"cover":None,"blocks":[]}
+    check(request("rpc/save_studio_draft",owner,"POST",{**media_args,"p_expected_revision":1,"p_request_id":"96000000-0000-0000-0000-000000000012","p_document":no_media})[0]==200,"remove references creates new revision")
+    check(request("rpc/get_studio_draft",owner,"POST",{"p_id":media_draft["id"],"p_revision":1})[1]["document"]==media_draft,"old media references survive removal")
+    check(request("studio_revision_media",owner,extra={"Accept-Profile":"private"})[0]>=400,"private reference table inaccessible")
     second_media_id = "99000000-0000-0000-0000-000000000002"
     status, second_media = request("rpc/reserve_studio_media", owner, "POST", {"p_id":second_media_id})
     check(status == 200, "reserve another slot before revocation")

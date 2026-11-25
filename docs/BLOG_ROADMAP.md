@@ -55,3 +55,5 @@ Phase 3D.2E: optional local HTTP service for promotion/cleanup. See BLOG_STUDIO_
 Phase 3D.3A: explicit local-only compressed JPEG upload and verification in Studio; see BLOG_STUDIO_PHASE_3D3A.md. Persisted asset browsing, references, covers/galleries and production activation remain gated.
 
 Phase 3D.3B: local private media library and authenticated verified JPEG preview. See BLOG_STUDIO_PHASE_3D3B.md. References/covers/galleries remain 3D.3C.
+
+Phase 3D.3C: v2 draft cover/image/gallery references, immutable revision bindings and protected article preview. See BLOG_STUDIO_PHASE_3D3C.md. Public projection/publishing and hosted readiness remain gated.

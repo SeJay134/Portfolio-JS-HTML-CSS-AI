@@ -1,10 +1,13 @@
 import React, { lazy, Suspense, useEffect, useState } from "react";
 import { BlogArticle } from "./BlogContent";
 import { fitsDraft, MAX_BLOCKS, MAX_DRAFTS, MAX_TEXT, moveBlock, newBlock, newDraft, previewPost, slugFromTitle,
-  type BlockKind, type StudioBlock, type StudioDraft } from "../data/blogStudio";
+  type BlockKind, type StudioBlock, type StudioDraft, mediaReferenceCount } from "../data/blogStudio";
 import { safeBlogHref, type RichRun } from "../data/blogRichText";
 import { useStudioDrafts } from "../hooks/useStudioDrafts";
 import type { RevisionSummary } from "../data/blogDraftRepository";
+
+import { DraftMediaPicker, ImageFields, PrivateArticleImage } from "./DraftMediaControls";
+import { localMediaUploadEnabled } from "../lib/studioMediaUpload";
 
 const StudioPhotoPanel = lazy(() => import("./StudioPhotoPanel").then(module => ({ default: module.StudioPhotoPanel })));
 
@@ -22,13 +25,22 @@ function BlockEditor({ block, index, count, onChange, onMove, onRemove }: {
   const changeRun = (i: number, changes: Partial<RichRun>) =>
     onChange({ ...block, runs: block.runs.map((run, j) => j === i ? { ...run, ...changes } : run) });
   return <fieldset className="studio-block">
-    <legend>{label} · {kinds.find(kind => kind.value === block.kind)?.label}</legend>
+    <legend>{label} · {kinds.find(kind => kind.value === block.kind)?.label ?? (block.kind === "image" ? "Image" : "Gallery")}</legend>
     <div className="studio-actions">
       <button type="button" onClick={() => onMove(-1)} disabled={!index} aria-label={label + " move up"}>↑ Up</button>
       <button type="button" onClick={() => onMove(1)} disabled={index === count - 1} aria-label={label + " move down"}>↓ Down</button>
       <button type="button" onClick={onRemove} aria-label={label + " remove"}>Remove</button>
     </div>
-    {block.kind === "paragraph" ? <>
+    {block.kind === "image" || block.kind === "gallery" ? <>
+      {(block.images ?? []).map((image,i)=><div key={image.assetId}>
+        <ImageFields image={image} label={label+" photo "+(i+1)} onChange={next=>onChange({...block,images:block.images!.map((a,j)=>i===j?next:a)})}/>
+        {block.kind==="gallery"&&<div className="studio-actions">
+          <button type="button" disabled={i===0} onClick={()=>{const next=[...block.images!];[next[i-1],next[i]]=[next[i],next[i-1]];onChange({...block,images:next});}}>Photo up</button>
+          <button type="button" disabled={i===block.images!.length-1} onClick={()=>{const next=[...block.images!];[next[i+1],next[i]]=[next[i],next[i+1]];onChange({...block,images:next});}}>Photo down</button>
+          <button type="button" onClick={()=>{const next=block.images!.filter((_,j)=>j!==i);onChange({...block,kind:next.length===1?"image":"gallery",images:next});}}>Remove photo</button>
+        </div>}
+      </div>)}
+    </> : block.kind === "paragraph" ? <>
       {block.runs.map((run, i) => {
         const name = label + " text part " + (i + 1);
         return <div className="studio-run" key={i}>
@@ -80,6 +92,7 @@ export function BlogStudioWorkspace({ persistent = false }: { persistent?: boole
   function update(changes: Partial<StudioDraft>) {
     if (!draft || store.busy) return;
     const next = { ...draft, ...changes };
+    if (mediaReferenceCount(next)>20) { setError("A draft can contain at most 20 photo references."); return; }
     if (!fitsDraft(next)) { setError("This draft exceeds the 1 MiB local limit. Remove some content."); return; }
     setDrafts(items => items.map(item => item.id === next.id ? next : item)); store.edited(next.id); setError("");
   }
@@ -132,10 +145,16 @@ export function BlogStudioWorkspace({ persistent = false }: { persistent?: boole
             {(currentSaved || currentFailure?.kind === "conflict" || currentFailure?.kind === "unavailable") && <button type="button" disabled={!!store.busy} onClick={() => { if (window.confirm("Reload latest saved draft and discard unsaved edits?")) { void store.reload(draft); setHistory(null); } }}>Reload saved version</button>}
           </div>}
           {mode === "preview" ? <div className="studio-preview">
-            {previewError ? <p role="alert" className="studio-error">{previewError}</p> : preview && <BlogArticle post={preview} posts={[]} preview />}
+            {previewError ? <p role="alert" className="studio-error">{previewError}</p> : preview && <BlogArticle post={preview} posts={[]} preview privatePreview={preview.privateMedia ? {
+              cover:preview.privateMedia.cover?<PrivateArticleImage key={preview.privateMedia.cover.assetId} image={preview.privateMedia.cover}/>:undefined,
+              blocks:Object.fromEntries(Object.entries(preview.privateMedia.blocks).map(([index,images])=>[index,<div className="studio-article-gallery">{images.map(image=><PrivateArticleImage key={image.assetId} image={image}/>)}</div>]))
+            }:undefined} />}
           </div> : <fieldset className="studio-edit-fields" disabled={!!store.busy}>
             <label>Article title<input className="studio-title-input" maxLength={240} value={draft.title} onChange={event => update({ title: event.target.value })} placeholder="Give your article a title"/></label>
             <label>Summary<textarea rows={3} maxLength={2000} value={draft.description} onChange={event => update({ description: event.target.value })} placeholder="A short introduction"/></label>
+            {persistent && localMediaUploadEnabled() && <DraftMediaPicker key={draft.id} draft={draft} remaining={20-mediaReferenceCount(draft)}
+              onChange={cover=>update({version:2,cover})}
+              onAdd={block=>update({version:2,cover:draft.cover??null,blocks:[...draft.blocks,block]})}/>}
             {draft.blocks.map((block, index) => <BlockEditor key={block.id} block={block} index={index} count={draft.blocks.length}
               onChange={next => update({ blocks: draft.blocks.map(item => item.id === next.id ? next : item) })}
               onMove={direction => update({ blocks: moveBlock(draft.blocks, index, direction) })}
@@ -161,7 +180,7 @@ export function BlogStudioWorkspace({ persistent = false }: { persistent?: boole
             {historyError && <p role="alert">{historyError}</p>}
             {history?.id === draft.id && <ul>{history.rows.map(item => <li key={item.revision}><span>Revision {item.revision} · {new Date(item.created_at).toLocaleString()}</span><button type="button" disabled={!!store.busy || !!currentFailure || item.revision === currentSaved.revision} onClick={() => { if (window.confirm("Load this revision as unsaved edits? Save to create a new revision.")) { void store.restore(draft, item.revision); setMode("edit"); } }}>Restore revision {item.revision}</button></li>)}</ul>}
           </section>}
-          <div className="studio-next"><strong>Coming next</strong><p>{persistent ? "Media, publishing and saved draft deletion are not enabled. History has a temporary storage cap." : "Database saving, categories, photos and publishing are not enabled in this phase."}</p></div>
+          <div className="studio-next"><strong>Coming next</strong><p>{persistent ? "Publishing and saved draft deletion are not enabled. Local media references are available only in isolated staging. History has a temporary storage cap." : "Database saving, categories, photos and publishing are not enabled in this phase."}</p></div>
           {!currentSaved && <button type="button" className="studio-discard" disabled={!!store.busy || !!currentFailure && currentFailure.kind !== "invalid"} onClick={removeDraft}>Discard draft</button>}
         </>}
       </aside>

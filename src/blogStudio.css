@@ -52,3 +52,6 @@
 .studio-photo-preview { display: grid; justify-items: start; gap: 8px; margin: 0; }
 .studio-photo-preview img { max-width: 100%; max-height: 360px; width: auto; height: auto; object-fit: contain; }
 .studio-photo-preview figcaption { font-size: .8rem; color: var(--muted); }
+
+.studio-article-gallery { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:12px; }
+.studio-article-gallery figure { min-width:0; }

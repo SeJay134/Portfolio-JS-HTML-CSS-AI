@@ -1,5 +1,5 @@
 import { getSupabase } from "../lib/supabase";
-import { fitsDraft, MAX_BLOCKS, MAX_DRAFTS, MAX_TEXT, type StudioDraft, type StudioBlock, type BlockKind } from "./blogStudio";
+import { fitsDraft, MAX_BLOCKS, MAX_DRAFTS, MAX_TEXT, type StudioDraft, type StudioBlock, type BlockKind, type StudioImage, mediaReferenceCount } from "./blogStudio";
 import { safeBlogHref, type RichRun } from "./blogRichText";
 
 export const draftPersistenceEnabled = () => import.meta.env.VITE_ENABLE_BLOG_DRAFTS === "true";
@@ -45,16 +45,22 @@ function slug(value: unknown): string {
 function validDraftHref(value: unknown): value is string {
   return safeBlogHref(value) && (value.startsWith("/") || /^https?:\/\/[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?(?::[0-9]{1,5})?(?:[/?#].*)?$/i.test(value));
 }
+function image(value: unknown): StudioImage {
+  const row=object(value); exact(row,["assetId","alt","caption"]);
+  return {assetId:id(row.assetId),alt:text(row.alt,500),caption:text(row.caption,1000)};
+}
 export function decodeDraft(value: unknown): StudioDraft {
   const d = object(value);
-  exact(d, ["id","version","title","description","slug","category","tags","author","seoTitle","seoDescription","blocks"]);
-  if (d.version !== 1 || !Array.isArray(d.blocks) || d.blocks.length > MAX_BLOCKS) return invalid();
+  exact(d, ["id","version","title","description","slug","category","tags","author","seoTitle","seoDescription","blocks",...(d.version===2?["cover"]:[])]);
+  if ((d.version !== 1 && d.version !== 2) || !Array.isArray(d.blocks) || d.blocks.length > MAX_BLOCKS) return invalid();
   const ids = new Set<string>();
   const blocks = d.blocks.map((value): StudioBlock => {
     const b = object(value);
-    exact(b, ["id","kind","text","language","runs"]);
+    const media=b.kind==="image"||b.kind==="gallery";
+    if(media&&d.version!==2)return invalid();
+    exact(b, ["id","kind","text","language","runs",...(media?["images"]:[])]);
     const blockId = id(b.id);
-    if (ids.has(blockId) || !["heading","paragraph","quote","list","code"].includes(String(b.kind)) ||
+    if (ids.has(blockId) || !["heading","paragraph","quote","list","code","image","gallery"].includes(String(b.kind)) ||
       typeof b.kind !== "string" || !Array.isArray(b.runs) || !b.runs.length || b.runs.length > 50) return invalid();
     ids.add(blockId);
     const body = text(b.text, MAX_TEXT);
@@ -68,12 +74,21 @@ export function decodeDraft(value: unknown): StudioDraft {
       return { text: text(run.text, MAX_TEXT), ...(typeof run.bold === "boolean" ? { bold: run.bold } : {}),
         ...(typeof run.italic === "boolean" ? { italic: run.italic } : {}), ...(typeof run.href === "string" ? { href: run.href } : {}) };
     });
-    return { id: blockId, kind: b.kind as BlockKind, text: body, language: text(b.language, 100), runs };
+    const result: StudioBlock={ id: blockId, kind: b.kind as BlockKind, text: body, language: text(b.language, 100), runs };
+    if(media){
+      if(body!==""||result.language!==""||runs.length!==1||runs[0].text!==""||Object.keys(runs[0]).length!==1||
+        !Array.isArray(b.images)||(b.kind==="image"?b.images.length!==1:b.images.length<2||b.images.length>8))return invalid();
+      const images=b.images.map(image);
+      if(new Set(images.map(i=>i.assetId)).size!==images.length)return invalid();
+      result.images=images;
+    }
+    return result;
   });
-  const doc: StudioDraft = { id: id(d.id), version: 1, title: text(d.title, 240), description: text(d.description, 2000),
+  const doc: StudioDraft = { id: id(d.id), version: d.version, title: text(d.title, 240), description: text(d.description, 2000),
     slug: slug(d.slug), category: text(d.category, 100), tags: text(d.tags, 2000), author: text(d.author, 160),
-    seoTitle: text(d.seoTitle, 240), seoDescription: text(d.seoDescription, 500), blocks };
-  if (!fitsDraft(doc)) return invalid();
+    seoTitle: text(d.seoTitle, 240), seoDescription: text(d.seoDescription, 500), blocks,
+    ...(d.version===2?{cover:d.cover===null?null:image(d.cover)}:{}) };
+  if (!fitsDraft(doc) || mediaReferenceCount(doc)>20) return invalid();
   return doc;
 }
 function receipt(value: unknown): SaveReceipt {
@@ -133,10 +148,15 @@ export async function getDraft(draftId: string, signal: AbortSignal, rev?: numbe
 export async function saveDraft(request: SaveRequest, signal: AbortSignal): Promise<SaveReceipt> {
   const doc = decodeDraft(request.document);
   if (!Number.isInteger(request.expected) || request.expected < 0 || request.expected >= 100) return invalid();
-  const result = receipt(await rpc("save_studio_draft", { p_id: doc.id, p_expected_revision: request.expected,
-    p_request_id: id(request.key), p_document: doc }, signal));
-  if (result.id !== doc.id || result.revision !== request.expected + 1) return invalid();
-  return result;
+  const raw=await rpc("save_studio_draft", { p_id: doc.id, p_expected_revision: request.expected,
+    p_request_id: id(request.key), p_document: doc }, signal);
+  try {
+    const result=receipt(raw);
+    if(result.id!==doc.id||result.revision!==request.expected+1)return invalid();
+    return result;
+  } catch {
+    throw new DraftError("unavailable","Save receipt not confirmed. Retry the same request.");
+  }
 }
 export async function listRevisions(draftId: string, signal: AbortSignal): Promise<RevisionSummary[]> {
   const rows = await rpc("list_studio_revisions", { p_id: id(draftId) }, signal);

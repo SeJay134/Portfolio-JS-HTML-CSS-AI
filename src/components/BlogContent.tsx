@@ -70,7 +70,7 @@ function FormattedRun({ run, preview }: { run: RichRun; preview: boolean }) {
   return <>{content}</>;
 }
 
-export function BlogArticle({ post, posts, preview = false }: { post: BlogPost; posts: readonly BlogSummary[]; preview?: boolean }) {
+export function BlogArticle({ post, posts, preview = false, privatePreview }: { post: BlogPost; posts: readonly BlogSummary[]; preview?: boolean; privatePreview?: {cover?:React.ReactNode;blocks:Record<number,React.ReactNode>} }) {
   const headings = post.blocks.flatMap((block, index) => block.type === "heading" ? [{ text: block.text, id: `section-${index + 1}` }] : []);
   const related = filterPosts(posts, "", post.category).filter((other) => other.slug !== post.slug).slice(0, 3);
   return (
@@ -82,11 +82,12 @@ export function BlogArticle({ post, posts, preview = false }: { post: BlogPost; 
         <p className="blog-author">By {post.author}</p>
         {preview ? <p className="blog-meta">{post.readingMinutes} min read · Unpublished preview</p> : <Metadata post={post} />}
         <ul className="tags" aria-label="Article tags">{post.tags.map((tag) => <li key={tag}>{tag}</li>)}</ul>
-        <Cover post={post} />
+        {preview && privatePreview?.cover ? privatePreview.cover : <Cover post={post} />}
       </header>
       {headings.length > 0 && <nav className="blog-toc" aria-label="Table of contents"><h2>On this page</h2><ul>{headings.map((heading) => <li key={heading.id}><a href={`#${heading.id}`}>{heading.text}</a></li>)}</ul></nav>}
       <div className="blog-prose">
         {post.blocks.map((block, index) => {
+          if(preview&&privatePreview&&Object.hasOwn(privatePreview.blocks,index))return <React.Fragment key={index}>{privatePreview.blocks[index]}</React.Fragment>;
           switch (block.type) {
             case "heading": return <h2 key={index} id={`section-${index + 1}`}>{block.text}</h2>;
             case "paragraph": return <p key={index}>{block.text}</p>;
