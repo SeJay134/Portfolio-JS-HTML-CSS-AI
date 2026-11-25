@@ -22,6 +22,7 @@ VERSIONS = (
     "20261125120000_blog_foundation.sql",
     "20261125130000_blog_admin_authorization.sql",
     "20261125204431_blog_draft_foundation.sql",
+    "20261125212546_blog_media_foundation.sql",
 )
 
 
