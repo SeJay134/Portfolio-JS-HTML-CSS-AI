@@ -171,7 +171,8 @@ def main():
             app_env = {**env, "VITE_SUPABASE_URL": API, "VITE_SUPABASE_PUBLISHABLE_KEY": key,
                        "VITE_ENABLE_GOOGLE_AUTH": "true", "VITE_ENABLE_BLOG_ADMIN": "true",
                        "VITE_ENABLE_LIVE_BLOG": "true", "VITE_ENABLE_BLOG_EDITOR": "true",
-                       "VITE_ENABLE_BLOG_DRAFTS": "true", "VITE_ENABLE_PUBLIC_CHAT_UI": "false"}
+                       "VITE_ENABLE_BLOG_DRAFTS": "true", "VITE_ENABLE_BLOG_PHOTOS": "true",
+                       "VITE_ENABLE_PUBLIC_CHAT_UI": "false"}
             print("Open http://127.0.0.1:5511/admin/blog/ in a fresh private browser window.")
             print("The allowlist is local only. No administrator is assigned until test sign-in.")
             print("Ctrl+C stops Vite and removes the disposable Supabase stack.")
