@@ -5,7 +5,7 @@ export type PublishedMediaBlock =
   | { type: "gallery"; version: 1; images: readonly PublishedImage[] };
 
 export function isPublishedMediaPath(value: unknown): value is string {
-  return typeof value === "string" && /^\/blog\/media\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.jpg$/.test(value);
+  return typeof value === "string" && value.length === 52 && /^\/blog\/media\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.jpg$/.test(value);
 }
 
 function record(value: unknown, keys: readonly string[]): Record<string, unknown> {
@@ -47,6 +47,6 @@ export function isPublicCoverPath(value: unknown): value is string {
   // Preserve the existing same-origin legacy static cover contract, but
   // reserve the entire media namespace for canonical UUID JPEG paths.
   return typeof value === "string" && /^\/[a-zA-Z0-9][a-zA-Z0-9/_.-]*$/.test(value) &&
-    !value.split("/").some(segment => segment === "." || segment === ".." || !segment && value.includes("//")) &&
+    !/[\s]/u.test(value) && !value.includes("//") && !value.split("/").some(segment => segment === "." || segment === "..") &&
     (!/^\/blog\/media(?:\/|$)/i.test(value) || isPublishedMediaPath(value));
 }

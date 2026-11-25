@@ -68,7 +68,7 @@ describe("published media projection", () => {
     expect(decodeArticle({ ...fixture, content: [image, gallery] })?.blocks).toEqual([image, gallery]);
     expect(decodeSummary({ ...fixture, cover_image: media.src, cover_alt: media.alt, cover_width: 96, cover_height: 64 })?.cover?.src).toBe(media.src);
   });
-  it.each(["https://evil.example/a.jpg", "//evil.example/a.jpg", "blob:private", "/storage/v1/object/private/a.jpg", "/blog/media/../a.jpg", media.src + "?token=x", media.src.toUpperCase(), media.src + "/"])("rejects noncanonical media path %s", src => {
+  it.each(["https://evil.example/a.jpg", "//evil.example/a.jpg", "blob:private", "/storage/v1/object/private/a.jpg", "/blog/media/../a.jpg", media.src + "?token=x", media.src.toUpperCase(), media.src + "/", media.src + "\n"])("rejects noncanonical media path %s", src => {
     expect(() => decodeArticle({ ...fixture, content: [{ ...image, image: { ...media, src } }] })).toThrow();
   });
   it("rejects hidden fields, missing alt, invalid dimensions and excess references", () => {
