@@ -4,7 +4,7 @@ export type RichParagraph = { type: "rich-paragraph"; version: 1; runs: readonly
 
 export function safeBlogHref(value: unknown): value is string {
   if (typeof value !== "string" || !value || value.length > 2048 ||
-      /[\s\\\u0000-\u001f\u007f]/u.test(value)) return false;
+      /[\s\\]/u.test(value) || Array.from(value).some(char => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)) return false;
   try {
     if (value.startsWith("/") && !value.startsWith("//")) {
       const url = new URL(value, "https://blog.invalid");
