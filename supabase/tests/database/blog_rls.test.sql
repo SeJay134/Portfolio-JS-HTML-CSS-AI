@@ -11,6 +11,9 @@ insert into auth.users(id,email,email_confirmed_at,raw_user_meta_data) values
 insert into auth.identities(provider_id,user_id,identity_data,provider)
 select 'fixture-'||right(id::text,1),id,jsonb_build_object('sub','fixture-'||right(id::text,1),'email',email,'email_verified',right(id::text,1)<>'4'),'google'
 from auth.users where id::text like '10000000-0000-0000-0000-00000000000%';
+insert into auth.sessions(id,user_id,created_at,updated_at)
+select ('50000000-0000-0000-0000-00000000000'||right(id::text,1))::uuid,id,now(),now()
+from auth.users where id::text like '10000000-0000-0000-0000-00000000000%';
 update public.profiles set role='admin' where id in ('10000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000003','10000000-0000-0000-0000-000000000004','10000000-0000-0000-0000-000000000005');
 update public.profiles set status='blocked' where id='10000000-0000-0000-0000-000000000003';
 insert into private.admin_allowlist(email,user_id,google_subject) values
@@ -45,7 +48,7 @@ select throws_ok($q$insert into public.blog_posts(author_name,slug,title) values
 reset role;
 set local role authenticated;
 set local request.jwt.claim.sub='10000000-0000-0000-0000-000000000001';
-set local request.jwt.claims='{"sub":"10000000-0000-0000-0000-000000000001","role":"authenticated","user_metadata":{"role":"admin"}}';
+set local request.jwt.claims='{"sub":"10000000-0000-0000-0000-000000000001","role":"authenticated","user_metadata":{"role":"admin"},"session_id":"50000000-0000-0000-0000-000000000001","app_metadata":{"provider":"google"},"amr":[{"method":"oauth"}]}';
 select is((select count(*) from public.blog_posts),1::bigint,'forged role metadata cannot read drafts');
 select throws_ok($q$insert into public.blog_posts(author_name,slug,title) values('User','user','User')$q$,'42501',null,'user cannot insert');
 select results_eq($q$with changed as (update public.blog_posts set title='Hijacked' where slug='live' returning 1) select count(*) from changed$q$,array[0::bigint],'user cannot update');
@@ -56,25 +59,25 @@ select throws_ok($q$select * from private.admin_allowlist$q$,'42501',null,'user 
 reset role;
 set local role authenticated;
 set local request.jwt.claim.sub='10000000-0000-0000-0000-000000000003';
-set local request.jwt.claims='{"sub":"10000000-0000-0000-0000-000000000003","role":"authenticated","user_metadata":{"role":"admin"}}';
+set local request.jwt.claims='{"sub":"10000000-0000-0000-0000-000000000003","role":"authenticated","user_metadata":{"role":"admin"},"session_id":"50000000-0000-0000-0000-000000000003","app_metadata":{"provider":"google"},"amr":[{"method":"oauth"}]}';
 select is((select count(*) from public.blog_posts),1::bigint,'blocked admin denied draft access');
 select throws_ok($q$insert into public.blog_posts(author_name,slug,title) values('Denied','denied','Denied')$q$,'42501',null,'blocked admin cannot write');
 reset role;
 set local role authenticated;
 set local request.jwt.claim.sub='10000000-0000-0000-0000-000000000004';
-set local request.jwt.claims='{"sub":"10000000-0000-0000-0000-000000000004","role":"authenticated","user_metadata":{"role":"admin"}}';
+set local request.jwt.claims='{"sub":"10000000-0000-0000-0000-000000000004","role":"authenticated","user_metadata":{"role":"admin"},"session_id":"50000000-0000-0000-0000-000000000004","app_metadata":{"provider":"google"},"amr":[{"method":"oauth"}]}';
 select is((select count(*) from public.blog_posts),1::bigint,'unverified admin denied draft access');
 select throws_ok($q$insert into public.blog_posts(author_name,slug,title) values('Denied','denied','Denied')$q$,'42501',null,'unverified admin cannot write');
 reset role;
 set local role authenticated;
 set local request.jwt.claim.sub='10000000-0000-0000-0000-000000000005';
-set local request.jwt.claims='{"sub":"10000000-0000-0000-0000-000000000005","role":"authenticated","user_metadata":{"role":"admin"}}';
+set local request.jwt.claims='{"sub":"10000000-0000-0000-0000-000000000005","role":"authenticated","user_metadata":{"role":"admin"},"session_id":"50000000-0000-0000-0000-000000000005","app_metadata":{"provider":"google"},"amr":[{"method":"oauth"}]}';
 select is((select count(*) from public.blog_posts),1::bigint,'unbound admin denied draft access');
 select throws_ok($q$insert into public.blog_posts(author_name,slug,title) values('Denied','denied','Denied')$q$,'42501',null,'unbound admin cannot write');
 reset role;
 set local role authenticated;
 set local request.jwt.claim.sub='10000000-0000-0000-0000-000000000002';
-set local request.jwt.claims='{"sub":"10000000-0000-0000-0000-000000000002","role":"authenticated","user_metadata":{"role":"admin"}}';
+set local request.jwt.claims='{"sub":"10000000-0000-0000-0000-000000000002","role":"authenticated","user_metadata":{"role":"admin"},"session_id":"50000000-0000-0000-0000-000000000002","app_metadata":{"provider":"google"},"amr":[{"method":"oauth"}]}';
 select is((select count(*) from public.blog_posts),4::bigint,'verified bound admin sees all');
 select is((select count(*) from public.blog_tags),2::bigint,'admin sees private taxonomy');
 select lives_ok($q$insert into public.blog_posts(author_name,slug,title) values('Fixture','new-draft','Draft')$q$,'admin can insert');

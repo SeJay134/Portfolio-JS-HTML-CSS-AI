@@ -11,6 +11,7 @@ const ALLOWED_PATHS = new Set([
   "/tools/photo-compressor/",
   "/tools/file-converter/",
   "/blog/",
+  "/admin/blog/",
 ]);
 
 export function safeReturnPath(candidate: unknown): string {
