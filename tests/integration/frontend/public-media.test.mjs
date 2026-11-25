@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { Buffer } from "node:buffer";
 import { deliverPublicMedia } from "../../../server/publicMedia.js";
 
 const id = "82000000-0000-0000-0000-000000000001";
@@ -9,7 +10,7 @@ const path = "/blog/media/" + id + ".jpg";
 const jpeg = Buffer.from([255, 216, 1, 2, 3, 255, 217]);
 const asset = { id, key: "62000000-0000-0000-0000-000000000001/" + id + ".jpg",
   byte_size: jpeg.length, sha256: createHash("sha256").update(jpeg).digest("hex") };
-const response = (bytes = jpeg, headers = {"Content-Type": "image/jpeg"}) => new Response(bytes, { headers });
+const response = (bytes = jpeg, headers = {"Content-Type": "image/jpeg"}) => new globalThis.Response(bytes, { headers });
 const invoke = (resolve, read, request = { method: "GET", path }) => deliverPublicMedia(request, { resolve, read });
 const checkNoStore = r => {
   assert.match(r.headers["Cache-Control"], /no-store/);
@@ -20,9 +21,9 @@ const checkNoStore = r => {
 test("serves bounded verified JPEG only after two live resolution checks", async () => {
   const calls = [];
   const result = await invoke(async (arg, signal) => {
-    calls.push("resolve"); assert.equal(arg,id); assert.ok(signal instanceof AbortSignal); return asset;
+    calls.push("resolve"); assert.equal(arg,id); assert.ok(signal instanceof globalThis.AbortSignal); return asset;
   }, async (arg, signal) => {
-    calls.push("read"); assert.deepEqual(arg,asset); assert.ok(signal instanceof AbortSignal); return response();
+    calls.push("read"); assert.deepEqual(arg,asset); assert.ok(signal instanceof globalThis.AbortSignal); return response();
   });
   assert.deepEqual(calls, ["resolve","read","resolve"]);
   assert.equal(result.status,200);
@@ -59,7 +60,7 @@ test("metadata corruption cannot reach storage", async () => {
 });
 test("rejects redirects, partial content, wrong MIME, length, framing and hash", async () => {
   for (const bad of [
-    Response.redirect("https://evil.example/"),new Response(jpeg,{status:206,headers:{"Content-Type":"image/jpeg"}}),
+    globalThis.Response.redirect("https://evil.example/"),new globalThis.Response(jpeg,{status:206,headers:{"Content-Type":"image/jpeg"}}),
     response(jpeg,{"Content-Type":"text/html"}),response(jpeg,{"Content-Type":"image/jpeg","Content-Range":"bytes 0-6/7"}),
     response(jpeg,{"Content-Type":"image/jpeg","Content-Length":"8"}),
     response(jpeg.subarray(0,3)),response(Buffer.concat([jpeg,jpeg])),response(Buffer.from([255,216,1,2,4,255,217])),
