@@ -43,3 +43,5 @@ Phase 3C: local Studio photo queue using existing safety screen and JPEG/ZIP eng
 Phase 3D.1: private quarantine/verified bucket foundation and reservation security. See BLOG_STUDIO_PHASE_3D1.md. Server byte validation/promotion, UI integration and reference lifecycle remain separate gates.
 
 Phase 3D.2A: bounded isolated JPEG byte validator; see BLOG_STUDIO_PHASE_3D2A.md. Promotion/cleanup and media references/UI remain separate increments.
+
+Phase 3D.2B-local: promotion orchestration and real disposable Storage integration; see BLOG_STUDIO_PHASE_3D2B_LOCAL.md. Hosted adapter and expired reservation/orphan reclamation remain gated.

@@ -1,0 +1,9 @@
+# Phase 3D.2B-local — verified promotion proof
+
+Stacked on #57, corrected CI workflow. Pinned Pillow installation and real decoder tests passed on both Linux and Windows; broader CI still separate. No hosted changes.
+
+The promotion orchestrator has an explicit trusted adapter interface. It checks reservation identity and current access before/after normalization, writes only immutable verified bytes, commits verified metadata with reservation CAS, checks receipt and reads back the digest, cleans only quarantine after commit. Repeated verified requests are idempotent; differing existing bytes fail closed. An interrupted write/commit leaves a private bounded orphan, not an automatic deletion race; retry reconciles exact bytes. Cleanup failure is reported. Verified state does not imply semantic moderation.
+
+Actual Storage integration is exercised by a deliberately test-only adapter inside the existing disposable loopback suite. It uses local CLI-generated service credentials and local Docker postgres for synthetic fixture metadata; these broad capabilities are NOT suitable for a hosted adapter. No SQL changes to storage.objects, no public endpoints, no new migration, no frontend upload or public read. Tests include real JPEG, malformed content with JPEG MIME, retry, privacy, ordinary and revoked caller, plus orchestration unit tests for failure and mismatch. Both buckets remain closed to direct reads.
+
+Remaining gates before runtime UI: least-privilege hosted/server adapter with reviewed credential model, atomically enforced live authorization and immutable object receipt, sandbox and concurrency limits, expiry/orphan/rejected reservation reclamation, bounded storage quotas, media references across revisions, and end-to-end integration. Current fixture adapter is not production code and must never be deployed as a service. No merge, hosted deployment, or recurring paid services authorized.
