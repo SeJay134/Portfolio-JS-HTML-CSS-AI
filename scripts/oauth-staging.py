@@ -113,9 +113,21 @@ def smoke_check(key):
 
 
 def main():
-    if sys.argv[1:] not in ([], ["--smoke"]):
-        raise RuntimeError("Usage: python3 scripts/oauth-staging.py [--smoke]")
+    if sys.argv[1:] not in ([], ["--smoke"], ["--media"]):
+        raise RuntimeError("Usage: python3 scripts/oauth-staging.py [--smoke|--media]")
     smoke = sys.argv[1:] == ["--smoke"]
+    media = sys.argv[1:] == ["--media"]
+    if media:
+        if sys.version_info[:2] != (3,12):
+            raise RuntimeError("Optional media staging requires an isolated Python 3.12 environment.")
+        try:
+            from PIL import __version__ as pillow_version
+        except ImportError:
+            raise RuntimeError("Install the hash-pinned requirements-studio-media.txt in the isolated environment.") from None
+        if pillow_version != "13.0.0":
+            raise RuntimeError("Expected pinned Pillow 13.0.0.")
+        with socket.socket() as sock:
+            sock.bind(("127.0.0.1",5512))
     if not smoke and not sys.stdin.isatty():
         raise RuntimeError("Run interactive staging in a local terminal.")
     warnings.filterwarnings("error", category=getpass.GetPassWarning)
@@ -151,6 +163,7 @@ def main():
                    "STAGING_GOOGLE_CLIENT_SECRET": secret}
         # Never send Google credentials to Vite. Do not print CLI status output.
         attempted = False
+        media_process = None
         try:
             attempted = True
             run(["supabase", "start"], cli_env, work, stdout=subprocess.DEVNULL,
@@ -176,6 +189,27 @@ def main():
                        "VITE_ENABLE_LIVE_BLOG": "true", "VITE_ENABLE_BLOG_EDITOR": "true",
                        "VITE_ENABLE_BLOG_DRAFTS": "true", "VITE_ENABLE_BLOG_PHOTOS": "true",
                        "VITE_ENABLE_PUBLIC_CHAT_UI": "false"}
+            if media:
+                # Only freshly generated disposable credentials, never hosted.
+                local_secret = status.get("JWT_SECRET", "")
+                if not isinstance(local_secret,str) or not 32<=len(local_secret)<=1024:
+                    raise RuntimeError("Local signing credentials unavailable.")
+                media_process = subprocess.Popen([sys.executable,"-m","server.studio_media.local_service","--isolated-staging"],
+                    cwd=ROOT,env=env,stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                media_process.stdin.write(json.dumps({"project":PROJECT,"api_origin":API,
+                    "publishable_key":key,"jwt_secret":local_secret}).encode())
+                media_process.stdin.close()
+                import time
+                deadline=time.monotonic()+10
+                while True:
+                    if media_process.poll() is not None or time.monotonic()>deadline:
+                        raise RuntimeError("Local media service did not start.")
+                    try:
+                        with socket.create_connection(("127.0.0.1",5512),timeout=.2):
+                            break
+                    except OSError:
+                        time.sleep(.1)
+                print("Optional local media service ready on 127.0.0.1:5512 (not exposed).")
             print("Open http://127.0.0.1:5511/admin/blog/ in a fresh private browser window.")
             print("The allowlist is local only. No administrator is assigned until test sign-in.")
             print("Ctrl+C stops Vite and removes the disposable Supabase stack.")
@@ -186,6 +220,13 @@ def main():
         except (subprocess.CalledProcessError, ValueError):
             raise RuntimeError("Local staging command failed. No hosted fallback.") from None
         finally:
+            if media_process is not None and media_process.poll() is None:
+                media_process.terminate()
+                try:
+                    media_process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    media_process.kill()
+                    media_process.wait()
             if attempted:
                 stopped = subprocess.run(["supabase", "stop", "--no-backup"], env=cli_env,
                                          cwd=work, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
