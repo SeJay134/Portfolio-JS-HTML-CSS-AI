@@ -229,6 +229,45 @@ def run():
         check(adapter.authorized_asset(malformed_id).state=="reserved","invalid bytes not promoted")
     else:
         raise AssertionError("invalid bytes promoted")
+    # Scope proof uses ONLY a CI-generated short-lived local JWT. The runtime
+    # adapter gets neither the local JWT signing secret nor service-role key.
+    from server.studio_media.scoped_store import ScopedStore
+    scoped_id = "99000000-0000-0000-0000-000000000006"
+    status, scoped_slot = request("rpc/reserve_studio_media",owner,"POST",{"p_id":scoped_id})
+    check(status==200,"reserve scoped worker fixture")
+    scoped_q="object/studio-media-quarantine/"+scoped_slot["object_key"]
+    scoped_v="object/studio-media-verified/"+scoped_slot["object_key"]
+    check(storage(scoped_q,owner,"POST",stream.getvalue(),"image/jpeg") in (200,201),"upload scoped worker fixture")
+    def worker_token(asset_id, ttl=120, user=1):
+        # Sign only synthetic fixtures inside the isolated CI stack.
+        now=int(time.time())
+        claims={"iss":"supabase","aud":"authenticated","role":"studio_media_worker",
+          "sub":f"91000000-0000-0000-0000-00000000000{user}",
+          "session_id":f"92000000-0000-0000-0000-00000000000{user}",
+          "iat":now,"exp":now+ttl,"studio_asset_id":asset_id,
+          "app_metadata":{"provider":"google","providers":["google"]},"amr":[{"method":"oauth","timestamp":now}]}
+        def enc(value):
+            return base64.urlsafe_b64encode(json.dumps(value,separators=(",",":")).encode()).rstrip(b"=")
+        message=enc({"alg":"HS256","typ":"JWT"})+b"."+enc(claims)
+        return (message+b"."+base64.urlsafe_b64encode(hmac.new(secret.encode(),message,hashlib.sha256).digest()).rstrip(b"=")).decode()
+    capability=worker_token(scoped_id)
+    scoped=ScopedStore(origin,key,capability,scoped_id)
+    check(request("rpc/get_media_worker_asset",owner,"POST",{"p_id":scoped_id})[0]>=400,"ordinary administrator cannot call worker RPC")
+    check(request("rpc/get_media_worker_asset",capability,"POST",{"p_id":promotion_id})[0]>=400,"worker cannot access another asset ID")
+    check(request("rpc/get_media_worker_asset",worker_token(scoped_id,ttl=180),"POST",{"p_id":scoped_id})[0]>=400,"worker overlong token denied")
+    check(request("rpc/get_media_worker_asset",worker_token(scoped_id,user=2),"POST",{"p_id":scoped_id})[0]>=400,"worker wrong owner denied")
+    check(storage(quarantine,capability)>=400,"worker cannot read other quarantine object")
+    check(storage(scoped_q,capability)==200,"worker reads exact quarantine object")
+    check(storage("object/sign/studio-media-quarantine/"+scoped_slot["object_key"],capability,"POST",b'{"expiresIn":60}',"application/json")>=400,"worker cannot sign quarantine URL")
+    check(storage("object/studio-media-quarantine/"+scoped_slot["object_key"],capability,"POST",stream.getvalue(),"image/jpeg",{"x-upsert":"true"})>=400,"worker cannot overwrite quarantine")
+    check(request("rpc/commit_media_worker_asset",capability,"POST",{"p_id":scoped_id,"p_sha256":"a"*64,"p_byte_size":42,"p_width":1,"p_height":1})[0]>=400,"metadata cannot be committed without verified object")
+    scoped_result=promote(scoped,scoped_id,300000)
+    check(scoped_result.asset.state=="verified" and not scoped_result.cleanup_pending,"scoped worker promotes without service role or postgres")
+    check(promote(scoped,scoped_id,300000)==scoped_result,"scoped worker retry idempotent")
+    check(storage(scoped_v,owner)>=400,"browser admin cannot read verified object")
+    check(storage("object/sign/studio-media-verified/"+scoped_slot["object_key"],capability,"POST",b'{"expiresIn":60}',"application/json")>=400,"worker cannot sign verified URL")
+    check(storage(scoped_v,capability,"DELETE")>=400,"worker cannot delete verified object")
+    check(storage(scoped_v,capability,"POST",stream.getvalue(),"image/jpeg",{"x-upsert":"true"})>=400,"worker cannot overwrite verified object")
     second_media_id = "99000000-0000-0000-0000-000000000002"
     status, second_media = request("rpc/reserve_studio_media", owner, "POST", {"p_id":second_media_id})
     check(status == 200, "reserve another slot before revocation")
@@ -248,6 +287,8 @@ def run():
         check(True,"revoked token cannot retry promotion")
     else:
         raise AssertionError("revoked token promoted")
+    check(request("rpc/get_media_worker_asset",capability,"POST",{"p_id":scoped_id})[0]>=400,"revoked scoped capability cannot read metadata")
+    check(storage(scoped_v,capability)>=400,"revoked scoped capability cannot read verified bytes")
     print(f"Real local Data API checks: {checks} passed")
 
 
