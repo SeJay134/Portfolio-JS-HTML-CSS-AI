@@ -21,9 +21,9 @@ enable_signup = true
 enable_anonymous_sign_ins = false
 enable_manual_linking = false
 [auth.email]
-enable_signup = false
+enabled = false
 [auth.sms]
-enable_signup = false
+enabled = false
 [auth.external.google]
 enabled = true
 client_id = "env(STAGING_GOOGLE_CLIENT_ID)"
