@@ -27,6 +27,7 @@ VERSIONS = (
     "20261125220658_blog_media_capability_broker.sql",
     "20261125221715_blog_media_library.sql",
     "20261125222114_blog_draft_media_references.sql",
+    "20261125222516_blog_publication_foundation.sql",
 )
 
 

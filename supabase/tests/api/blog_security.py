@@ -151,8 +151,40 @@ def run():
     check(slugs() == {"api-live"}, "working copy absent from public blog")
     status, body = request("blog_posts", owner, "PATCH", {"status":"archived"},
                            {"slug":"eq.api-live"}, {"Prefer":"return=representation"})
-    check(status == 200 and len(body) == 1, "admin archives through API")
-    check(slugs() == set(), "archived post immediately disappears from anonymous API")
+    check(status in (401,403), "admin cannot archive via direct projection API")
+    check(slugs()=={"api-live"},"direct mutation has no effect")
+    # Legacy fixture-only state change for isolation of the rest of the suite.
+    sql("update public.blog_posts set status='archived' where slug='api-live';")
+    check(slugs()==set(),"archived fixture hidden")
+    publish_args={"p_id":draft["id"],"p_expected_revision":2,"p_expected_generation":0,
+      "p_request_id":"98000000-0000-0000-0000-000000000020","p_action":"publish"}
+    check(request("rpc/change_studio_publication",ordinary,"POST",publish_args)[0]>=400,"ordinary publication denied")
+    check(request("rpc/change_studio_publication",method="POST",body=publish_args)[0]>=400,"anonymous publication denied")
+    check(request("rpc/change_studio_publication",owner,"POST",{**publish_args,"p_expected_revision":1})[0]>=400,"stale revision cannot publish")
+    status,published=request("rpc/change_studio_publication",owner,"POST",publish_args)
+    check(status==200 and published["generation"]==1 and published["source_revision"]==2 and published["status"]=="published","saved revision published atomically")
+    check(request("rpc/change_studio_publication",owner,"POST",publish_args)==(200,published),"publication retry exact receipt")
+    check(request("rpc/change_studio_publication",owner,"POST",{**publish_args,"p_action":"archive"})[0]>=400,"publication request key cannot be repurposed")
+    public_rows=rows(params={"select":"id,slug,title,content,blog_categories(name),blog_post_tags(blog_tags(name))"})
+    check(len(public_rows)==1 and public_rows[0]["slug"]=="studio-fixture" and public_rows[0]["title"]=="Revision two","published projection visible")
+    check(public_rows[0]["id"]!=draft["id"] and public_rows[0]["content"]==[{"type":"rich-paragraph","version":1,"runs":draft["blocks"][0]["runs"]}],"public projection excludes private draft ID")
+    check(public_rows[0]["blog_categories"]=={"name":"Test"} and public_rows[0]["blog_post_tags"]==[{"blog_tags":{"name":"SQL"}}],"public taxonomy atomically linked")
+    third={**changed,"p_expected_revision":2,"p_request_id":"98000000-0000-0000-0000-000000000021","p_document":{**draft,"title":"Unsaved-to-public revision three"}}
+    check(request("rpc/save_studio_draft",owner,"POST",third)[0]==200,"private edit after publish")
+    check(rows(params={"select":"title"})==[{"title":"Revision two"}],"private edit does not change publication")
+    check(request("rpc/change_studio_publication",owner,"POST",{**publish_args,"p_expected_revision":3,"p_request_id":"98000000-0000-0000-0000-000000000022"})[0]>=400,"stale publication generation rejected")
+    updated_args={**publish_args,"p_expected_revision":3,"p_expected_generation":1,"p_request_id":"98000000-0000-0000-0000-000000000023"}
+    status,updated_pub=request("rpc/change_studio_publication",owner,"POST",updated_args)
+    check(status==200 and updated_pub["source_revision"]==3 and updated_pub["generation"]==2,"explicit republish updates snapshot")
+    check(rows(params={"select":"title"})==[{"title":"Unsaved-to-public revision three"}],"republished snapshot visible")
+    unpublish={**updated_args,"p_expected_generation":2,"p_request_id":"98000000-0000-0000-0000-000000000024","p_action":"unpublish"}
+    status,hidden=request("rpc/change_studio_publication",owner,"POST",unpublish)
+    check(status==200 and hidden["status"]=="draft" and slugs()==set(),"unpublish removes anonymous projection")
+    archive={**unpublish,"p_expected_generation":3,"p_request_id":"98000000-0000-0000-0000-000000000025","p_action":"archive"}
+    status,archived=request("rpc/change_studio_publication",owner,"POST",archive)
+    check(status==200 and archived["status"]=="archived" and slugs()==set(),"archive keeps projection private")
+    check(request("rpc/get_studio_publication",owner,"POST",{"p_id":draft["id"]})==(200,archived),"owner publication state")
+    check(request("studio_publication_events",owner,extra={"Accept-Profile":"private"})[0]>=400,"private publication history not exposed")
     # Real Storage gateway checks, not simulated storage.objects inserts.
     def storage(path, token=None, method="GET", data=None, mime=None, extra=None):
         headers = {"apikey": key, "Cache-Control": "no-store"}
@@ -378,6 +410,7 @@ def run():
     media_args={"p_id":media_draft["id"],"p_expected_revision":0,"p_request_id":"96000000-0000-0000-0000-000000000009","p_document":media_draft}
     status,media_saved=request("rpc/save_studio_draft",owner,"POST",media_args)
     check(status==200 and media_saved["revision"]==1,"v2 cover and gallery saved atomically")
+    check(request("rpc/change_studio_publication",owner,"POST",{"p_id":media_draft["id"],"p_expected_revision":1,"p_expected_generation":0,"p_request_id":"98000000-0000-0000-0000-000000000026","p_action":"publish"})[0]>=400,"media publication fails closed until public route exists")
     check(request("rpc/save_studio_draft",owner,"POST",media_args)==(200,media_saved),"v2 save retry idempotent")
     check(request("rpc/get_studio_draft",owner,"POST",{"p_id":media_draft["id"],"p_revision":1})[1]["document"]==media_draft,"v2 revision preserves media references and captions")
     invalid_media={**media_draft,"cover":{"assetId":malformed_id,"alt":"","caption":""}}
@@ -419,6 +452,7 @@ def run():
         raise AssertionError("revoked broker authorization")
     check(request("rpc/list_studio_media",owner,"POST",{})[0]>=400,"revoked library access denied")
     check(storage("object/studio-media-verified/"+http_slot["object_key"],preview_token)>=400,"revoked preview token denied")
+    check(request("rpc/change_studio_publication",owner,"POST",{**archive,"p_expected_generation":4,"p_request_id":"98000000-0000-0000-0000-000000000027","p_action":"publish"})[0]>=400,"revoked session cannot publish")
     print(f"Real local Data API checks: {checks} passed")
 
 
