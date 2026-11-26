@@ -1,0 +1,12 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+set local search_path=public,extensions;
+select no_plan();
+select is((select enabled from private.studio_public_media_gate where singleton),false,'publication disabled by default');
+select ok(not has_table_privilege('authenticated','private.studio_public_media_gate','UPDATE'),'browser cannot enable publication');
+select ok(not has_table_privilege('service_role','private.studio_public_media_gate','UPDATE'),'service role cannot enable publication');
+select ok(not has_table_privilege('studio_public_media_reader','private.studio_public_media_gate','UPDATE'),'delivery role cannot enable publication');
+select ok(not has_function_privilege('anon','private.studio_public_blocks(uuid,integer,jsonb)','EXECUTE'),'projector private');
+select ok(not has_function_privilege('authenticated','private.studio_public_blocks(uuid,integer,jsonb)','EXECUTE'),'browser cannot invoke projector');
+select * from finish();
+rollback;

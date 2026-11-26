@@ -457,21 +457,37 @@ def run():
     status,saved_media=request("rpc/save_studio_draft",owner,"POST",{**media_args,
         "p_expected_revision":2,"p_request_id":"96000000-0000-0000-0000-000000000013","p_document":clean})
     check(status==200 and saved_media["revision"]==3,"delivery fixture saved revision")
-    sql("""
-    begin;
-    insert into public.blog_categories(id,slug,name) values('93000000-0000-0000-0000-000000000099','media-delivery-fixture','Media delivery fixture');
-    insert into public.blog_posts(id,author_name,category_id,slug,title,description,content,cover_image,cover_alt,cover_width,cover_height,status,published_at)
-    select '95000000-0000-0000-0000-000000000099','Fixture','93000000-0000-0000-0000-000000000099',
-      'media-delivery-fixture','Fixture','Fixture',m->'blocks',m->'cover'->>'src',m->'cover'->>'alt',
-      (m->'cover'->>'width')::int,(m->'cover'->>'height')::int,'published',now()
-    from private.prepare_studio_publication_media('98000000-0000-0000-0000-000000000009',3) m;
-    insert into private.studio_publications(draft_id,post_id,source_revision,generation)
-      values('98000000-0000-0000-0000-000000000009','95000000-0000-0000-0000-000000000099',3,1);
-    insert into private.studio_publication_events(draft_id,generation,request_id,action,expected_revision,source_revision,receipt)
-      values('98000000-0000-0000-0000-000000000009',1,'98000000-0000-0000-0000-000000000099','publish',3,3,'{}');
-    select private.bind_studio_publication_media('98000000-0000-0000-0000-000000000009',1);
-    commit;
-    """)
+    atomic_candidate=__import__("os").environ.get("TEST_ATOMIC_MEDIA_CANDIDATE")=="1"
+    if atomic_candidate:
+        pub={"p_id":media_draft["id"],"p_expected_revision":3,"p_expected_generation":0,
+            "p_request_id":"98000000-0000-0000-0000-000000000099","p_action":"publish"}
+        check(request("rpc/change_studio_publication",owner,"POST",pub)[0]>=400,"default gate denies real media publication")
+        sql("update private.studio_public_media_gate set enabled=true where singleton;")
+        check(request("rpc/change_studio_publication",ordinary,"POST",pub)[0]>=400,"ordinary user cannot publish media")
+        check(request("rpc/change_studio_publication",owner,"POST",{**pub,"p_expected_revision":2})[0]>=400,"stale media revision denied")
+        status,receipt_pub=request("rpc/change_studio_publication",owner,"POST",pub)
+        check(status==200 and receipt_pub["generation"]==1 and receipt_pub["status"]=="published","atomic real media publication")
+        check(request("rpc/change_studio_publication",owner,"POST",pub)==(200,receipt_pub),"media publish retry exact")
+        public_media=rows(params={"select":"slug,cover_image,content","slug":"eq.media-reference-fixture"})
+        check(len(public_media)==1 and public_media[0]["cover_image"]=="/blog/media/"+http_id+".jpg"
+            and public_media[0]["content"][0]["type"]=="gallery"
+            and public_media[0]["content"][0]["images"][0]["src"]=="/blog/media/"+scoped_id+".jpg","real anonymous snapshot uses canonical media projection")
+    else:
+        sql("""
+        begin;
+        insert into public.blog_categories(id,slug,name) values('93000000-0000-0000-0000-000000000099','media-delivery-fixture','Media delivery fixture');
+        insert into public.blog_posts(id,author_name,category_id,slug,title,description,content,cover_image,cover_alt,cover_width,cover_height,status,published_at)
+        select '95000000-0000-0000-0000-000000000099','Fixture','93000000-0000-0000-0000-000000000099',
+          'media-delivery-fixture','Fixture','Fixture',m->'blocks',m->'cover'->>'src',m->'cover'->>'alt',
+          (m->'cover'->>'width')::int,(m->'cover'->>'height')::int,'published',now()
+        from private.prepare_studio_publication_media('98000000-0000-0000-0000-000000000009',3) m;
+        insert into private.studio_publications(draft_id,post_id,source_revision,generation)
+          values('98000000-0000-0000-0000-000000000009','95000000-0000-0000-0000-000000000099',3,1);
+        insert into private.studio_publication_events(draft_id,generation,request_id,action,expected_revision,source_revision,receipt)
+          values('98000000-0000-0000-0000-000000000009',1,'98000000-0000-0000-0000-000000000099','publish',3,3,'{}');
+        select private.bind_studio_publication_media('98000000-0000-0000-0000-000000000009',1);
+        commit;
+        """)
     token=public_token(scoped_id)
     status,meta=request(rpc,token,"POST",body)
     check(status==200 and meta=={"id":scoped_id,"key":scoped_slot["object_key"],
@@ -504,7 +520,15 @@ def run():
             check(json.loads(response.read())==[],"delivery listing returns no rows")
     else:
         check(status_list>=400,"delivery listing denied")
-    sql("update public.blog_posts set status='draft',published_at=null where id='95000000-0000-0000-0000-000000000099';")
+    if atomic_candidate:
+        hide={**pub,"p_expected_generation":1,"p_action":"unpublish",
+            "p_request_id":"98000000-0000-0000-0000-000000000098"}
+        status,hidden_media=request("rpc/change_studio_publication",owner,"POST",hide)
+        check(status==200 and hidden_media["status"]=="draft","atomic media unpublish")
+        check(request("rpc/change_studio_publication",owner,"POST",pub)==(200,receipt_pub),"old publish retry cannot reactivate media")
+        check(rows(params={"select":"slug","slug":"eq.media-reference-fixture"})==[],"withdrawn projection invisible")
+    else:
+        sql("update public.blog_posts set status='draft',published_at=null where id='95000000-0000-0000-0000-000000000099';")
     check(request(rpc,token,"POST",body)==(200,None),"same capability loses eligibility on withdrawal")
     check(storage(scoped_v,token)>=400,"same capability cannot GET withdrawn bytes")
     prove_public_http(404)
