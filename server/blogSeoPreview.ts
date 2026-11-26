@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createBlogSeoHandler } from "../src/data/blogSeo";
+import { assertSeoPreviewIsolation } from "../scripts/seo-preview-isolation.mjs";
 
 type Environment = Record<string, string | undefined>;
 type Options = { env: Environment; reader?: typeof fetch; clock?: () => number; readShell?: () => Promise<string> };
@@ -48,6 +49,7 @@ export function createSeoPreviewHandler({ env, reader, clock, readShell = () => 
     const origin = env.BLOG_SEO_SUPABASE_URL ?? "";
     const key = env.BLOG_SEO_SUPABASE_PUBLISHABLE_KEY ?? "";
     try {
+      assertSeoPreviewIsolation(env);
       const upstream = new URL(origin);
       if (upstream.protocol !== "https:" || !upstream.hostname.endsWith(".supabase.co") || upstream.port ||
           upstream.username || upstream.password || upstream.pathname !== "/" || upstream.search || upstream.hash ||

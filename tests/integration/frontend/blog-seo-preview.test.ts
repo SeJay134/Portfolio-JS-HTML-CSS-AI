@@ -4,13 +4,13 @@ import { createServer } from "node:http";
 import { once } from "node:events";
 import { readFile } from "node:fs/promises";
 import { createSeoPreviewHandler, styleLinks } from "../../../server/blogSeoPreview";
-const env = { VERCEL_ENV:"preview", BLOG_SEO_PREVIEW:"true", BLOG_SEO_SUPABASE_URL:"https://fixture.supabase.co", BLOG_SEO_SUPABASE_PUBLISHABLE_KEY:"sb_publishable_fixture" };
+const env = { VERCEL_ENV:"preview", BLOG_SEO_PREVIEW:"true", BLOG_SEO_PRIMARY_PROJECT_REF:"aaaaaaaaaaaaaaaaaaaa",BLOG_SEO_TEST_PROJECT_REF:"bbbbbbbbbbbbbbbbbbbb",BLOG_SEO_SUPABASE_URL:"https://bbbbbbbbbbbbbbbbbbbb.supabase.co", BLOG_SEO_SUPABASE_PUBLISHABLE_KEY:"sb_publishable_fixture" };
 const fixture = {slug:"fixture",title:"Fixture",description:"Description",author_name:"Author",status:"published",published_at:"2026-01-01T00:00:00Z",featured:false,reading_minutes:2,cover_image:null,cover_alt:null,cover_width:null,cover_height:null,blog_categories:{name:"Data"},blog_post_tags:[],content:[{type:"paragraph",text:"No JavaScript required."}],seo_title:"SEO Fixture",seo_description:"SEO Description"};
 test("real local HTTP adapter against built assets and disposable public fixtures", async () => {
   let visible = true, calls = 0, failUpstream = false;
   const handler = createSeoPreviewHandler({env,clock:()=>Date.parse("2026-11-25T00:00:00Z"),reader:async(target,init)=>{
     calls++;
-    assert.equal(new URL(String(target)).hostname,"fixture.supabase.co");
+    assert.equal(new URL(String(target)).hostname,"bbbbbbbbbbbbbbbbbbbb.supabase.co");
     assert.equal(new Headers(init?.headers).has("authorization"),false);
     assert.equal(init?.credentials,"omit");
     if(failUpstream) return new Response("upstream private error",{status:500});
@@ -56,4 +56,12 @@ test("disabled and production modes cannot fetch; stylesheet extraction rejects 
   for(const invalid of [{...env,VERCEL_ENV:"production"},{...env,BLOG_SEO_PREVIEW:"false"}]) assert.equal((await createSeoPreviewHandler({env:invalid,reader})(req)).status,404);
   assert.throws(()=>styleLinks('<link rel="stylesheet" href="https://evil.invalid/style.css">'));
   assert.throws(()=>styleLinks('<link rel="stylesheet" href="/assets/../evil.css">'));
+});
+
+test("preview refuses primary or mismatched project before upstream fetch", async()=>{
+  let calls=0;
+  const reader:typeof fetch=async()=>{calls++;throw new Error("Unexpected fetch");};
+  const req=new Request("https://fixture.invalid/api/blog-seo?route=/blog/");
+  for(const invalid of [{...env,BLOG_SEO_TEST_PROJECT_REF:env.BLOG_SEO_PRIMARY_PROJECT_REF},{...env,BLOG_SEO_SUPABASE_URL:"https://"+env.BLOG_SEO_PRIMARY_PROJECT_REF+".supabase.co"},{...env,BLOG_SEO_TEST_PROJECT_REF:""},{...env,VITE_ENABLE_LIVE_BLOG:"true",VITE_SUPABASE_URL:"https://"+env.BLOG_SEO_PRIMARY_PROJECT_REF+".supabase.co"}]) assert.equal((await createSeoPreviewHandler({env:invalid,reader})(req)).status,503);
+  assert.equal(calls,0);
 });

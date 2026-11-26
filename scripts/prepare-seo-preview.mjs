@@ -1,6 +1,7 @@
 import { lstat, readdir, unlink } from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { assertSeoPreviewIsolation } from "./seo-preview-isolation.mjs";
 
 // Only remove conflicting generated files, never repository source or arbitrary paths.
 export async function prepareSeoPreview(env, root = process.cwd()) {
@@ -8,6 +9,7 @@ export async function prepareSeoPreview(env, root = process.cwd()) {
       env.VITE_ENABLE_LIVE_BLOG !== "true" || !/^[a-f0-9]{40}$/.test(env.VERCEL_GIT_COMMIT_SHA ?? "")) {
     throw new Error("SEO preview build requires explicit Preview flags and exact Git revision");
   }
+  assertSeoPreviewIsolation(env);
   const dist = resolve(root, "dist");
   for (const dir of [dist, resolve(dist,"blog"), resolve(dist,"blog-article")]) {
     if (!(await lstat(dir)).isDirectory()) throw new Error("Unexpected preview build directory");

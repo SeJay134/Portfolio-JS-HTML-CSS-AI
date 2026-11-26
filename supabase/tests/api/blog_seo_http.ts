@@ -10,11 +10,11 @@ assert.match(input.key,/^sb_publishable_[A-Za-z0-9_-]+$/);
 assert.equal(input.slug,"studio-fixture");
 let calls=0;
 const handler=createSeoPreviewHandler({
-  env:{VERCEL_ENV:"preview",BLOG_SEO_PREVIEW:"true",BLOG_SEO_SUPABASE_URL:"https://fixture.supabase.co",BLOG_SEO_SUPABASE_PUBLISHABLE_KEY:input.key},
+  env:{VERCEL_ENV:"preview",BLOG_SEO_PREVIEW:"true",BLOG_SEO_PRIMARY_PROJECT_REF:"aaaaaaaaaaaaaaaaaaaa",BLOG_SEO_TEST_PROJECT_REF:"bbbbbbbbbbbbbbbbbbbb",BLOG_SEO_SUPABASE_URL:"https://bbbbbbbbbbbbbbbbbbbb.supabase.co",BLOG_SEO_SUPABASE_PUBLISHABLE_KEY:input.key},
   // This injected test-only reader maps the fixed validated endpoint to the disposable local gateway.
   reader:async(target,init)=>{
     const url=new URL(String(target));
-    assert.equal(url.origin,"https://fixture.supabase.co");
+    assert.equal(url.origin,"https://bbbbbbbbbbbbbbbbbbbb.supabase.co");
     assert.equal(url.pathname,"/rest/v1/blog_posts");
     assert.equal(init?.credentials,"omit");
     assert.equal(init?.redirect,"error");
