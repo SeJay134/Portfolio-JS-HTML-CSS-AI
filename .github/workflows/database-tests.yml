@@ -4,6 +4,8 @@ on:
     paths:
       - 'supabase/**'
       - 'server/studio_media/**'
+      - 'server/publicMedia.js'
+      - 'server/localPublicMedia.js'
       - 'requirements-studio-media.txt'
       - 'package.json'
       - 'package-lock.json'
@@ -13,6 +15,8 @@ on:
     paths:
       - 'supabase/**'
       - 'server/studio_media/**'
+      - 'server/publicMedia.js'
+      - 'server/localPublicMedia.js'
       - 'requirements-studio-media.txt'
       - 'package.json'
       - 'package-lock.json'
@@ -47,6 +51,9 @@ jobs:
       - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb
         with:
           version: 3.4.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
