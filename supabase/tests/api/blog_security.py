@@ -517,13 +517,13 @@ def run():
     # A failed transaction must roll back projection, mapping, event and taxonomy.
     sql("""
     create function private.test_fail_shared_media_binding() returns trigger
-    language plpgsql set search_path='' as $
+    language plpgsql set search_path='' as $$
     begin
       if new.draft_id='a9100000-0000-0000-0000-000000000001' then
         raise exception 'Synthetic binding failure' using errcode='22023';
       end if;
       return new;
-    end; $;
+    end; $$;
     create trigger test_fail_shared_media_binding before insert on private.studio_publication_media
       for each row execute function private.test_fail_shared_media_binding();
     """)
@@ -533,12 +533,12 @@ def run():
         status,failed_state=request("rpc/get_studio_publication",owner,"POST",{"p_id":shared_id})
         check(status==200 and failed_state["generation"]==0,"failed binding leaves no publication mapping")
         sql("""
-        do $ begin
+        do $$ begin
           if exists(select 1 from private.studio_publication_events where draft_id='a9100000-0000-0000-0000-000000000001')
             or exists(select 1 from private.studio_publication_media where draft_id='a9100000-0000-0000-0000-000000000001')
             or exists(select 1 from public.blog_posts where slug='shared-media-fixture')
           then raise exception 'Failed publication retained state'; end if;
-        end; $;
+        end; $$;
         """)
         check(True,"failed binding leaves no event or references")
     finally:
