@@ -38,11 +38,13 @@ test("hosted verifier rejects stale cache, wrong SHA, wrong state and non-previe
 });
 test("preview build removes only colliding generated files, refuses production and static snapshots",async()=>{
   const root=await mkdtemp(join(tmpdir(),"seo-preview-"));
-  const flags={VERCEL_ENV:"preview",BLOG_SEO_PREVIEW:"true",VITE_ENABLE_LIVE_BLOG:"true",VERCEL_GIT_COMMIT_SHA:sha};
+  const flags={VERCEL_ENV:"preview",BLOG_SEO_PREVIEW:"true",VITE_ENABLE_LIVE_BLOG:"true",VERCEL_GIT_COMMIT_SHA:sha,BLOG_SEO_PRIMARY_PROJECT_REF:"aaaaaaaaaaaaaaaaaaaa",BLOG_SEO_TEST_PROJECT_REF:"bbbbbbbbbbbbbbbbbbbb",BLOG_SEO_SUPABASE_URL:"https://bbbbbbbbbbbbbbbbbbbb.supabase.co",BLOG_SEO_SUPABASE_PUBLISHABLE_KEY:"sb_publishable_fixture",VITE_SUPABASE_URL:"https://bbbbbbbbbbbbbbbbbbbb.supabase.co",VITE_SUPABASE_PUBLISHABLE_KEY:"sb_publishable_fixture"};
   try{
     await mkdir(join(root,"dist/blog"),{recursive:true});await mkdir(join(root,"dist/blog-article"));
     for(const path of ["blog/index.html","sitemap.xml","blog-article/index.html","index.html"]) await writeFile(join(root,"dist",path),"fixture");
     await assert.rejects(prepareSeoPreview({...flags,VERCEL_ENV:"production"},root));
+    await assert.rejects(prepareSeoPreview({...flags,BLOG_SEO_TEST_PROJECT_REF:flags.BLOG_SEO_PRIMARY_PROJECT_REF},root));
+    await assert.rejects(prepareSeoPreview({...flags,VITE_SUPABASE_URL:"https://"+flags.BLOG_SEO_PRIMARY_PROJECT_REF+".supabase.co"},root));
     assert.equal(await readFile(join(root,"dist/blog/index.html"),"utf8"),"fixture");
     await mkdir(join(root,"dist/blog/static-article"));
     await assert.rejects(prepareSeoPreview(flags,root));

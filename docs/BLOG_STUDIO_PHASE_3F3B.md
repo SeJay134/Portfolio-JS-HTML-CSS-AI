@@ -13,3 +13,5 @@ Candidate config now uses an explicit post-build preparation step requiring Prev
 5. Verify no direct private Storage access and real media route separately; verify 503 under controlled isolated upstream failure and no draft indexing. Candidate routing and function packaging, protected access and CDN behavior remain unproven until executed. No production GO.
 
 CI uses synthetic responses and temporary directories to test verifier and build fence, not the hosted environment. Current CI pending. No new dependencies.
+
+Additional isolation fence: configure BLOG_SEO_PRIMARY_PROJECT_REF from the actual working project and BLOG_SEO_TEST_PROJECT_REF from the separately approved test project. Both must be distinct 20-character refs, server URL must equal test project origin, and enabled live client must use the same origin/key. Configuration is not proof of isolation; verify against actual project inventory. See BLOG_STUDIO_PHASE_3F3C.md.
