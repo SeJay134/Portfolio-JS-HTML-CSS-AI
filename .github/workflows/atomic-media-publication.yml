@@ -1,0 +1,42 @@
+name: Validate atomic media publication candidate
+on:
+  push:
+    branches: [feat/blog-atomic-media-publication]
+    paths: ['supabase/**', '.github/workflows/atomic-media-publication.yml']
+permissions:
+  contents: read
+jobs:
+  candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb
+        with:
+          version: 3.4.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          architecture: x64
+      - run: |
+          python -m pip install --require-hashes --only-binary=:all: -r requirements-studio-media.txt
+      - name: Allocate candidate migration locally
+        run: |
+          supabase migration new blog_atomic_media_publication
+          migration=$(find supabase/migrations -name '*_blog_atomic_media_publication.sql')
+          test -n "$migration"
+          echo "Allocated migration: $migration"
+          cp supabase/staging/atomic-media-publication/candidate.sql "$migration"
+          cp supabase/staging/atomic-media-publication/candidate.test.sql supabase/tests/database/blog_atomic_media_publication.test.sql
+      - run: supabase start
+      - run: supabase test db --local
+      - run: supabase db lint --local --level error --fail-on error
+      - name: Real atomic media publication and HTTP withdrawal
+        run: PYTHONPATH="$PWD" TEST_ATOMIC_MEDIA_CANDIDATE=1 python supabase/tests/api/blog_security.py
+      - if: always()
+        run: supabase stop --no-backup
