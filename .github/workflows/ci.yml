@@ -20,6 +20,7 @@ jobs:
       - run: npm run test:unit
       - run: node --test tests/integration/frontend/*.test.mjs
       - run: npm run build
+      - run: node --import tsx --test tests/integration/frontend/blog-seo-preview.test.ts
   local-api:
     runs-on: ubuntu-latest
     steps:

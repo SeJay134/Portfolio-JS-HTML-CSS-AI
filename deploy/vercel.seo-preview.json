@@ -1,0 +1,118 @@
+{
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        }
+      ]
+    },
+    {
+      "source": "/admin/blog/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/blog/:slug",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/blog/:slug/",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/blog-article/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    }
+  ],
+  "functions": {
+    "api/chat.js": {
+      "maxDuration": 130
+    },
+    "api/ready.js": {
+      "maxDuration": 10
+    },
+    "api/blog-seo.ts": {
+      "maxDuration": 15,
+      "includeFiles": "dist/blog-article/index.html"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/blog/sitemap.xml",
+      "destination": "/api/blog-seo?route=/blog/sitemap.xml"
+    },
+    {
+      "source": "/blog/rss.xml",
+      "destination": "/api/blog-seo?route=/blog/rss.xml"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/api/blog-seo?route=/sitemap.xml"
+    },
+    {
+      "source": "/blog",
+      "destination": "/api/blog-seo?route=/blog/"
+    },
+    {
+      "source": "/blog/",
+      "destination": "/api/blog-seo?route=/blog/"
+    },
+    {
+      "source": "/blog/:slug",
+      "destination": "/api/blog-seo?route=/blog/:slug/"
+    },
+    {
+      "source": "/blog/:slug/",
+      "destination": "/api/blog-seo?route=/blog/:slug/"
+    }
+  ]
+}

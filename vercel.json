@@ -79,6 +79,10 @@
     },
     "api/ready.js": {
       "maxDuration": 10
+    },
+    "api/blog-seo.ts": {
+      "maxDuration": 15,
+      "includeFiles": "dist/blog-article/index.html"
     }
   },
   "rewrites": [
