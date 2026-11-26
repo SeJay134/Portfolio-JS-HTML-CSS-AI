@@ -439,6 +439,69 @@ def run():
     check(request("rpc/save_studio_draft",owner,"POST",{**media_args,"p_expected_revision":1,"p_request_id":"96000000-0000-0000-0000-000000000012","p_document":no_media})[0]==200,"remove references creates new revision")
     check(request("rpc/get_studio_draft",owner,"POST",{"p_id":media_draft["id"],"p_revision":1})[1]["document"]==media_draft,"old media references survive removal")
     check(request("studio_revision_media",owner,extra={"Accept-Profile":"private"})[0]>=400,"private reference table inaccessible")
+    # Optional candidate role proof: only in disposable authorization CI.
+    if __import__("os").environ.get("TEST_PUBLIC_MEDIA_CANDIDATE")=="1":
+        def public_token(asset_id, ttl=60, action="read", subject="a9000000-0000-0000-0000-000000000001"):
+            now=int(time.time())
+            return local_signer({"iss":"supabase","aud":"authenticated","role":"studio_public_media_reader",
+                "sub":subject,"iat":now,"exp":now+ttl,"studio_public_asset_id":asset_id,"studio_public_action":action})
+        rpc="rpc/resolve_public_media"
+        token=public_token(scoped_id)
+        body={"p_id":scoped_id}
+        check(request(rpc,owner,"POST",body)[0]>=400,"owner cannot invoke public delivery resolver")
+        check(request(rpc,method="POST",body=body)[0]>=400,"anon cannot invoke public delivery resolver")
+        check(request(rpc,token,"POST",body)==(200,None),"verified draft has no public eligibility")
+        check(storage(scoped_v,token)>=400,"draft bytes denied even with scoped delivery capability")
+        # Synthetic projection only, through postgres in disposable CI. Real
+        # publication RPC remains fail-closed. Use a fresh saved revision.
+        clean={**media_draft,"cover":{**media_draft["cover"],"caption":""}}
+        status,saved_media=request("rpc/save_studio_draft",owner,"POST",{**media_args,
+            "p_expected_revision":2,"p_request_id":"96000000-0000-0000-0000-000000000013","p_document":clean})
+        check(status==200 and saved_media["revision"]==3,"delivery fixture saved revision")
+        sql("""
+        begin;
+        insert into public.blog_categories(id,slug,name) values('93000000-0000-0000-0000-000000000099','media-delivery-fixture','Media delivery fixture');
+        insert into public.blog_posts(id,author_name,category_id,slug,title,description,content,cover_image,cover_alt,cover_width,cover_height,status,published_at)
+        select '95000000-0000-0000-0000-000000000099','Fixture','93000000-0000-0000-0000-000000000099',
+          'media-delivery-fixture','Fixture','Fixture',m->'blocks',m->'cover'->>'src',m->'cover'->>'alt',
+          (m->'cover'->>'width')::int,(m->'cover'->>'height')::int,'published',now()
+        from private.prepare_studio_publication_media('98000000-0000-0000-0000-000000000009',3) m;
+        insert into private.studio_publications(draft_id,post_id,source_revision,generation)
+          values('98000000-0000-0000-0000-000000000009','95000000-0000-0000-0000-000000000099',3,1);
+        insert into private.studio_publication_events(draft_id,generation,request_id,action,expected_revision,source_revision,receipt)
+          values('98000000-0000-0000-0000-000000000009',1,'98000000-0000-0000-0000-000000000099','publish',3,3,'{}');
+        select private.bind_studio_publication_media('98000000-0000-0000-0000-000000000009',1);
+        commit;
+        """)
+        token=public_token(scoped_id)
+        status,meta=request(rpc,token,"POST",body)
+        check(status==200 and meta=={"id":scoped_id,"key":scoped_slot["object_key"],
+            "byte_size":scoped_result.asset.byte_size,"sha256":scoped_result.asset.sha256},"scoped resolver returns exact verified metadata")
+        check(storage(scoped_v,token)==200,"real published JPEG scoped GET")
+        check(storage(scoped_v)>=400 and storage(scoped_v,owner)>=400,"anon and owner still denied direct Storage")
+        check(storage("object/public/studio-media-verified/"+scoped_slot["object_key"])>=400,"public bucket URL denied")
+        check(storage("object/studio-media-verified/"+http_slot["object_key"],token)>=400,"capability cannot read another published asset")
+        check(storage("object/studio-media-quarantine/"+scoped_slot["object_key"],token)>=400,"quarantine denied")
+        check(request(rpc,token,"POST",{"p_id":http_id})[0]>=400,"other resolver identity denied")
+        for invalid in (public_token(scoped_id,ttl=61),public_token(scoped_id,ttl=-120),
+                        public_token(scoped_id,action="sign"),public_token(scoped_id,subject="91000000-0000-0000-0000-000000000001")):
+            check(request(rpc,invalid,"POST",body)[0]>=400 and storage(scoped_v,invalid)>=400,"invalid delivery capability denied")
+        check(storage("object/sign/studio-media-verified/"+scoped_slot["object_key"],token,"POST",b'{"expiresIn":60}',"application/json")>=400,"delivery cannot sign URL")
+        check(storage(scoped_v,token,"POST",jpeg,"image/jpeg",{"x-upsert":"true"})>=400,"delivery cannot overwrite")
+        check(storage(scoped_v,token,"DELETE")>=400,"delivery cannot delete")
+        status_list=storage("object/list/studio-media-verified",token,"POST",b'{"prefix":"","limit":100,"offset":0}',"application/json")
+        # Storage list can return 200 with zero visible rows. Inspect body in that case.
+        if status_list==200:
+            req=Request(origin+"/storage/v1/object/list/studio-media-verified",method="POST",
+                headers={"apikey":key,"Authorization":"Bearer "+token,"Content-Type":"application/json"},
+                data=b'{"prefix":"","limit":100,"offset":0}')
+            with opener.open(req,timeout=10) as response:
+                check(json.loads(response.read())==[],"delivery listing returns no rows")
+        else:
+            check(status_list>=400,"delivery listing denied")
+        sql("update public.blog_posts set status='draft',published_at=null where id='95000000-0000-0000-0000-000000000099';")
+        check(request(rpc,token,"POST",body)==(200,None),"same capability loses eligibility on withdrawal")
+        check(storage(scoped_v,token)>=400,"same capability cannot GET withdrawn bytes")
     second_media_id = "99000000-0000-0000-0000-000000000002"
     status, second_media = request("rpc/reserve_studio_media", owner, "POST", {"p_id":second_media_id})
     check(status == 200, "reserve another slot before revocation")
