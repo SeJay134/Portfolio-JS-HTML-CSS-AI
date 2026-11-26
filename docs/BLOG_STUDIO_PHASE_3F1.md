@@ -1,0 +1,7 @@
+# Phase 3F.1 — isolated request-time SEO core
+
+Stacked on #74, whose 26 applicable CI jobs and four dedicated publication browser tests passed. Existing live article rewrite is a JavaScript noindex shell, with application rather than HTTP 404; not suitable for indexing.
+
+Prototype request-time handler uses the existing public projection decoders and article renderer, anonymous publishable key only, no cookies/authorization, no redirects or persistent cache, bounded response bytes and 10-second abort signal. Returns crawlable article/catalogue HTML, exact canonical URLs, custom SEO title/description, Open Graph/Twitter metadata, escaped BlogPosting JSON-LD, current public-only sitemap/RSS, true 404 for absent/withdrawn and 503 for invalid/upstream failure. Reserved routes rejected before fetch. No build-time live snapshots. Fresh data on every request.
+
+The core is not an active server route. No Vercel configuration change, no hosted calls, no production indexing change. Static prototype markup has no existing hashed CSS assets, interactive hydration or full shared navigation; next phase must integrate the built assets and verify actual Vercel routing/status/header semantics in isolated preview. Sitemap is blog-specific; root sitemap discovery and RSS alternate link remain integration tasks. Media route and real OAuth, quota/retention/backup/restore, release review remain blockers. Tests use synthetic fetch responses. CI pending.
