@@ -1,0 +1,38 @@
+name: Validate scoped public media authorization
+on:
+  push:
+    branches: [feat/blog-public-media-authorization]
+    paths: ['supabase/**', '.github/workflows/public-media-authorization.yml']
+permissions:
+  contents: read
+jobs:
+  candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb
+        with:
+          version: 3.4.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          architecture: x64
+      - run: python -m pip install --require-hashes --only-binary=:all: -r requirements-studio-media.txt
+      - name: Allocate candidate migration with local CLI
+        run: |
+          supabase migration new blog_public_media_authorization
+          migration=$(find supabase/migrations -name '*_blog_public_media_authorization.sql')
+          test -n "$migration"
+          echo "Allocated migration: $migration"
+          cp supabase/staging/public-media-authorization/candidate.sql "$migration"
+          cp supabase/staging/public-media-authorization/candidate.test.sql supabase/tests/database/blog_public_media_authorization.test.sql
+      - run: supabase start
+      - run: supabase test db --local
+      - run: supabase db lint --local --level error --fail-on error
+      - name: Real local scoped Storage authorization proof
+        run: PYTHONPATH="$PWD" TEST_PUBLIC_MEDIA_CANDIDATE=1 python supabase/tests/api/blog_security.py
+      - if: always()
+        run: supabase stop --no-backup
