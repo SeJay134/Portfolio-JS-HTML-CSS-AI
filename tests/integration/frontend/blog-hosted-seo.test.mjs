@@ -10,17 +10,17 @@ const env={BLOG_SEO_ACCEPTANCE_ORIGIN:"https://sergei-luna-123456789-sergeis-pro
 const canonical="https://sergei-luna.vercel.app/blog/"+slug+"/";
 function reader(state, override={}) {
   return async (url,init)=>{
-    assert.equal(new URL(url).origin,env.BLOG_SEO_ACCEPTANCE_ORIGIN);
+    assert.equal(new globalThis.URL(url).origin,env.BLOG_SEO_ACCEPTANCE_ORIGIN);
     assert.equal(init.redirect,"manual");
-    assert.equal(new Headers(init.headers).get("x-vercel-trusted-oidc-idp-token"),env.VERCEL_OIDC_TOKEN);
-    assert.equal(new Headers(init.headers).has("cache-control"),false);
-    const path=new URL(url).pathname;
+    assert.equal(new globalThis.Headers(init.headers).get("x-vercel-trusted-oidc-idp-token"),env.VERCEL_OIDC_TOKEN);
+    assert.equal(new globalThis.Headers(init.headers).has("cache-control"),false);
+    const path=new globalThis.URL(url).pathname;
     const article=path==="/blog/"+slug+"/"||path==="/blog/"+slug;
     const css=path.startsWith("/assets/");
     const status=article&&state==="withdrawn"?404:200;
     const type=css?"text/css":path.endsWith("rss.xml")?"application/rss+xml":path.endsWith("sitemap.xml")?"application/xml":"text/html";
     const body=css?"body{}":state==="withdrawn"?"empty":article?'<link rel="canonical" href="'+canonical+'"><meta property="og:title"><meta name="twitter:title"><script type="application/ld+json">{"@type":"BlogPosting"}</script><link rel="stylesheet" href="/assets/blog-a123.css"><article class="blog-article">'+marker+'</article>':marker+" "+canonical;
-    return new Response(init.method==="HEAD"?null:body,{status,headers:{"content-type":type,"cache-control":"private, no-store","x-robots-tag":"noindex, nofollow","x-blog-preview-revision":sha,"x-vercel-cache":"MISS",...override}});
+    return new globalThis.Response(init.method==="HEAD"?null:body,{status,headers:{"content-type":type,"cache-control":"private, no-store","x-robots-tag":"noindex, nofollow","x-blog-preview-revision":sha,"x-vercel-cache":"MISS",...override}});
   };
 }
 test("hosted verifier checks repeated routes, conditional requests, CSS and HEAD",async()=>{
