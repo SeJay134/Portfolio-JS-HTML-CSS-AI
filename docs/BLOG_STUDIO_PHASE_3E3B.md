@@ -1,0 +1,5 @@
+# Phase 3E.3B — publication browser acceptance and UI lock
+
+Stacked on #73 (24 applicable CI jobs, 255 unit and 21 integration tests passed). During an unresolved mutation, the mounted workspace now blocks draft editing, draft switching/creation, save, reload, restore and autosave, while the exact publication request remains retryable. A confirmed receipt triggers fresh live state read before unlocking; conflict/invalid releases lock; denial clears workspace. Reload/access recheck loses in-memory request and rereads live state. Server CAS remains authoritative. Working-copy labels distinguish drafts from public state.
+
+Dedicated Chromium and mobile WebKit Playwright job uses isolated mocked Supabase, verifies cancel confirmation, publish/republish/unpublish/archive, saved revision CAS, reload status, lost receipt exact retry, editor/navigation lock and access revocation. Real local API lifecycle was separately verified in #72. No real OAuth browser acceptance or hosted media route. All rollout flags remain off by default, no deployment. CI pending.

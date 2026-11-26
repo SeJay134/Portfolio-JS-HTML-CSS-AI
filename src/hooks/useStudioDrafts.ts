@@ -8,7 +8,7 @@ type Failure = { kind: DraftError["kind"]; message: string };
 const failure = (reason: unknown): Failure => reason instanceof DraftError
   ? { kind: reason.kind, message: reason.message } : { kind: "unavailable", message: "Draft service unavailable." };
 
-export function useStudioDrafts(enabled: boolean) {
+export function useStudioDrafts(enabled: boolean, publicationLocked = false) {
   const [drafts, setDrafts] = useState<StudioDraft[]>([]);
   const [saved, setSaved] = useState<Record<string, SavedDraft>>({});
   const [loading, setLoading] = useState(enabled);
@@ -59,7 +59,7 @@ export function useStudioDrafts(enabled: boolean) {
   const dirty = enabled ? drafts.some(isDirty) : drafts.length > 0;
   const save = useCallback(async (doc: StudioDraft, manual = false) => {
     const signal = lifecycle.current?.signal;
-    if (!enabled || !signal || signal.aborted || lock.current || loading || loadError || denied) return;
+    if (!enabled || publicationLocked || !signal || signal.aborted || lock.current || loading || loadError || denied) return;
     const previous = failures[doc.id];
     if (previous?.kind === "conflict" || (!manual && previous)) return;
     if (saved[doc.id] && JSON.stringify(doc) === JSON.stringify(saved[doc.id].document) && !pending.current.has(doc.id)) return;
@@ -84,19 +84,19 @@ export function useStudioDrafts(enabled: boolean) {
       lock.current = false;
       if (!signal.aborted) setBusy(null);
     }
-  }, [enabled, loading, loadError, denied, failures, saved, deny]);
+  }, [enabled, publicationLocked, loading, loadError, denied, failures, saved, deny]);
 
   useEffect(() => {
-    if (!enabled || !auto || loading || loadError || denied || busy) return;
+    if (!enabled || publicationLocked || !auto || loading || loadError || denied || busy) return;
     const next = drafts.find(doc => !failures[doc.id] && (!saved[doc.id] || JSON.stringify(doc) !== JSON.stringify(saved[doc.id].document)));
     if (!next) return;
     const timer = window.setTimeout(() => { void save(next); }, AUTOSAVE_MS);
     return () => window.clearTimeout(timer);
-  }, [enabled, auto, loading, loadError, denied, busy, drafts, failures, saved, save]);
+  }, [enabled, publicationLocked, auto, loading, loadError, denied, busy, drafts, failures, saved, save]);
 
   async function reload(doc: StudioDraft) {
     const signal = lifecycle.current?.signal;
-    if (!signal || signal.aborted || lock.current || !saved[doc.id] && !failures[doc.id]) return;
+    if (publicationLocked || !signal || signal.aborted || lock.current || !saved[doc.id] && !failures[doc.id]) return;
     lock.current = true; setBusy(doc.id);
     try {
       const latest = await getDraft(doc.id, signal);
@@ -120,7 +120,7 @@ export function useStudioDrafts(enabled: boolean) {
   }
   async function restore(doc: StudioDraft, rev: number) {
     const signal = lifecycle.current?.signal;
-    if (!signal || signal.aborted || lock.current || failures[doc.id] || pending.current.has(doc.id)) return;
+    if (publicationLocked || !signal || signal.aborted || lock.current || failures[doc.id] || pending.current.has(doc.id)) return;
     lock.current = true; setBusy(doc.id);
     try {
       const historical = await getDraft(doc.id, signal, rev);
@@ -133,7 +133,7 @@ export function useStudioDrafts(enabled: boolean) {
     } finally { lock.current = false; if (!signal.aborted) setBusy(null); }
   }
   function discardLocal(doc: StudioDraft) {
-    if (saved[doc.id] || pending.current.has(doc.id) || lock.current || failures[doc.id]?.kind === "conflict") return false;
+    if (publicationLocked || saved[doc.id] || pending.current.has(doc.id) || lock.current || failures[doc.id]?.kind === "conflict") return false;
     setDrafts(items => items.filter(item => item.id !== doc.id));
     setFailures(items => { const next = { ...items }; delete next[doc.id]; return next; });
     return true;
