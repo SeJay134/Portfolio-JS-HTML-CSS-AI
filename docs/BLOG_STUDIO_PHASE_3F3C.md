@@ -11,3 +11,5 @@ This change makes isolation configuration mandatory at runtime and before candid
 - Keep Production flags disabled, no migration or merge to main. Record evidence before any release decision.
 
 CI pending for this change. No hosted acceptance result claimed.
+
+Update: isolated free staging created and all 13 reviewed migrations applied; initial catalog security checks passed. See BLOG_HOSTED_STAGING_BOOTSTRAP.md for migration ledger and remaining manual Google OAuth/hosted acceptance gates. #79 CI 32/32 passed. Actual hosted SEO/CDN remains unverified.
