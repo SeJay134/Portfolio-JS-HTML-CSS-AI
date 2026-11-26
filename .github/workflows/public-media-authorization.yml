@@ -20,7 +20,8 @@ jobs:
         with:
           python-version: "3.12"
           architecture: x64
-      - run: python -m pip install --require-hashes --only-binary=:all: -r requirements-studio-media.txt
+      - run: |
+          python -m pip install --require-hashes --only-binary=:all: -r requirements-studio-media.txt
       - name: Allocate candidate migration with local CLI
         run: |
           supabase migration new blog_public_media_authorization
