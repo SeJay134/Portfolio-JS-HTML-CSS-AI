@@ -65,3 +65,5 @@ Phase 3E.2A: public image/gallery reader contract, validation and rendering only
 Phase 3E.2B–3E.3B: atomic public media references, scoped local JPEG delivery, lifecycle verification and opt-in text publication UI with browser acceptance. See BLOG_STUDIO_PHASE_3E2C4.md and BLOG_STUDIO_PHASE_3E3B.md. No hosted activation.
 
 Phase 3F.1: isolated request-time public HTML, metadata, HTTP status, sitemap and RSS core; see BLOG_STUDIO_PHASE_3F1.md. Actual route integration, preview acceptance and production readiness remain gated.
+
+Phase 3F.2–3F.3A: gated Vercel SEO adapter and real local lifecycle acceptance (42 HTTP requests). Phase 3F.3B prepares guarded Preview build and read-only hosted verifier. Hosted acceptance requires isolated test data and separate approval; see BLOG_STUDIO_PHASE_3F3B.md.
