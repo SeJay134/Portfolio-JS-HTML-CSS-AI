@@ -5,3 +5,5 @@ Stacked on verified #75 (26 CI jobs, 263 unit tests and 21 integration tests). A
 Local HTTP integration tests exercise actual Node HTTP status/headers and built CSS files with mocked upstream, 200, 404 after withdrawal, removal from sitemap/RSS, 503, HEAD, 405 and gate. CI pending. Actual Vercel function bundling/includeFiles, rewrite precedence (especially static /blog/ and /sitemap.xml), parameter forwarding, noindex headers/CDN, isolated Supabase data, real OAuth and media must be separately verified in a protected preview before production. Candidate config is not automatic; current production routing unchanged. No hosted data/flag change.
 
 References: https://vercel.com/docs/project-configuration/vercel-json and https://vercel.com/docs/functions/functions-api-reference.
+
+Verification: #76 commit a60a35c3cbb89268cd6f08948042351c6f9b200c passed 26/26 applicable CI jobs, 263 unit tests, 21 standard integration tests and 2 dedicated HTTP tests. Vercel Git preview dpl_BzCrFcBNvhKGgDv4hd7fwvqKvMuz reported READY for that commit; this is the unchanged active-routing build, not activated SEO acceptance.

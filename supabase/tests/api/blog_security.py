@@ -156,6 +156,14 @@ def run():
     # Legacy fixture-only state change for isolation of the rest of the suite.
     sql("update public.blog_posts set status='archived' where slug='api-live';")
     check(slugs()==set(),"archived fixture hidden")
+    def prove_seo(expected_title=None, forbidden_title=None):
+        if legacy:
+            raise AssertionError("SEO acceptance requires a publishable key")
+        subprocess.run(["node", "--import", "tsx", str(Path(__file__).with_name("blog_seo_http.ts"))],
+            input=json.dumps({"key":key,"slug":"studio-fixture","expectedTitle":expected_title,
+                "forbiddenTitle":forbidden_title}),text=True,check=True,timeout=45)
+        check(True,"real local SEO HTTP acceptance: "+(expected_title or "withdrawn"))
+    prove_seo(forbidden_title="Revision two")
     publish_args={"p_id":draft["id"],"p_expected_revision":2,"p_expected_generation":0,
       "p_request_id":"98000000-0000-0000-0000-000000000020","p_action":"publish"}
     check(request("rpc/change_studio_publication",ordinary,"POST",publish_args)[0]>=400,"ordinary publication denied")
@@ -169,20 +177,25 @@ def run():
     check(len(public_rows)==1 and public_rows[0]["slug"]=="studio-fixture" and public_rows[0]["title"]=="Revision two","published projection visible")
     check(public_rows[0]["id"]!=draft["id"] and public_rows[0]["content"]==[{"type":"rich-paragraph","version":1,"runs":draft["blocks"][0]["runs"]}],"public projection excludes private draft ID")
     check(public_rows[0]["blog_categories"]=={"name":"Test"} and public_rows[0]["blog_post_tags"]==[{"blog_tags":{"name":"SQL"}}],"public taxonomy atomically linked")
+    prove_seo("Revision two", "Private studio fixture")
     third={**changed,"p_expected_revision":2,"p_request_id":"98000000-0000-0000-0000-000000000021","p_document":{**draft,"title":"Unsaved-to-public revision three"}}
     check(request("rpc/save_studio_draft",owner,"POST",third)[0]==200,"private edit after publish")
     check(rows(params={"select":"title"})==[{"title":"Revision two"}],"private edit does not change publication")
+    prove_seo("Revision two", "Unsaved-to-public revision three")
     check(request("rpc/change_studio_publication",owner,"POST",{**publish_args,"p_expected_revision":3,"p_request_id":"98000000-0000-0000-0000-000000000022"})[0]>=400,"stale publication generation rejected")
     updated_args={**publish_args,"p_expected_revision":3,"p_expected_generation":1,"p_request_id":"98000000-0000-0000-0000-000000000023"}
     status,updated_pub=request("rpc/change_studio_publication",owner,"POST",updated_args)
     check(status==200 and updated_pub["source_revision"]==3 and updated_pub["generation"]==2,"explicit republish updates snapshot")
     check(rows(params={"select":"title"})==[{"title":"Unsaved-to-public revision three"}],"republished snapshot visible")
+    prove_seo("Unsaved-to-public revision three", "Revision two")
     unpublish={**updated_args,"p_expected_generation":2,"p_request_id":"98000000-0000-0000-0000-000000000024","p_action":"unpublish"}
     status,hidden=request("rpc/change_studio_publication",owner,"POST",unpublish)
     check(status==200 and hidden["status"]=="draft" and slugs()==set(),"unpublish removes anonymous projection")
+    prove_seo(forbidden_title="Unsaved-to-public revision three")
     archive={**unpublish,"p_expected_generation":3,"p_request_id":"98000000-0000-0000-0000-000000000025","p_action":"archive"}
     status,archived=request("rpc/change_studio_publication",owner,"POST",archive)
     check(status==200 and archived["status"]=="archived" and slugs()==set(),"archive keeps projection private")
+    prove_seo(forbidden_title="Unsaved-to-public revision three")
     check(request("rpc/get_studio_publication",owner,"POST",{"p_id":draft["id"]})==(200,archived),"owner publication state")
     check(request("studio_publication_events",owner,extra={"Accept-Profile":"private"})[0]>=400,"private publication history not exposed")
     # Accelerate the bounded lifecycle edge in the disposable fixture only.
@@ -202,6 +215,7 @@ def run():
     check(status==200 and final_archived["generation"]==200 and final_archived["status"]=="archived","archive remains possible at limit")
     check(request("rpc/change_studio_publication",owner,"POST",final_archive)==(200,final_archived),"final operation remains exactly retryable")
     check(request("rpc/change_studio_publication",owner,"POST",last_publish)==(200,last_receipt) and slugs()==set(),"old retry cannot republish archived content")
+    prove_seo(forbidden_title="Unsaved-to-public revision three")
     # Real Storage gateway checks, not simulated storage.objects inserts.
     def storage(path, token=None, method="GET", data=None, mime=None, extra=None):
         headers = {"apikey": key, "Cache-Control": "no-store"}

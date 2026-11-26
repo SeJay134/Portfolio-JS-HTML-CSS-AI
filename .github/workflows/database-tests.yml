@@ -6,6 +6,10 @@ on:
       - 'server/studio_media/**'
       - 'server/publicMedia.js'
       - 'server/localPublicMedia.js'
+      - 'server/blogSeoPreview.ts'
+      - 'src/data/blogSeo.tsx'
+      - 'src/data/blogRemote.ts'
+      - 'src/components/BlogContent.tsx'
       - 'requirements-studio-media.txt'
       - 'package.json'
       - 'package-lock.json'
@@ -17,6 +21,10 @@ on:
       - 'server/studio_media/**'
       - 'server/publicMedia.js'
       - 'server/localPublicMedia.js'
+      - 'server/blogSeoPreview.ts'
+      - 'src/data/blogSeo.tsx'
+      - 'src/data/blogRemote.ts'
+      - 'src/components/BlogContent.tsx'
       - 'requirements-studio-media.txt'
       - 'package.json'
       - 'package-lock.json'
@@ -60,6 +68,8 @@ jobs:
           architecture: x64
       - run: |
           python -m pip install --require-hashes --only-binary=:all: -r requirements-studio-media.txt
+      - run: npm ci
+      - run: npm run build
       - name: Start disposable local API stack
         run: supabase start
       - name: Exercise real local Data API with synthetic fixtures
