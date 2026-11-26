@@ -2,14 +2,14 @@ import React, { useEffect, useRef, useState } from "react";
 import { changePublication, DraftError, getPublication, type PublicationAction, type PublicationRequest, type PublicationState } from "../data/blogDraftRepository";
 import { mediaReferenceCount, type StudioDraft } from "../data/blogStudio";
 
-type Props = { draft: StudioDraft; revision: number; dirty: boolean; blocked: boolean; onDenied: () => void };
+type Props = { draft: StudioDraft; revision: number; dirty: boolean; blocked: boolean; onDenied: () => void; onMutationLock?: (locked: boolean) => void };
 const messages = {
   denied: "Administrator access is no longer available.",
   conflict: "The saved revision or publication changed. Reload the saved version and refresh publication status.",
   invalid: "Publication rejected. Check article fields, slug, media and revision limits.",
   unavailable: "Publication outcome is uncertain. Retry the exact request before starting another action.",
 };
-export function StudioPublicationPanel({ draft, revision, dirty, blocked, onDenied }: Props) {
+export function StudioPublicationPanel({ draft, revision, dirty, blocked, onDenied, onMutationLock }: Props) {
   const [state, setState] = useState<PublicationState | null>(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState("");
@@ -22,7 +22,7 @@ export function StudioPublicationPanel({ draft, revision, dirty, blocked, onDeni
     const kind = reason instanceof DraftError ? reason.kind : "unavailable";
     if (kind === "denied") { onDenied(); return; }
     setError(mutation ? messages[kind] : "Publication status unavailable. Refresh to try again.");
-    if (kind !== "unavailable") setPending(null);
+    if (kind !== "unavailable") { setPending(null); onMutationLock?.(false); }
     if (!mutation || kind === "conflict") setState(null);
   }
   useEffect(() => {
@@ -40,8 +40,8 @@ export function StudioPublicationPanel({ draft, revision, dirty, blocked, onDeni
     }).finally(() => {
       if (!c.signal.aborted) { locked.current = false; setBusy(false); }
     });
-    return () => { c.abort(); };
-  }, [id, onDenied]);
+    return () => { c.abort(); onMutationLock?.(false); };
+  }, [id, onDenied, onMutationLock]);
   async function refresh() {
     const signal = controller.current?.signal;
     if (!signal || signal.aborted || locked.current || pending) return;
@@ -54,7 +54,7 @@ export function StudioPublicationPanel({ draft, revision, dirty, blocked, onDeni
   }
   const hasMedia = mediaReferenceCount(draft) > 0;
   const canPublish = !!state && !dirty && !blocked && !busy && !pending && !hasMedia &&
-    state.generation < 198 && state.source_revision !== null ? state.source_revision <= revision : !!state && !dirty && !blocked && !busy && !pending && !hasMedia && state.generation < 198;
+    state.generation < 198 && (state.source_revision === null || state.source_revision <= revision);
   const canRemove = !!state && !blocked && !busy && !pending && state.generation > 0 && state.generation < 200;
   async function perform(action: PublicationAction, retry = false) {
     const signal = controller.current?.signal;
@@ -68,7 +68,7 @@ export function StudioPublicationPanel({ draft, revision, dirty, blocked, onDeni
       request = { draftId: id, revision, generation: state.generation, key: crypto.randomUUID(), action };
     }
     if (!request || request.action !== action) return;
-    locked.current = true; setBusy(true); setError(""); setNotice(""); setPending(request);
+    locked.current = true; onMutationLock?.(true); setBusy(true); setError(""); setNotice(""); setPending(request);
     try {
       await changePublication(request, signal);
       if (signal.aborted) return;
@@ -80,6 +80,7 @@ export function StudioPublicationPanel({ draft, revision, dirty, blocked, onDeni
         const latest = await getPublication(id, signal);
         if (!signal.aborted) setState(latest);
       } catch (reason) { if (!signal.aborted) failure(reason, false); }
+      finally { if (!signal.aborted) onMutationLock?.(false); }
     } catch (reason) { if (!signal.aborted) failure(reason, true); }
     finally { if (!signal.aborted) { locked.current = false; setBusy(false); } }
   }
@@ -100,6 +101,7 @@ export function StudioPublicationPanel({ draft, revision, dirty, blocked, onDeni
     </>}
     {notice && <p role="status">{notice}</p>}
     {error && <p role="alert" className="studio-error">{error}</p>}
+    {pending && !busy && <p className="studio-hint">Editing and switching drafts are paused until this request is confirmed. If you reload, check the live status before making another change.</p>}
     {pending && !busy && <button type="button" disabled={blocked} onClick={() => void perform(pending.action, true)}>Retry publication request</button>}
     <button type="button" disabled={busy || !!pending} onClick={() => void refresh()}>Refresh publication status</button>
   </section>;

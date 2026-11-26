@@ -65,7 +65,9 @@ function BlockEditor({ block, index, count, onChange, onMove, onRemove }: {
 }
 
 export function BlogStudioWorkspace({ persistent = false }: { persistent?: boolean }) {
-  const store = useStudioDrafts(persistent);
+  const [publicationLocked, setPublicationLocked] = useState(false);
+  const store = useStudioDrafts(persistent, publicationLocked);
+  const editingLocked = !!store.busy || publicationLocked;
   const publishing = persistent && publicationEnabled();
   const { drafts, setDrafts, dirty } = store;
   const [selected, setSelected] = useState<string | null>(null);
@@ -87,12 +89,12 @@ export function BlogStudioWorkspace({ persistent = false }: { persistent?: boole
   }, [dirty]);
 
   function addDraft() {
-    if (drafts.length >= MAX_DRAFTS || store.loading || store.loadError || store.denied || store.busy) return;
+    if (drafts.length >= MAX_DRAFTS || store.loading || store.loadError || store.denied || editingLocked) return;
     const next = newDraft(uid(), uid());
     setDrafts(items => [...items, next]); setSelected(next.id); setMode("edit"); setSearch(""); setError(""); setHistory(null); setHistoryError("");
   }
   function update(changes: Partial<StudioDraft>) {
-    if (!draft || store.busy) return;
+    if (!draft || editingLocked) return;
     const next = { ...draft, ...changes };
     if (mediaReferenceCount(next)>20) { setError("A draft can contain at most 20 photo references."); return; }
     if (!fitsDraft(next)) { setError("This draft exceeds the 1 MiB local limit. Remove some content."); return; }
@@ -123,14 +125,14 @@ export function BlogStudioWorkspace({ persistent = false }: { persistent?: boole
   return <section className="studio-workspace" aria-label="Article workspace">
     <div className="studio-banner"><div><p className="eyebrow">{persistent ? "Phase 3B / Private drafts" : "Phase 3A / Local workspace"}</p><h2>Administrator access confirmed</h2>
       <p>{persistent ? "Saved drafts are private. Unsaved edits may be lost on reload or access recheck (including window focus). Wait for Saved before leaving. " + (publishing ? "Publication controls are available for saved text articles." : "Publishing is not enabled.")  : "Drafts are temporary and held in memory only. Reloading, leaving, or an access recheck (including window focus) can discard them. No saving or publishing yet."}</p></div>
-      <span className="studio-state" role="status">{persistent ? (store.busy ? "Saving or loading…" : dirty ? "Unsaved changes" : drafts.length ? "All drafts saved" : "No saved drafts") : (drafts.length ? "Unsaved local drafts" : "No local drafts")}</span>
+      <span className="studio-state" role="status">{persistent ? (publicationLocked ? "Publication request pending" : store.busy ? "Saving or loading…" : dirty ? "Unsaved changes" : drafts.length ? "All drafts saved" : "No saved drafts") : (drafts.length ? "Unsaved local drafts" : "No local drafts")}</span>
     </div>
     <div className="studio-grid">
       <aside className="studio-panel studio-library" aria-label="Draft library">
-        <div className="studio-panel-heading"><h3>Articles</h3><button className="button primary" type="button" onClick={addDraft} disabled={drafts.length >= MAX_DRAFTS || !!store.busy}>+ New draft</button></div>
+        <div className="studio-panel-heading"><h3>Articles</h3><button className="button primary" type="button" onClick={addDraft} disabled={drafts.length >= MAX_DRAFTS || editingLocked}>+ New draft</button></div>
         <label>Search drafts<input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Title, category, tags" /></label>
         <p className="studio-hint">{matches.length} of {drafts.length} {persistent ? "private" : "local"} drafts</p>
-        {matches.length ? <ul className="studio-draft-list">{matches.map(item => <li key={item.id}><button type="button" aria-current={selected === item.id ? "true" : undefined} onClick={() => { setSelected(item.id); setMode("edit"); setError(""); setHistory(null); setHistoryError(""); }}><strong>{item.title || "Untitled draft"}</strong><span>Draft · {item.category || "Uncategorized"}{persistent && (store.isDirty(item) ? " · Unsaved" : " · Saved")}</span></button></li>)}</ul> : <p>No matching local drafts.</p>}
+        {matches.length ? <ul className="studio-draft-list">{matches.map(item => <li key={item.id}><button type="button" aria-current={selected === item.id ? "true" : undefined} disabled={publicationLocked} onClick={() => { setSelected(item.id); setMode("edit"); setError(""); setHistory(null); setHistoryError(""); }}><strong>{item.title || "Untitled draft"}</strong><span>{publishing ? "Working copy" : "Draft"} · {item.category || "Uncategorized"}{persistent && (store.isDirty(item) ? " · Unsaved" : " · Saved")}</span></button></li>)}</ul> : <p>No matching local drafts.</p>}
       </aside>
       <section className="studio-panel studio-canvas" aria-label="Article editor">
         {!draft ? <div className="studio-empty"><h3>Start writing</h3><p>Create a draft to compose text, format blocks and preview an article.</p><button className="button secondary" type="button" onClick={addDraft}>Create first draft</button></div> : <>
@@ -140,18 +142,18 @@ export function BlogStudioWorkspace({ persistent = false }: { persistent?: boole
           </div></div>
           {error && <p role="alert" className="studio-error">{error}</p>}
           {persistent && <div className="studio-save-panel">
-            <div className="studio-actions"><button type="button" disabled={!!store.busy || !store.isDirty(draft) && !currentFailure || currentFailure?.kind === "conflict"} onClick={() => { void store.save(draft, true); setHistory(null); }}>Save draft</button>
-              <label className="studio-autosave"><input type="checkbox" checked={store.auto} onChange={event => store.setAuto(event.target.checked)}/> Autosave</label></div>
+            <div className="studio-actions"><button type="button" disabled={editingLocked || !store.isDirty(draft) && !currentFailure || currentFailure?.kind === "conflict"} onClick={() => { void store.save(draft, true); setHistory(null); }}>Save draft</button>
+              <label className="studio-autosave"><input type="checkbox" disabled={publicationLocked} checked={store.auto} onChange={event => store.setAuto(event.target.checked)}/> Autosave</label></div>
             <p className="studio-hint">{currentSaved ? "Saved revision " + currentSaved.revision + " / 100" : "Not saved yet"} · {store.auto ? "15-second idle autosave" : "Manual saving"}</p>
             {currentFailure && <p role="alert" className="studio-error">{currentFailure.message}</p>}
-            {(currentSaved || currentFailure?.kind === "conflict" || currentFailure?.kind === "unavailable") && <button type="button" disabled={!!store.busy} onClick={() => { if (window.confirm("Reload latest saved draft and discard unsaved edits?")) { void store.reload(draft); setHistory(null); } }}>Reload saved version</button>}
+            {(currentSaved || currentFailure?.kind === "conflict" || currentFailure?.kind === "unavailable") && <button type="button" disabled={editingLocked} onClick={() => { if (window.confirm("Reload latest saved draft and discard unsaved edits?")) { void store.reload(draft); setHistory(null); } }}>Reload saved version</button>}
           </div>}
           {mode === "preview" ? <div className="studio-preview">
             {previewError ? <p role="alert" className="studio-error">{previewError}</p> : preview && <BlogArticle post={preview} posts={[]} preview privatePreview={preview.privateMedia ? {
               cover:preview.privateMedia.cover?<PrivateArticleImage key={preview.privateMedia.cover.assetId} image={preview.privateMedia.cover}/>:undefined,
               blocks:Object.fromEntries(Object.entries(preview.privateMedia.blocks).map(([index,images])=>[index,<div className="studio-article-gallery">{images.map(image=><PrivateArticleImage key={image.assetId} image={image}/>)}</div>]))
             }:undefined} />}
-          </div> : <fieldset className="studio-edit-fields" disabled={!!store.busy}>
+          </div> : <fieldset className="studio-edit-fields" disabled={editingLocked}>
             <label>Article title<input className="studio-title-input" maxLength={240} value={draft.title} onChange={event => update({ title: event.target.value })} placeholder="Give your article a title"/></label>
             <label>Summary<textarea rows={3} maxLength={2000} value={draft.description} onChange={event => update({ description: event.target.value })} placeholder="A short introduction"/></label>
             {persistent && localMediaUploadEnabled() && <DraftMediaPicker key={draft.id} draft={draft} remaining={20-mediaReferenceCount(draft)}
@@ -168,7 +170,7 @@ export function BlogStudioWorkspace({ persistent = false }: { persistent?: boole
       </section>
       <aside className="studio-panel studio-settings" aria-label="Article settings"><h3>Article settings</h3>
         {!draft ? <p>Choose a local draft to edit its details.</p> : <>
-          <fieldset className="studio-edit-fields" disabled={!!store.busy}>{!publishing && <p className="studio-hint">Status: Draft · Not published</p>}
+          <fieldset className="studio-edit-fields" disabled={editingLocked}>{!publishing && <p className="studio-hint">Status: Draft · Not published</p>}
           <label>URL slug<input maxLength={160} value={draft.slug} onChange={event => update({ slug: event.target.value })} placeholder={slugFromTitle(draft.title) || "article-slug"}/></label>
           <button type="button" onClick={() => update({ slug: slugFromTitle(draft.title) })}>Generate slug from title</button>
           <label>Category<input maxLength={100} value={draft.category} onChange={event => update({ category: event.target.value })}/></label>
@@ -178,15 +180,15 @@ export function BlogStudioWorkspace({ persistent = false }: { persistent?: boole
           <label>SEO description<textarea rows={3} maxLength={500} value={draft.seoDescription} onChange={event => update({ seoDescription: event.target.value })}/></label>
           </fieldset>
           {publishing && currentSaved && <StudioPublicationPanel key={draft.id} draft={draft} revision={currentSaved.revision}
-            dirty={store.isDirty(draft)} blocked={!!store.busy || !!currentFailure} onDenied={store.deny}/>}
+            dirty={store.isDirty(draft)} blocked={!!store.busy || !!currentFailure} onDenied={store.deny} onMutationLock={setPublicationLocked}/>}
           {publishing && !currentSaved && <p className="studio-hint">Save the draft to manage publication.</p>}
           {persistent && currentSaved && <section className="studio-history" aria-label="Revision history"><h4>Revision history</h4>
-            <button type="button" disabled={historyLoading || !!store.busy} onClick={() => void showHistory()}>Load revision history</button>
+            <button type="button" disabled={historyLoading || editingLocked} onClick={() => void showHistory()}>Load revision history</button>
             {historyError && <p role="alert">{historyError}</p>}
-            {history?.id === draft.id && <ul>{history.rows.map(item => <li key={item.revision}><span>Revision {item.revision} · {new Date(item.created_at).toLocaleString()}</span><button type="button" disabled={!!store.busy || !!currentFailure || item.revision === currentSaved.revision} onClick={() => { if (window.confirm("Load this revision as unsaved edits? Save to create a new revision.")) { void store.restore(draft, item.revision); setMode("edit"); } }}>Restore revision {item.revision}</button></li>)}</ul>}
+            {history?.id === draft.id && <ul>{history.rows.map(item => <li key={item.revision}><span>Revision {item.revision} · {new Date(item.created_at).toLocaleString()}</span><button type="button" disabled={editingLocked || !!currentFailure || item.revision === currentSaved.revision} onClick={() => { if (window.confirm("Load this revision as unsaved edits? Save to create a new revision.")) { void store.restore(draft, item.revision); setMode("edit"); } }}>Restore revision {item.revision}</button></li>)}</ul>}
           </section>}
           <div className="studio-next"><strong>Coming next</strong><p>{persistent ? "Saved draft deletion is not enabled. Local media references are available only in isolated staging. History has a temporary storage cap." : "Database saving, categories, photos and publishing are not enabled in this phase."}</p></div>
-          {!currentSaved && <button type="button" className="studio-discard" disabled={!!store.busy || !!currentFailure && currentFailure.kind !== "invalid"} onClick={removeDraft}>Discard draft</button>}
+          {!currentSaved && <button type="button" className="studio-discard" disabled={editingLocked || !!currentFailure && currentFailure.kind !== "invalid"} onClick={removeDraft}>Discard draft</button>}
         </>}
       </aside>
     </div>
