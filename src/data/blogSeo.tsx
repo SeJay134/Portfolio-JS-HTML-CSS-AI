@@ -88,7 +88,10 @@ function html(title: string, description: string, content: string, canonical?: s
   return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' +
     escape(title) + '</title><meta name="description" content="' + escape(description) + '">' +
     (canonical ? '<link rel="canonical" href="' + escape(canonical) + '">' : '<meta name="robots" content="noindex,nofollow">') +
-    extra + '</head><body><main><a href="/blog/">All articles</a>' + content + '</main></body></html>';
+    extra + '<link rel="alternate" type="application/rss+xml" title="Blog &amp; Insights" href="/blog/rss.xml"><link rel="icon" href="/favicon.svg"></head><body>' +
+    '<header class="site-header"><div class="header-inner"><a class="wordmark" href="/" aria-label="Portfolio home">SP.</a><nav aria-label="Site navigation"><a href="/blog/">Blog</a> · <a href="/#Projects">Projects</a> · <a href="/#Connect">Contact</a></nav></div></header>' +
+    '<main class="section blog-main" id="main"><a class="text-link" href="/blog/">All articles</a>' + content +
+    '</main><footer class="site-footer"><a href="/">Portfolio</a><nav class="footer-legal" aria-label="Legal"><a href="/privacy/">Privacy Policy</a><a href="/terms/">Terms of Service</a></nav></footer></body></html>';
 }
 function errorPage(status: 404 | 503) {
   const title = status === 404 ? "Article not found" : "Blog temporarily unavailable";
@@ -103,7 +106,8 @@ export function createBlogSeoHandler(config: Settings, reader: Reader = fetch, c
   return async function handle(path: string): Promise<Response> {
     const match = /^\/blog\/([a-z0-9]+(?:-[a-z0-9]+)*)\/?$/.exec(path);
     const listing = path === "/blog/" || path === "/blog";
-    const sitemap = path === "/blog/sitemap.xml";
+    const rootSitemap = path === "/sitemap.xml";
+    const sitemap = rootSitemap || path === "/blog/sitemap.xml";
     const rss = path === "/blog/rss.xml";
     if (!listing && !sitemap && !rss && (!match || !validSlug(match[1]))) return errorPage(404);
     try {
@@ -111,6 +115,7 @@ export function createBlogSeoHandler(config: Settings, reader: Reader = fetch, c
       if (listing || sitemap || rss) {
         const posts = await catalogue(config, reader, now, signal);
         if (sitemap) return response('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>' + SITE + '/blog/</loc></url>' +
+          (rootSitemap ? ["/","/privacy/","/terms/","/collaborations/light-up-media-signs/"].map(route => "<url><loc>" + SITE + route + "</loc></url>").join("") : "") +
           posts.map(post => "<url><loc>" + xml(urlFor(post.slug)) + "</loc></url>").join("") + "</urlset>", 200, "application/xml; charset=utf-8");
         if (rss) return response('<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>Blog &amp; Insights</title><link>' + SITE + '/blog/</link><description>Software, data and AI articles.</description>' +
           posts.map(post => "<item><title>" + xml(post.title) + "</title><link>" + xml(urlFor(post.slug)) + "</link><guid isPermaLink=\"true\">" + xml(urlFor(post.slug)) +
