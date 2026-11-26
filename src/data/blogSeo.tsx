@@ -13,7 +13,11 @@ const PAGE_SIZE = 50;
 type Settings = { url: string; key: string };
 type Reader = typeof fetch;
 const escape = (value: string) => value.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
-const xml = (value: string) => escape(value.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffe\uffff]/g, ""));
+const xml = (value: string) => escape(Array.from(value).filter(char => {
+  const point = char.codePointAt(0)!;
+  return point === 9 || point === 10 || point === 13 || (point >= 32 && point <= 0xd7ff) ||
+    (point >= 0xe000 && point <= 0xfffd) || (point >= 0x10000 && point <= 0x10ffff);
+}).join(""));
 const jsonScript = (value: unknown) => JSON.stringify(value).replace(/[<>&\u2028\u2029]/g, c => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0"));
 const urlFor = (slug: string) => SITE + articlePath(slug);
 const validSlug = (slug: string) => slug.length <= 160 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) && !["media", "readiness-probe"].includes(slug);

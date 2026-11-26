@@ -23,7 +23,12 @@ it("renders no-JS article, custom SEO, canonical and escaped structured data",as
   expect(init?.redirect).toBe("error");
   expect(init?.credentials).toBe("omit");
 });
-it.each([[],[{status:"draft",content:"PRIVATE"}],[{status:"archived",content:"PRIVATE"}],[{...fixture,published_at:"2099-01-01"}]])("returns true 404 for nonpublic rows",async(data)=>{
+it.each([
+  {label:"missing",data:[]},
+  {label:"draft",data:[{status:"draft",content:"PRIVATE"}]},
+  {label:"archived",data:[{status:"archived",content:"PRIVATE"}]},
+  {label:"future",data:[{...fixture,published_at:"2099-01-01"}]},
+])("returns true 404 for $label rows",async({data})=>{
   const response=await createBlogSeoHandler(config,vi.fn<typeof fetch>().mockResolvedValue(json(data)),()=>now)("/blog/fixture");
   expect(response.status).toBe(404);
   expect(response.headers.get("x-robots-tag")).toContain("noindex");
