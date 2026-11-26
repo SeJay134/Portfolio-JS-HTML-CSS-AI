@@ -61,3 +61,7 @@ Phase 3D.3C: v2 draft cover/image/gallery references, immutable revision binding
 Phase 3E.1: local text-only atomic publication and lifecycle, no direct projection DML. See BLOG_STUDIO_PHASE_3E1.md. Public media, UI and SEO remain gated.
 
 Phase 3E.2A: public image/gallery reader contract, validation and rendering only; publication and private Storage route remain gated. See BLOG_STUDIO_PHASE_3E2A.md.
+
+Phase 3E.2B–3E.3B: atomic public media references, scoped local JPEG delivery, lifecycle verification and opt-in text publication UI with browser acceptance. See BLOG_STUDIO_PHASE_3E2C4.md and BLOG_STUDIO_PHASE_3E3B.md. No hosted activation.
+
+Phase 3F.1: isolated request-time public HTML, metadata, HTTP status, sitemap and RSS core; see BLOG_STUDIO_PHASE_3F1.md. Actual route integration, preview acceptance and production readiness remain gated.
