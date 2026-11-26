@@ -146,6 +146,6 @@ export function useStudioDrafts(enabled: boolean) {
       const next = { ...items }; delete next[docId]; return next;
     });
   }
-  return { drafts, setDrafts, saved, loading, loadError, denied, dirty, isDirty, failures, busy, auto, setAuto,
+  return { drafts, setDrafts, saved, loading, loadError, denied, deny, dirty, isDirty, failures, busy, auto, setAuto,
     save, reload, history, restore, discardLocal, edited, retryLoad: () => setAttempt(value => value + 1) };
 }

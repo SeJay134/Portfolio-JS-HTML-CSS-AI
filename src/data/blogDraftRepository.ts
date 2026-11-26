@@ -169,3 +169,47 @@ export async function listRevisions(draftId: string, signal: AbortSignal): Promi
     return { revision: rev, created_at: date(r.created_at) };
   });
 }
+
+export const publicationEnabled = () => draftPersistenceEnabled() && import.meta.env.VITE_ENABLE_BLOG_PUBLICATION === "true";
+export type PublicationAction = "publish" | "unpublish" | "archive";
+export type PublicationState = { generation: number; source_revision: number | null; status: "draft" | "published" | "archived"; slug: string | null; published_at: string | null };
+export type PublicationRequest = { draftId: string; revision: number; generation: number; key: string; action: PublicationAction };
+export function decodePublication(value: unknown): PublicationState {
+  const row = object(value);
+  exact(row, ["generation","source_revision","status","slug","published_at"]);
+  const g = row.generation;
+  if (typeof g !== "number" || !Number.isInteger(g) || g < 0 || g > 200) return invalid();
+  if (row.status !== "draft" && row.status !== "published" && row.status !== "archived") return invalid();
+  if (g === 0) {
+    if (row.source_revision !== null || row.status !== "draft" || row.slug !== null || row.published_at !== null) return invalid();
+    return { generation: 0, source_revision: null, status: "draft", slug: null, published_at: null };
+  }
+  const source = revision(row.source_revision), urlSlug = slug(row.slug);
+  if (!urlSlug || ["media","readiness-probe"].includes(urlSlug)) return invalid();
+  const published = row.published_at === null ? null : date(row.published_at);
+  if ((row.status === "published" && published === null) || (row.status === "draft" && published !== null)) return invalid();
+  return { generation: g, source_revision: source, status: row.status, slug: urlSlug, published_at: published };
+}
+function assertPublicationEnabled() {
+  if (!publicationEnabled()) throw new DraftError("unavailable", "Publication service unavailable.");
+}
+export async function getPublication(draftId: string, signal: AbortSignal): Promise<PublicationState> {
+  assertPublicationEnabled();
+  return decodePublication(await rpc("get_studio_publication", { p_id: id(draftId) }, signal));
+}
+export async function changePublication(request: PublicationRequest, signal: AbortSignal): Promise<PublicationState> {
+  assertPublicationEnabled();
+  if (!Number.isInteger(request.generation) || request.generation < 0 || request.generation >= 200 ||
+      !["publish","unpublish","archive"].includes(request.action)) return invalid();
+  const raw = await rpc("change_studio_publication", { p_id: id(request.draftId), p_expected_revision: revision(request.revision),
+    p_expected_generation: request.generation, p_request_id: id(request.key), p_action: request.action }, signal);
+  try {
+    const result = decodePublication(raw);
+    const expected = request.action === "publish" ? "published" : request.action === "unpublish" ? "draft" : "archived";
+    if (result.generation !== request.generation + 1 || result.status !== expected ||
+        (request.action === "publish" && result.source_revision !== request.revision)) return invalid();
+    return result;
+  } catch {
+    throw new DraftError("unavailable", "Publication receipt not confirmed. Retry the same request.");
+  }
+}
