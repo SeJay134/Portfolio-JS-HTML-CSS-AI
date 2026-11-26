@@ -54,6 +54,8 @@ export function createSeoPreviewHandler({ env, reader, clock, readShell = () => 
           !/^sb_publishable_[A-Za-z0-9_-]+$/.test(key)) return fail(503, head);
       const result = await createBlogSeoHandler({ url: origin, key }, reader, clock)(routes[0]);
       const h = headers();
+      const revision = env.VERCEL_GIT_COMMIT_SHA;
+      if (revision && /^[a-f0-9]{40}$/.test(revision)) h.set("X-Blog-Preview-Revision", revision);
       for (const name of ["content-type", "retry-after"]) {
         const value = result.headers.get(name);
         if (value) h.set(name, value);
@@ -61,7 +63,7 @@ export function createSeoPreviewHandler({ env, reader, clock, readShell = () => 
       let body = await result.text();
       if (h.get("Content-Type")?.startsWith("text/html")) {
         const links = styleLinks(await readShell());
-        body = body.replace("</head>", () => links + '<meta name="robots" content="noindex,nofollow"></head>');
+        body = body.replace('<meta name="robots" content="noindex,nofollow">', "").replace("</head>", () => links + '<meta name="robots" content="noindex,nofollow"></head>');
       }
       return new Response(head ? null : body, { status: result.status, headers: h });
     } catch { return fail(503, head); }
